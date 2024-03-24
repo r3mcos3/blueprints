@@ -3,6 +3,12 @@ blueprint:
   name: 🔈️ Volume Control 2.0
   author: r3mcos3
   source_url: https://github.com/r3mcos3/blueprints/blob/main/volumecontrol/volume_control.yaml
+  homeassistant:
+    min_version: "2024.3.0"
+  description: "
+    Blueprint for automate all your speakers 🔊
+  Based on time 🕛️ and your chosen speakers. 
+    "  
   input:
     media:
       name: 📻️ Media Players
