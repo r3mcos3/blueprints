@@ -53,19 +53,13 @@ blueprint:
           mode: slider
 mode: single
 
-input_media: !input_media
-input_scheduler: !input_scheduler
-input_volume_up: !input_volume_up
-input_volume_down: !input_volume_down
-
-
 trigger:
   - platform: state
-    entity_id: input_scheduler
+    entity_id: !input_scheduler
     to: "on"
     id: aan
   - platform: state
-    entity_id: input_scheduler
+    entity_id: !input_scheduler
     to: "off"
     id: uit
 action:
@@ -76,9 +70,9 @@ action:
               - aan
         sequence:
           - service: media_player.volume_set
-            target: input_media
+            target: !input media
             data:
-              volumee_level: volume_up
+              volumee_level: !input volume_up
       - conditions:
           - condition: trigger
             id:
@@ -87,4 +81,4 @@ action:
           - service: media_player.volume_set
             target: input_media
             data:
-              volumee_level: volume_down 
+              volumee_level: !input volume_down 
