@@ -45,7 +45,6 @@ blueprint:
           max: 1.0
           step: 0.1
           mode: slider
-  source_url: https://gist.github.com/r3mcos3/9da622593b43d3ed166b9bed3dd5c85b
 mode: single
 trigger:
 - platform: time
