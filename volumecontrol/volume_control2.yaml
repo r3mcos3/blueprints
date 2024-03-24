@@ -2,7 +2,7 @@ blueprint:
   domain: automation
   name: 🔈️ Volume Control 2.0
   author: r3mcos3
-  source_url: https://github.com/r3mcos3/blueprints/blob/main/volumecontrol/volume_control.yaml
+  source_url: https://github.com/r3mcos3/blueprints/blob/main/volumecontrol/volume_control2.yaml
   homeassistant:
     min_version: "2024.3.0"
   description: "
