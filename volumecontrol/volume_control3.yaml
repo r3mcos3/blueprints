@@ -55,11 +55,11 @@ mode: single
 
 trigger:
   - platform: state
-    entity_id: !input_scheduler
+    entity_id: !input scheduler
     to: "on"
     id: aan
   - platform: state
-    entity_id: !input_scheduler
+    entity_id: !input scheduler
     to: "off"
     id: uit
 action:
