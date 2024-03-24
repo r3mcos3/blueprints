@@ -1,0 +1,72 @@
+blueprint:
+  domain: automation
+  name: Volume Control 2.0
+  input:
+    media:
+      name: Media Players
+      description: Media players to use
+      default: []
+      selector:
+        target:
+          entity:
+          - domain:
+            - media_player
+    time_up:
+      name: Up Time
+      description: Time that the volume goes up
+      default: 00:00:00
+      selector:
+        time: {}
+    time_down:
+      name: Down Time
+      description: Time that the volume goes down
+      default: 00:00:00
+      selector:
+        time: {}
+    volume_up:
+      name: Volume Up Level
+      description: The volume goes to this level when the up time is reached
+      default: 0.6
+      selector:
+        number:
+          min: 0.1
+          max: 1.0
+          step: 0.1
+          mode: slider
+    volume_down:
+      name: Volume Down Level
+      description: The volume goes to this level when the down time is reached
+      default: 0.2
+      selector:
+        number:
+          min: 0.1
+          max: 1.0
+          step: 0.1
+          mode: slider
+  source_url: https://gist.github.com/r3mcos3/9da622593b43d3ed166b9bed3dd5c85b
+mode: single
+trigger:
+- platform: time
+  at: !input time_up
+- platform: time
+  at: !input time_down
+action:
+- choose:
+  - conditions:
+    - condition: time
+      before: !input time_down
+      after: !input time_up
+    sequence:
+    - service: media_player.volume_set
+      target: !input media
+      data:
+        volume_level: !input volume_up
+  - conditions:
+    - condition: time
+      before: !input time_up
+      after: !input time_down
+    sequence:
+    - service: media_player.volume_set
+      target: !input media
+      data:
+        volume_level: !input volume_down
