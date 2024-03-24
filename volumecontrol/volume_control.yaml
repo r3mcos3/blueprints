@@ -1,6 +1,8 @@
 blueprint:
   domain: automation
-  name: Volume Control 2.0
+  name: 🔈️ Volume Control 2.0
+  author: r3mcos3
+  source_url: https://github.com/r3mcos3/blueprints/blob/main/volumecontrol/volume_control.yaml
   input:
     media:
       name: Media Players
