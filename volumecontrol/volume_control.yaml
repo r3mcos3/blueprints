@@ -7,8 +7,10 @@ blueprint:
     min_version: "2024.3.0"
   description: "
     Blueprint for automate all your speakers 🔊
-    
+  
+
   Based on time 🕛️ and your chosen speakers.
+
 
     "  
   input:
