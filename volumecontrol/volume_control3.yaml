@@ -1,0 +1,90 @@
+blueprint:
+  domain: automation
+  name: 🔈️ Volume Controle 3.0
+  author: r3mcos3
+  source_url: https://github.com/r3mcos3/blueprints/blob/main/volumecontrol/volume_control3.yaml
+  homeassistant:
+    min_version: "2024.3.0"
+  description: " Blueprint to automate all your speakers 🔈️"
+
+  input:
+    media:
+      name: 📻️ Media Players
+      description: Speakers to use.
+      default: []
+      selector:
+        target:
+          entity:
+            - domain:
+                - media_player
+    scheduler:
+      name: 🗓️ Scheduler
+      description: >
+        scheduler to use,
+
+        for more information about schedulers click [here](https://www.home-assistant.io/integrations/schedule/)
+
+        to make your scheduler click [here](https://my.home-assistant.io/redirect/helpers/).
+      default: []
+      selector:
+        entity:
+          filter:
+            - domain:
+                - schedule
+    volume_up:
+      name: 🔊 Volume Up Level
+      description: The volume goes to this level when the up time is reached
+      default: 0.6
+      selector:
+        number:
+          min: 0.1
+          max: 1.0
+          step: 0.1
+          mode: slider
+    volume_down:
+      name: 🔈️ Volume Down Level
+      description: The volume goes to this level when the down time is reached
+      default: 0.2
+      selector:
+        number:
+          min: 0.1
+          max: 1.0
+          step: 0.1
+          mode: slider
+mode: single
+
+input_media: !input_media
+input_scheduler: !input_scheduler
+input_volume_up: !input_volume_up
+input_volume_down: !input_volume_down
+
+
+trigger:
+  - platform: state
+    entity_id: input_scheduler
+    to: "on"
+    id: aan
+  - platform: state
+    entity_id: input_scheduler
+    to: "off"
+    id: uit
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id:
+              - aan
+        sequence:
+          - service: media_player.volume_set
+            target: input_media
+            data:
+              volumee_level: volume_up
+      - conditions:
+          - condition: trigger
+            id:
+              - uit
+        sequence:
+          - service: media_player.volume_set
+            target: input_media
+            data:
+              volumee_level: volume_down 
