@@ -79,6 +79,6 @@ action:
               - uit
         sequence:
           - service: media_player.volume_set
-            target: input_media
+            target: !input media
             data:
               volumee_level: !input volume_down 
