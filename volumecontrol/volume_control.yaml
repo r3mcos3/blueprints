@@ -5,7 +5,7 @@ blueprint:
   source_url: https://github.com/r3mcos3/blueprints/blob/main/volumecontrol/volume_control.yaml
   input:
     media:
-      name: Media Players
+      name: 📻️ Media Players
       description: Media players to use
       default: []
       selector:
@@ -14,19 +14,19 @@ blueprint:
           - domain:
             - media_player
     time_up:
-      name: Up Time
+      name: 🕛️ Up Time
       description: Time that the volume goes up
       default: 00:00:00
       selector:
         time: {}
     time_down:
-      name: Down Time
+      name: 🕛️ Down Time
       description: Time that the volume goes down
       default: 00:00:00
       selector:
         time: {}
     volume_up:
-      name: Volume Up Level
+      name: 🔊 Volume Up Level
       description: The volume goes to this level when the up time is reached
       default: 0.6
       selector:
@@ -36,7 +36,7 @@ blueprint:
           step: 0.1
           mode: slider
     volume_down:
-      name: Volume Down Level
+      name: 🔈️ Volume Down Level
       description: The volume goes to this level when the down time is reached
       default: 0.2
       selector:
