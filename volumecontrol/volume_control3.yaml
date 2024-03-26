@@ -33,7 +33,7 @@ blueprint:
                 - schedule
     volume_up:
       name: 🔊 Volume Up Level
-      description: The volume goes to this level when the up time is reached
+      description: The volume goes to this level when the scheduler goes to on
       default: 0.6
       selector:
         number:
@@ -43,7 +43,7 @@ blueprint:
           mode: slider
     volume_down:
       name: 🔈️ Volume Down Level
-      description: The volume goes to this level when the down time is reached
+      description: The volume goes to this level when the scheduler goes to off
       default: 0.2
       selector:
         number:
