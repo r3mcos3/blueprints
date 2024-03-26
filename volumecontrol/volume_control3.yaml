@@ -6,11 +6,10 @@ blueprint:
   homeassistant:
     min_version: "2024.3.0"
   description: >
-    " Blueprint to automate all your speakers 🔈️
+    Blueprint to automate all your speakers 🔈️
     
     
     📦️ Version: 1.0
-    "
 
   input:
     media:
