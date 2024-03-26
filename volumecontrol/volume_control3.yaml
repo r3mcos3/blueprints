@@ -72,7 +72,7 @@ action:
           - service: media_player.volume_set
             target: !input media
             data:
-              volumee_level: !input volume_up
+              volume_level: !input volume_up
       - conditions:
           - condition: trigger
             id:
@@ -81,4 +81,4 @@ action:
           - service: media_player.volume_set
             target: !input media
             data:
-              volumee_level: !input volume_down 
+              volume_level: !input volume_down 
