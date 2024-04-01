@@ -57,6 +57,16 @@ blueprint:
           max: 1.0
           step: 0.1
           mode: slider
+    custom_action:
+      name: 🎬 Custom Action
+      description: >
+        `optional`
+
+
+        This custom action gets executed if scheduler get to 'on' or 'off'
+      default:
+      selector:
+        action:
 mode: single
 
 trigger:
@@ -87,4 +97,8 @@ action:
           - service: media_player.volume_set
             target: !input media
             data:
-              volume_level: !input volume_down 
+              volume_level: !input volume_down
+  - if:
+      - condition: template
+        value_template: "{{ input_custom_action != none }}"
+    then: !input "input_custom_action"
