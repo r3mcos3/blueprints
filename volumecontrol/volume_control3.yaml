@@ -101,4 +101,4 @@ action:
   - if:
       - condition: template
         value_template: "{{ input_custom_action != none }}"
-    then: !input "input_custom_action"
+    then: !input custom_action
