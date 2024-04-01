@@ -71,7 +71,7 @@ blueprint:
     custom_action:
       name: 🎬 Custom Action
       description: >
-        `Csutom Action` `Optional`
+        `Custom Action` `Optional`
 
 
         This custom action gets executed if scheduler get to 'on' or 'off'
