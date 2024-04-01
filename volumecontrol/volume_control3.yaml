@@ -14,7 +14,11 @@ blueprint:
   input:
     media:
       name: 📻️ Media Players
-      description: Speakers to use.
+      description: >
+        `Speakers`
+        
+        
+        Speakers to use.
       default: []
       selector:
         target:
