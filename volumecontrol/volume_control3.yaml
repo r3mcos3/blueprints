@@ -24,7 +24,7 @@ blueprint:
     scheduler:
       name: 🗓️ Scheduler
       description: >
-        scheduler to use,
+        `Scheduler`
 
         for more information about schedulers click [here](https://www.home-assistant.io/integrations/schedule/)
 
@@ -38,6 +38,9 @@ blueprint:
     volume_up:
       name: 🔊 Volume Up Level
       description: >
+        `Volume High Setting`
+        
+
         The volume goes to this level when the scheduler goes to on
       default: 0.6
       selector:
@@ -49,6 +52,9 @@ blueprint:
     volume_down:
       name: 🔈️ Volume Down Level
       description: >
+        `Volume Low Setting`
+        
+
         The volume goes to this level when the scheduler goes to off
       default: 0.2
       selector:
