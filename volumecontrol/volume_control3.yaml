@@ -25,7 +25,8 @@ blueprint:
       name: 🗓️ Scheduler
       description: >
         `Scheduler`
-
+        
+        
         for more information about schedulers click [here](https://www.home-assistant.io/integrations/schedule/)
 
         to make your scheduler click [here](https://my.home-assistant.io/redirect/helpers/).
