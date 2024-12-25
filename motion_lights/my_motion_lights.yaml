@@ -1,1 +1,53 @@
 blueprint:
+  name: My Motion Lights
+  description: Turn on lights when motion is detected
+  domain: automation
+  author: r3mcos3
+  source_url: "https://github.com/r3mcos3/blueprints/blob/main/motion_lights/my_motion_lights.yaml"
+  homeassistant:
+    min_version: 2024.12.0
+  input:
+    section:
+    name: Motions Sensors & Lights
+    icon: mdi:cog
+    description: Configure the motion sensors and lights
+    input:
+      motion_sensor:
+        name: Motion Sensor
+        description: The motion sensor to trigger the lights
+        selector:
+          entity:
+            domain: binary_sensor
+            device_class: motion
+      lights:
+        name: Lights
+        description: The lights to turn on when motion is detected
+        selector:
+          entity:
+            domain: light
+mode: restart
+trigger:
+  platform: state
+  entity_id: !input motion_sensor
+  to: "on"
+  id: on
+  platform: state
+  entity_id: !input motion_sensor
+  to: "off"
+  id: off
+action:
+  choose:
+    - conditions:
+        - condition: trigger
+          id: on
+      sequence:
+        - service: light.turn_on
+          target:
+            entity_id: !input lights
+    - conditions:
+        - condition: trigger
+          id: off
+      sequence:
+        - service: light.turn_off
+          target:
+            entity_id: !input lights
