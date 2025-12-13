@@ -1,7 +1,7 @@
 blueprint:
   name: "🔥 Advanced Heating Control"
   description: >-
-    Version: 2.10
+    Version: 2.11
     A smart thermostat control that considers indoor/outdoor temperature, 
     presence, day/night schedule, and open windows/doors. 🌡️🏠
   domain: automation
@@ -165,9 +165,14 @@ trigger:
   - platform: state
     entity_id: !input indoor_temp_sensor
   - platform: state
+    entity_id: !input outdoor_temp_sensor
+  - platform: state
     entity_id: !input presence_entity
   - platform: state
     entity_id: !input window_sensor
+    to:
+      - "on"
+      - "off"
   - platform: state
     entity_id:
       - !input target_temp_day
