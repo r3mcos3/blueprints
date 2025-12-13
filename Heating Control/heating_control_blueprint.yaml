@@ -1,0 +1,234 @@
+blueprint:
+  name: "🔥 Advanced Heating Control"
+  description: >-
+    Version: 2.4
+    A smart thermostat control that considers indoor/outdoor temperature, 
+    presence, day/night schedule, and open windows/doors. 🌡️🏠
+  domain: automation
+  source_url: https://github.com/your-username/your-repo/blob/main/heating_blueprint.yaml
+  input:
+    thermostat_entity:
+      name: "🌡️ Thermostat"
+      description: "The climate entity you want to control (e.g., climate.living_room_thermostat)."
+      selector:
+        entity:
+          domain: climate
+    indoor_temp_sensor:
+      name: "🌡️ Indoor Temperature Sensor"
+      description: "Sensor that measures the current temperature in the room."
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    outdoor_temp_sensor:
+      name: "🌡️ Outdoor Temperature Sensor (Optional)"
+      description: "Sensor for the outdoor temperature. Used to disable heating when it's warm outside."
+      default: ''
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    max_outdoor_temp:
+      name: "🌡️ Max Outdoor Temperature"
+      description: "If the outdoor temperature is higher than this value, the heating will not turn on."
+      default: 15
+      selector:
+        number:
+          min: 0
+          max: 30
+          step: 1
+          unit_of_measurement: °C
+    presence_entity:
+      name: "👥 Presence Sensors"
+      description: "Select one or more 'person' or 'group' entities that track presence in the home."
+      selector:
+        entity:
+          domain:
+            - person
+            - group
+          multiple: true
+    window_sensor:
+      name: "🪟 Window/Door Sensors (Optional)"
+      description: "Select one or more window/door sensors. If one is open, the heating will pause."
+      default: []
+      selector:
+        entity:
+          multiple: true
+          domain: binary_sensor
+          device_class:
+            - window
+            - door
+    target_temp_day:
+      name: "☀️ Target Temperature (Day)"
+      description: "The 'input_number' helper for the daytime target temperature."
+      selector:
+        entity:
+          domain: input_number
+    target_temp_night:
+      name: "🌙 Target Temperature (Night)"
+      description: "The 'input_number' helper for the nighttime target temperature."
+      selector:
+        entity:
+          domain: input_number
+    target_temp_away:
+      name: "✈️ Target Temperature (Away)"
+      description: "The 'input_number' helper for the away mode target temperature."
+      selector:
+        entity:
+          domain: input_number
+    hysteresis:
+      name: "📊 Hysteresis"
+      description: "The buffer around the target temperature to prevent the boiler from cycling too often (0.1-2.0°C)."
+      default: 0.5
+      selector:
+        number:
+          min: 0.1
+          max: 2.0
+          step: 0.1
+          unit_of_measurement: °C
+          mode: slider
+    manual_off_override_duration:
+      name: "🤫 Manual 'Off' Override Duration"
+      description: "Duration (in minutes) to keep the heating off when turned off manually, even if it's cold."
+      default: 60
+      selector:
+        number:
+          min: 0
+          max: 240
+          step: 15
+          unit_of_measurement: minutes
+
+mode: single
+max_exceeded: silent
+
+variables:
+  indoor_temp: "{{ states(indoor_temp_sensor) | float(20) }}"
+  outdoor_temp: "{{ states(outdoor_temp_sensor) | float(99) }}"
+  max_outdoor_temp: !input max_outdoor_temp
+  too_warm_outside: "{{ outdoor_temp_sensor != '' and outdoor_temp > max_outdoor_temp }}"
+  is_home: "{{ expand(presence_entity) | selectattr('state', 'eq', 'home') | list | count > 0 }}"
+  is_day: "{{ now().hour >= 8 and now().hour < 21 }}"
+  window_open: "{{ expand(window_sensor) | selectattr('state', 'eq', 'on') | list | count > 0 }}"
+  target_temp: >-
+    {% if not is_home %}
+      {{ states(target_temp_away) | float(15) }}
+    {% elif is_day %}
+      {{ states(target_temp_day) | float(20) }}
+    {% else %}
+      {{ states(target_temp_night) | float(18) }}
+    {% endif %}
+  hysteresis: !input hysteresis
+
+trigger:
+  - platform: state
+    entity_id: !input indoor_temp_sensor
+  - platform: state
+    entity_id: !input presence_entity
+  - platform: state
+    entity_id: !input window_sensor
+    to:
+      - "on"
+      - "off"
+  - platform: state
+    entity_id:
+      - !input target_temp_day
+      - !input target_temp_night
+      - !input target_temp_away
+  - platform: time_pattern
+    minutes: "/5"
+  - platform: homeassistant
+    event: start
+  - platform: event
+    event_type: automation_reloaded # Trigger when automations are reloaded
+  - platform: event
+    event_type: call_service
+    event_data:
+      domain: climate
+      service: set_temperature
+      service_data:
+        entity_id: !input thermostat_entity
+
+action:
+  - choose:
+      # 1. Safety Check: windows open. Turn heating off.
+      - conditions:
+          - condition: template
+            value_template: "{{ window_open }}"
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input thermostat_entity
+            data:
+              hvac_mode: "off"
+          - service: persistent_notification.create
+            data:
+              title: "💨 Heating Paused"
+              message: "The heating has been turned off because a window/door is open."
+              notification_id: "heating_paused_window"
+
+      # 2. Condition: Too warm outside. Turn heating off.
+      - conditions:
+          - condition: template
+            value_template: "{{ too_warm_outside }}"
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input thermostat_entity
+            data:
+              hvac_mode: "off"
+          - service: persistent_notification.create
+            data:
+              title: "☀️ Heating Inactive"
+              message: "The heating has been disabled because it is warm enough outside ({{ outdoor_temp }}°C)."
+              notification_id: "heating_off_outside_temp"
+
+      # 3. Condition: Away. Set to away temperature.
+      - conditions:
+          - condition: template
+            value_template: "{{ not is_home }}"
+        sequence:
+          - service: climate.set_temperature
+            target:
+              entity_id: !input thermostat_entity
+            data:
+              temperature: "{{ target_temp }}"
+              hvac_mode: heat
+          - service: persistent_notification.dismiss
+            data:
+              notification_id: "heating_off_outside_temp"
+
+    # 4. Default Behavior: home, windows closed, not too warm outside.
+    default:
+      - service: persistent_notification.dismiss
+        data:
+          notification_id: "heating_paused_window"
+      - service: persistent_notification.dismiss
+        data:
+          notification_id: "heating_off_outside_temp"
+      - choose:
+          # ON: Too cold
+          - conditions:
+              - condition: template
+                value_template: "{{ indoor_temp < (target_temp - hysteresis) }}"
+              - condition: template
+                value_template: >
+                  {% set override_minutes = manual_off_override_duration | int(60) %}
+                  {{ states(thermostat_entity) != 'off' or 
+                     (now() - states[thermostat_entity].last_changed).total_seconds() > (override_minutes * 60) }}
+            sequence:
+              - service: climate.set_temperature
+                target:
+                  entity_id: !input thermostat_entity
+                data:
+                  temperature: "{{ target_temp }}"
+                  hvac_mode: heat
+          # OFF: At temperature or too warm
+          - conditions:
+              - condition: template
+                value_template: "{{ indoor_temp >= target_temp }}"
+            sequence:
+              - service: climate.set_hvac_mode
+                target:
+                  entity_id: !input thermostat_entity
+                data:
+                  hvac_mode: "off"
