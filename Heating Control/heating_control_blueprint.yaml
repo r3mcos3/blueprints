@@ -1,7 +1,7 @@
 blueprint:
   name: "🔥 Advanced Heating Control"
   description: >-
-    Version: 2.9
+    Version: 2.10
     A smart thermostat control that considers indoor/outdoor temperature, 
     presence, day/night schedule, and open windows/doors. 🌡️🏠
   domain: automation
@@ -133,7 +133,23 @@ variables:
   max_outdoor_temp: !input max_outdoor_temp
   too_warm_outside: "{{ outdoor_temp_sensor != '' and outdoor_temp > max_outdoor_temp }}"
   is_home: "{{ expand(presence_entity) | selectattr('state', 'eq', 'home') | list | count > 0 }}"
-  is_day: "{{ as_timestamp(now()) >= as_timestamp(day_start_time) and as_timestamp(now()) < as_timestamp(day_end_time) }}"
+  is_day: >-
+    {% set now_time = now().time() %}
+    {% set start_time_str = day_start_time %}
+    {% set end_time_str = day_end_time %}
+    {% set start_hour = start_time_str.split(':')[0] | int(0) %}
+    {% set start_minute = start_time_str.split(':')[1] | int(0) %}
+    {% set start_second = start_time_str.split(':')[2] | int(0) %}
+    {% set end_hour = end_time_str.split(':')[0] | int(0) %}
+    {% set end_minute = end_time_str.split(':')[1] | int(0) %}
+    {% set end_second = end_time_str.split(':')[2] | int(0) %}
+    {% set start_time = today_at(start_hour ~ ':' ~ start_minute ~ ':' ~ start_second).time() %}
+    {% set end_time = today_at(end_hour ~ ':' ~ end_minute ~ ':' ~ end_second).time() %}
+    {% if start_time < end_time %}
+      {{ now_time >= start_time and now_time < end_time }}
+    {% else %}
+      {{ now_time >= start_time or now_time < end_time }}
+    {% endif %}
   window_open: "{{ expand(window_sensor) | selectattr('state', 'eq', 'on') | list | count > 0 }}"
   target_temp: >-
     {% if not is_home %}
