@@ -1,11 +1,11 @@
 blueprint:
   name: "🔥 Advanced Heating Control"
   description: >-
-    Version: 2.4
+    Version: 2.5
     A smart thermostat control that considers indoor/outdoor temperature, 
     presence, day/night schedule, and open windows/doors. 🌡️🏠
   domain: automation
-  source_url: https://github.com/your-username/your-repo/blob/main/heating_blueprint.yaml
+  source_url: https://github.com/r3mcos3/blueprints/blob/main/Heating%20Control/heating_control_blueprint.yaml
   input:
     thermostat_entity:
       name: "🌡️ Thermostat"
@@ -102,6 +102,18 @@ mode: single
 max_exceeded: silent
 
 variables:
+  # Get entity IDs from inputs to make them available for templates
+  indoor_temp_sensor: !input indoor_temp_sensor
+  outdoor_temp_sensor: !input outdoor_temp_sensor
+  presence_entity: !input presence_entity
+  window_sensor: !input window_sensor
+  target_temp_day: !input target_temp_day
+  target_temp_night: !input target_temp_night
+  target_temp_away: !input target_temp_away
+  thermostat_entity: !input thermostat_entity
+  manual_off_override_duration: !input manual_off_override_duration
+
+  # Derive state from entities
   indoor_temp: "{{ states(indoor_temp_sensor) | float(20) }}"
   outdoor_temp: "{{ states(outdoor_temp_sensor) | float(99) }}"
   max_outdoor_temp: !input max_outdoor_temp
