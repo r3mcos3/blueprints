@@ -1,7 +1,7 @@
 blueprint:
   name: "🔥 Advanced Heating Control"
   description: >-
-    Version: 2.7
+    Version: 2.8
     A smart thermostat control that considers indoor/outdoor temperature, 
     presence, day/night schedule, and open windows/doors. 🌡️🏠
   domain: automation
@@ -132,12 +132,12 @@ variables:
   hysteresis: !input hysteresis
 
 trigger:
-  - platform: template
-    value_template: "{{ states(indoor_temp_sensor) }}"
-  - platform: template
-    value_template: "{{ expand(presence_entity) | map(attribute='state') | list }}"
-  - platform: template
-    value_template: "{{ expand(window_sensor) | map(attribute='state') | list }}"
+  - platform: state
+    entity_id: !input indoor_temp_sensor
+  - platform: state
+    entity_id: !input presence_entity
+  - platform: state
+    entity_id: !input window_sensor
   - platform: state
     entity_id:
       - !input target_temp_day
