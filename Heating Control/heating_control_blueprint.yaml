@@ -1,7 +1,7 @@
 blueprint:
   name: "🔥 Advanced Heating Control"
   description: >-
-    Version: 2.11
+    Version: 2.12
     A smart thermostat control that considers indoor/outdoor temperature, 
     presence, day/night schedule, and open windows/doors. 🌡️🏠
   domain: automation
@@ -64,18 +64,21 @@ blueprint:
       selector:
         entity:
           domain: input_number
+      default: []
     target_temp_night:
       name: "🌙 Target Temperature (Night)"
       description: "The 'input_number' helper for the nighttime target temperature."
       selector:
         entity:
           domain: input_number
+      default: []
     target_temp_away:
       name: "✈️ Target Temperature (Away)"
       description: "The 'input_number' helper for the away mode target temperature."
       selector:
         entity:
           domain: input_number
+      default: []
     day_start_time:
       name: "☀️ Day Start Time"
       description: "The time to switch to the daytime target temperature."
