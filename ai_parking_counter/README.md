@@ -1,6 +1,6 @@
 # 🚗 AI - Parking Spot Counter
 
-**Version:** 1.0.3
+**Version:** 1.0.4
 
 This Home Assistant blueprint uses AI to analyze a camera feed and count free and occupied parking spaces when you arrive home. Perfect for keeping track of available parking spots in front of your house!
 
@@ -150,6 +150,7 @@ Er zijn 2 parkeerplaatsen 🚗 vrij voor de deur! 🚪
 
 ## 📝 Version History
 
+- **1.0.4** (2025-12-15): Fix decimal formatting in Telegram message (remove .0 from parking count)
 - **1.0.3** (2025-12-15): Add Telegram bot selector for easy dropdown selection
 - **1.0.2** (2025-12-15): Add customizable Telegram message and optional title fields
 - **1.0.1** (2025-12-15): Fix camera media_content_id to include full entity_id

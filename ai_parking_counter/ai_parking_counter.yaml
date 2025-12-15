@@ -1,8 +1,8 @@
-# Version: 1.0.3
+# Version: 1.0.4
 blueprint:
   name: "🚗 AI - Parking Spot Counter"
   description:
-    "📦 [Version 1.0.3] Analyzes camera feed with AI to count free and occupied parking
+    "📦 [Version 1.0.4] Analyzes camera feed with AI to count free and occupied parking
     spaces upon arrival, updating sensors and sending a notification."
   domain: automation
   source_url: https://github.com/r3mcos3/blueprints/blob/main/ai_parking_counter/ai_parking_counter.yaml
@@ -227,7 +227,7 @@ action:
               {{ _telegram_title }}
             {% endif %}
           message: >-
-            {{ _telegram_message | replace('{free_spots}', states(_free_sensor)) }}
+            {{ _telegram_message | replace('{free_spots}', states(_free_sensor) | int(0) | string) }}
 
   - alias: Save camera snapshot
     if:
