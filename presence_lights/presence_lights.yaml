@@ -82,7 +82,7 @@ action:
                   - service: light.turn_off
                     data: {}
                     target:
-                      entity_id: "light.all"
+                      entity_id: "all"
             # If the 'turn_off_all_lights' switch is OFF (default)
             default:
               - service: light.turn_off
