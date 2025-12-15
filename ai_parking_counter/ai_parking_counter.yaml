@@ -1,8 +1,8 @@
-# Version: 1.0.0
+# Version: 1.0.1
 blueprint:
   name: "🚗 AI - Parking Spot Counter"
   description:
-    "📦 [Version 1.0.0] Analyzes camera feed with AI to count free and occupied parking
+    "📦 [Version 1.0.1] Analyzes camera feed with AI to count free and occupied parking
     spaces upon arrival, updating sensors and sending a notification."
   domain: automation
   source_url: https://github.com/r3mcos3/blueprints/blob/main/ai_parking_counter/ai_parking_counter.yaml
@@ -166,7 +166,7 @@ action:
       entity_id: "{{ _ai_task }}"
       task_name: Scan Free Park Spaces
       attachments:
-        media_content_id: "media-source://camera/{{ _camera.split('.')[1] }}"
+        media_content_id: "media-source://camera/{{ _camera }}"
         media_content_type: application/vnd.apple.mpegurl
         metadata:
           title: "{{ state_attr(_camera, 'friendly_name') | default('Camera') }}"
