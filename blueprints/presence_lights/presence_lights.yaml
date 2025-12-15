@@ -1,0 +1,70 @@
+blueprint:
+  name: "💡 Presence - Home/Away Lights"
+  description:
+    "Turns on specified lights when someone arrives home after sunset, and turns
+    them off when the last person leaves."
+  domain: automation
+  source_url: https://github.com/r3mco/blueprints/blob/main/blueprints/presence_lights/presence_lights.yaml
+  version: 1.0.0
+
+  input:
+    lights_target:
+      name: 💡 Target Lights
+      description: The lights to control based on presence.
+      selector:
+        target:
+          entity:
+            domain: light
+
+    presence_zone:
+      name: 🏠 Presence Zone
+      description: The zone to monitor for arrivals and departures (e.g., zone.home).
+      selector:
+        zone:
+
+    arrival_brightness:
+      name: "✨ Arrival Brightness"
+      description: The brightness percentage for the lights when they turn on.
+      default: 33
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+
+mode: restart
+max_exceeded: silent
+
+trigger:
+  - platform: numeric_state
+    entity_id: !input presence_zone
+    above: 0
+    id: home
+  - platform: numeric_state
+    entity_id: !input presence_zone
+    below: 1
+    id: away
+
+action:
+  - choose:
+      # Case 1: Arrived Home
+      - conditions:
+          - condition: trigger
+            id: home
+          - condition: state
+            entity_id: sun.sun
+            state: "below_horizon"
+        sequence:
+          - service: light.turn_on
+            target: !input lights_target
+            data:
+              brightness_pct: !input arrival_brightness
+
+      # Case 2: Left Home
+      - conditions:
+          - condition: trigger
+            id: away
+        sequence:
+          - service: light.turn_off
+            target: !input lights_target
+            data: {}
