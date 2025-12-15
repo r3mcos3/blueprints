@@ -1,8 +1,8 @@
-# Version: 1.0.4
+# Version: 1.0.5
 blueprint:
   name: "🚗 AI - Parking Spot Counter"
   description:
-    "📦 [Version 1.0.4] Analyzes camera feed with AI to count free and occupied parking
+    "📦 [Version 1.0.5] Analyzes camera feed with AI to count free and occupied parking
     spaces upon arrival, updating sensors and sending a notification."
   domain: automation
   source_url: https://github.com/r3mcos3/blueprints/blob/main/ai_parking_counter/ai_parking_counter.yaml
@@ -88,7 +88,7 @@ blueprint:
       description: >
         Message to send via Telegram. Use {free_spots} as placeholder for number of free parking spots.
         Only sent when Telegram Bot is selected.
-      default: "Er zijn {free_spots} parkeerplaatsen 🚗 vrij voor de deur! 🚪"
+      default: "There are {free_spots} free parking spots 🚗 available! 🚪"
       selector:
         text:
           multiline: true

@@ -1,6 +1,6 @@
 # 🚗 AI - Parking Spot Counter
 
-**Version:** 1.0.4
+**Version:** 1.0.5
 
 This Home Assistant blueprint uses AI to analyze a camera feed and count free and occupied parking spaces when you arrive home. Perfect for keeping track of available parking spots in front of your house!
 
@@ -81,7 +81,7 @@ Create two input number helpers to store the parking spot counts:
 |---------|-------------|---------|
 | 🅿️ Total Parking Spaces | Number of parking spaces to count | 3 |
 | 📱 Telegram Bot | Select your Telegram bot from the dropdown | None (disabled) |
-| 💬 Telegram Message | Message to send (use {free_spots} as placeholder) | "Er zijn {free_spots} parkeerplaatsen 🚗 vrij voor de deur! 🚪" |
+| 💬 Telegram Message | Message to send (use {free_spots} as placeholder) | "There are {free_spots} free parking spots 🚗 available! 🚪" |
 | 🏷️ Telegram Title | Optional title for Telegram notification | "" (no title) |
 | 📸 Save Snapshot | Save a camera snapshot | true |
 | 🗂️ Snapshot Path | Path to save the snapshot | `/config/www/parking_spot.jpg` |
@@ -122,7 +122,7 @@ There are {free_spots} free parking spots! 🅿️
 
 **Default notification (without customization):**
 ```
-Er zijn 2 parkeerplaatsen 🚗 vrij voor de deur! 🚪
+There are 2 free parking spots 🚗 available! 🚪
 ```
 
 ## 💡 Tips
@@ -150,6 +150,7 @@ Er zijn 2 parkeerplaatsen 🚗 vrij voor de deur! 🚪
 
 ## 📝 Version History
 
+- **1.0.5** (2025-12-15): Translate default Telegram message to English
 - **1.0.4** (2025-12-15): Fix decimal formatting in Telegram message (remove .0 from parking count)
 - **1.0.3** (2025-12-15): Add Telegram bot selector for easy dropdown selection
 - **1.0.2** (2025-12-15): Add customizable Telegram message and optional title fields
