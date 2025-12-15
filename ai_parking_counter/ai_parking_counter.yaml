@@ -1,8 +1,8 @@
-# Version: 1.0.2
+# Version: 1.0.3
 blueprint:
   name: "🚗 AI - Parking Spot Counter"
   description:
-    "📦 [Version 1.0.2] Analyzes camera feed with AI to count free and occupied parking
+    "📦 [Version 1.0.3] Analyzes camera feed with AI to count free and occupied parking
     spaces upon arrival, updating sensors and sending a notification."
   domain: automation
   source_url: https://github.com/r3mcos3/blueprints/blob/main/ai_parking_counter/ai_parking_counter.yaml
@@ -74,20 +74,20 @@ blueprint:
         entity:
           domain: input_number
 
-    telegram_config_id:
-      name: 📱 Telegram Config Entry
+    telegram_bot:
+      name: 📱 Telegram Bot
       description: >
-        Telegram bot configuration entry ID (found in Developer Tools -> Services -> telegram_bot.send_message).
-        Leave empty to disable Telegram notifications.
-      default: ""
+        Select your Telegram bot. Leave empty to disable notifications.
+      default: {}
       selector:
-        text:
+        config_entry:
+          integration: telegram_bot
 
     telegram_message:
       name: 💬 Telegram Message
       description: >
         Message to send via Telegram. Use {free_spots} as placeholder for number of free parking spots.
-        Only used when Telegram Config Entry is filled in.
+        Only sent when Telegram Bot is selected.
       default: "Er zijn {free_spots} parkeerplaatsen 🚗 vrij voor de deur! 🚪"
       selector:
         text:
@@ -151,7 +151,7 @@ action:
       _total_spaces: !input parking_spaces_total
       _free_sensor: !input free_spots_sensor
       _occupied_sensor: !input occupied_spots_sensor
-      _telegram_id: !input telegram_config_id
+      _telegram_bot: !input telegram_bot
       _telegram_message: !input telegram_message
       _telegram_title: !input telegram_title
       _snapshot_enabled: !input snapshot_enabled
@@ -217,11 +217,11 @@ action:
   - alias: Send Telegram notification
     if:
       - condition: template
-        value_template: "{{ _telegram_id | trim != '' }}"
+        value_template: "{{ _telegram_bot != none and _telegram_message | trim != '' }}"
     then:
       - action: telegram_bot.send_message
         data:
-          config_entry_id: "{{ _telegram_id }}"
+          config_entry_id: "{{ _telegram_bot }}"
           title: >-
             {% if _telegram_title | trim != '' %}
               {{ _telegram_title }}

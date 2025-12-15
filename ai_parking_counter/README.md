@@ -1,6 +1,6 @@
 # 🚗 AI - Parking Spot Counter
 
-**Version:** 1.0.2
+**Version:** 1.0.3
 
 This Home Assistant blueprint uses AI to analyze a camera feed and count free and occupied parking spaces when you arrive home. Perfect for keeping track of available parking spots in front of your house!
 
@@ -46,8 +46,9 @@ Create two input number helpers to store the parking spot counts:
 - The camera should have a clear view of the parking spaces
 
 ### 5. 📱 Telegram Bot (Optional)
-- If you want notifications, configure the Telegram integration
-- You'll need the config entry ID (found in Developer Tools → Services → telegram_bot.send_message)
+- If you want notifications, first configure the Telegram integration in Home Assistant
+- You can then select your Telegram bot from a dropdown in the blueprint configuration
+- To disable notifications, simply don't select a Telegram bot
 
 ## 🚀 Installation
 
@@ -79,7 +80,7 @@ Create two input number helpers to store the parking spot counts:
 | Setting | Description | Default |
 |---------|-------------|---------|
 | 🅿️ Total Parking Spaces | Number of parking spaces to count | 3 |
-| 📱 Telegram Config Entry | Telegram bot config ID for notifications | "" (disabled) |
+| 📱 Telegram Bot | Select your Telegram bot from the dropdown | None (disabled) |
 | 💬 Telegram Message | Message to send (use {free_spots} as placeholder) | "Er zijn {free_spots} parkeerplaatsen 🚗 vrij voor de deur! 🚪" |
 | 🏷️ Telegram Title | Optional title for Telegram notification | "" (no title) |
 | 📸 Save Snapshot | Save a camera snapshot | true |
@@ -99,10 +100,16 @@ Ignore motorcycles and bicycles, only count cars.
 
 ## 📱 Telegram Notifications
 
-You can customize both the message and optional title for Telegram notifications.
+You can easily enable Telegram notifications by selecting your Telegram bot from a dropdown menu.
 
-### Customizing the Message
-Use `{free_spots}` as a placeholder for the number of free parking spots:
+### How to Enable Telegram Notifications
+
+1. **Select your Telegram Bot** from the dropdown in the blueprint configuration
+   - If you don't see your bot, make sure the Telegram integration is properly configured in Home Assistant
+   - Leave empty to disable notifications
+
+2. **Customize the Message** (optional)
+   - Use `{free_spots}` as a placeholder for the number of free parking spots
 
 **Example custom message:**
 ```
@@ -143,6 +150,7 @@ Er zijn 2 parkeerplaatsen 🚗 vrij voor de deur! 🚪
 
 ## 📝 Version History
 
+- **1.0.3** (2025-12-15): Add Telegram bot selector for easy dropdown selection
 - **1.0.2** (2025-12-15): Add customizable Telegram message and optional title fields
 - **1.0.1** (2025-12-15): Fix camera media_content_id to include full entity_id
 - **1.0.0** (2025-12-15): Initial release
