@@ -1,23 +1,24 @@
+# Version: 1.0
 blueprint:
   domain: automation
-  name: 🔈️ Volume Controle 3.0
+  name: 🔈 Volume Control
   author: r3mcos3
-  source_url: https://github.com/r3mcos3/blueprints/blob/main/volumecontrol/volume_control3.yaml
+  source_url: https://github.com/r3mcos3/blueprints/blob/main/volumecontrol/volumecontrol.yaml
   homeassistant:
     min_version: "2024.3.0"
   description: >
-    Blueprint to automate all your speakers 🔈️
-    
-    
-    📦️ Version: 2.0
+    Blueprint to automate all your speakers 🔈
+
+
+    📦 Version: 1.0
 
   input:
     media:
-      name: 📻️ Media Players
+      name: 📻 Media Players
       description: >
         `Speakers`
-        
-        
+
+
         Speakers to use.
       default: []
       selector:
@@ -29,8 +30,8 @@ blueprint:
       name: 🗓️ Scheduler
       description: >
         `Scheduler`
-        
-        
+
+
         for more information about schedulers click [here](https://www.home-assistant.io/integrations/schedule/)
 
         to make your scheduler click [here](https://my.home-assistant.io/redirect/helpers/).
@@ -44,7 +45,7 @@ blueprint:
       name: 🔊 Volume Up Level
       description: >
         `Volume High Setting`
-        
+
 
         The volume goes to this level when the scheduler goes to on
       default: 0.6
@@ -55,10 +56,10 @@ blueprint:
           step: 0.1
           mode: slider
     volume_down:
-      name: 🔈️ Volume Down Level
+      name: 🔈 Volume Down Level
       description: >
         `Volume Low Setting`
-        
+
 
         The volume goes to this level when the scheduler goes to off
       default: 0.2

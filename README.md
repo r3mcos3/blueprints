@@ -23,7 +23,7 @@ Currently, this repository offers the following blueprints:
 
 *   **🚗 AI - Parking Spot Counter**: Use AI to analyze camera feed and count free/occupied parking spaces upon arrival. (Found in `ai_parking_counter/ai_parking_counter.yaml`)
 *   **💡 Presence Lights**: Automate your lighting based on presence detection. (Found in `presence_lights/presence_lights.yaml`)
-*   **🔈 Volume Control**: Control the volume of your media players. (Found in `volumecontrol/volume_control3.yaml`)
+*   **🔈 Volume Control**: Control the volume of your media players. (Found in `volumecontrol/volumecontrol.yaml`)
 
 *(Further blueprints will be added here as they are developed.)*
 

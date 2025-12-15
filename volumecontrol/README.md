@@ -1,6 +1,6 @@
-# 🔈 Volume Control 3.0
+# 🔈 Volume Control
 
-**Version:** 2.0
+**Version:** 1.0
 
 This Home Assistant blueprint automates volume control for your media players based on a schedule. Perfect for automatically adjusting speaker volume during different times of the day (e.g., quiet hours at night, louder during the day).
 
@@ -38,7 +38,7 @@ Before using this blueprint, you need:
 2. Click **"Import Blueprint"**
 3. Enter the URL:
    ```
-   https://raw.githubusercontent.com/r3mcos3/blueprints/main/volumecontrol/volume_control3.yaml
+   https://raw.githubusercontent.com/r3mcos3/blueprints/main/volumecontrol/volumecontrol.yaml
    ```
 4. Click **"Preview"** and then **"Import Blueprint"**
 
@@ -159,8 +159,7 @@ data:
 
 ## 📝 Version History
 
-- **2.0** (Current): Latest version with custom action support
-- Earlier versions: Basic volume control functionality
+- **1.0** (2025-12-15): Initial release with schedule-based volume control and custom action support
 
 ## 🤝 Contributing
 
