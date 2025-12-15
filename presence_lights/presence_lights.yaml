@@ -1,8 +1,8 @@
-# Version: 1.0.9
+# Version: 1.0.10
 blueprint:
   name: "💡 Presence - Home/Away Lights"
   description:
-    "📦 [Version 1.0.9] Turns on specified lights when someone arrives home after sunset, and turns
+    "📦 [Version 1.0.10] Turns on specified lights when someone arrives home after sunset, and turns
     them off when the last person leaves."
   domain: automation
   source_url: https://github.com/r3mcos3/blueprints/blob/main/presence_lights/presence_lights.yaml
@@ -77,7 +77,7 @@ action:
               # If the 'turn_off_all_lights' switch is ON
               - conditions:
                   - condition: template
-                    value_template: "{{ turn_off_all_lights }}"
+                    value_template: "{{ turn_off_all_lights == true }}"
                 sequence:
                   - service: light.turn_off
                     data: {}
