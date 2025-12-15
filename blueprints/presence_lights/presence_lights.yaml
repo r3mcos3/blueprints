@@ -1,3 +1,4 @@
+# Version: 1.0.1
 blueprint:
   name: "💡 Presence - Home/Away Lights"
   description:
@@ -5,7 +6,6 @@ blueprint:
     them off when the last person leaves."
   domain: automation
   source_url: https://github.com/r3mco/blueprints/blob/main/blueprints/presence_lights/presence_lights.yaml
-  version: 1.0.0
 
   input:
     lights_target:
@@ -20,7 +20,8 @@ blueprint:
       name: 🏠 Presence Zone
       description: The zone to monitor for arrivals and departures (e.g., zone.home).
       selector:
-        zone:
+        entity:
+          domain: zone
 
     arrival_brightness:
       name: "✨ Arrival Brightness"
