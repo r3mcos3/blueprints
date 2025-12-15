@@ -1,8 +1,8 @@
-# Version: 1.0.1
+# Version: 1.0.2
 blueprint:
   name: "🚗 AI - Parking Spot Counter"
   description:
-    "📦 [Version 1.0.1] Analyzes camera feed with AI to count free and occupied parking
+    "📦 [Version 1.0.2] Analyzes camera feed with AI to count free and occupied parking
     spaces upon arrival, updating sensors and sending a notification."
   domain: automation
   source_url: https://github.com/r3mcos3/blueprints/blob/main/ai_parking_counter/ai_parking_counter.yaml
@@ -83,6 +83,24 @@ blueprint:
       selector:
         text:
 
+    telegram_message:
+      name: 💬 Telegram Message
+      description: >
+        Message to send via Telegram. Use {free_spots} as placeholder for number of free parking spots.
+        Only used when Telegram Config Entry is filled in.
+      default: "Er zijn {free_spots} parkeerplaatsen 🚗 vrij voor de deur! 🚪"
+      selector:
+        text:
+          multiline: true
+
+    telegram_title:
+      name: 🏷️ Telegram Title (Optional)
+      description: >
+        Optional title for the Telegram notification. Leave empty for no title.
+      default: ""
+      selector:
+        text:
+
     snapshot_enabled:
       name: 📸 Save Snapshot
       description: Save a camera snapshot when analyzing parking spots.
@@ -134,6 +152,8 @@ action:
       _free_sensor: !input free_spots_sensor
       _occupied_sensor: !input occupied_spots_sensor
       _telegram_id: !input telegram_config_id
+      _telegram_message: !input telegram_message
+      _telegram_title: !input telegram_title
       _snapshot_enabled: !input snapshot_enabled
       _snapshot_path: !input snapshot_path
       _custom_instructions: !input ai_instructions
@@ -202,9 +222,12 @@ action:
       - action: telegram_bot.send_message
         data:
           config_entry_id: "{{ _telegram_id }}"
+          title: >-
+            {% if _telegram_title | trim != '' %}
+              {{ _telegram_title }}
+            {% endif %}
           message: >-
-            Er zijn {{ states(_free_sensor) | int(0) }}
-            parkeerplaatsen 🚗 vrij voor de deur! 🚪
+            {{ _telegram_message | replace('{free_spots}', states(_free_sensor)) }}
 
   - alias: Save camera snapshot
     if:

@@ -1,6 +1,6 @@
 # 🚗 AI - Parking Spot Counter
 
-**Version:** 1.0.1
+**Version:** 1.0.2
 
 This Home Assistant blueprint uses AI to analyze a camera feed and count free and occupied parking spaces when you arrive home. Perfect for keeping track of available parking spots in front of your house!
 
@@ -80,6 +80,8 @@ Create two input number helpers to store the parking spot counts:
 |---------|-------------|---------|
 | 🅿️ Total Parking Spaces | Number of parking spaces to count | 3 |
 | 📱 Telegram Config Entry | Telegram bot config ID for notifications | "" (disabled) |
+| 💬 Telegram Message | Message to send (use {free_spots} as placeholder) | "Er zijn {free_spots} parkeerplaatsen 🚗 vrij voor de deur! 🚪" |
+| 🏷️ Telegram Title | Optional title for Telegram notification | "" (no title) |
 | 📸 Save Snapshot | Save a camera snapshot | true |
 | 🗂️ Snapshot Path | Path to save the snapshot | `/config/www/parking_spot.jpg` |
 | 📝 AI Instructions | Custom instructions for the AI | "" (use default) |
@@ -95,9 +97,23 @@ Count how many spots are FREE (empty) and how many are OCCUPIED (vehicle present
 Ignore motorcycles and bicycles, only count cars.
 ```
 
-## 📱 Example Notification
+## 📱 Telegram Notifications
 
-When triggered, you'll receive a Telegram message like:
+You can customize both the message and optional title for Telegram notifications.
+
+### Customizing the Message
+Use `{free_spots}` as a placeholder for the number of free parking spots:
+
+**Example custom message:**
+```
+There are {free_spots} free parking spots! 🅿️
+```
+
+**Example with title:**
+- **Title:** "🚗 Parking Update"
+- **Message:** "Good news! {free_spots} spots available right now!"
+
+**Default notification (without customization):**
 ```
 Er zijn 2 parkeerplaatsen 🚗 vrij voor de deur! 🚪
 ```
@@ -127,6 +143,7 @@ Er zijn 2 parkeerplaatsen 🚗 vrij voor de deur! 🚪
 
 ## 📝 Version History
 
+- **1.0.2** (2025-12-15): Add customizable Telegram message and optional title fields
 - **1.0.1** (2025-12-15): Fix camera media_content_id to include full entity_id
 - **1.0.0** (2025-12-15): Initial release
 
