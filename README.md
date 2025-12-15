@@ -12,7 +12,7 @@ To use a blueprint from this repository:
 
 1.  Navigate to **Settings** -> **Automations & Scenes** -> **Blueprints** in your Home Assistant UI.
 2.  Click on the **"Import Blueprint"** button.
-3.  Enter the URL of the blueprint you wish to import. You can find the raw URL of each blueprint file in its respective directory within this repository (e.g., `https://github.com/your-username/blueprints/blob/main/presence_lights/presence_lights.yaml`). **Remember to replace `your-username` with your actual GitHub username.**
+3.  Enter the URL of the blueprint you wish to import. To get the correct URL, navigate to the blueprint file on GitHub, click the "Raw" button, and copy the URL from your browser's address bar. For example: `https://raw.githubusercontent.com/r3mcos3/blueprints/main/presence_lights/presence_lights.yaml`.
 4.  Follow the on-screen prompts to configure the blueprint with your entities and settings.
 
 For more detailed instructions, please refer to the official Home Assistant documentation on [Blueprints](https://www.home-assistant.io/docs/blueprint/).
