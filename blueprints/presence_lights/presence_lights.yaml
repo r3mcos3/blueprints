@@ -1,8 +1,8 @@
-# Version: 1.0.1
+# Version: 1.0.2
 blueprint:
   name: "💡 Presence - Home/Away Lights"
   description:
-    "Turns on specified lights when someone arrives home after sunset, and turns
+    "[Version 1.0.2] Turns on specified lights when someone arrives home after sunset, and turns
     them off when the last person leaves."
   domain: automation
   source_url: https://github.com/r3mco/blueprints/blob/main/blueprints/presence_lights/presence_lights.yaml
