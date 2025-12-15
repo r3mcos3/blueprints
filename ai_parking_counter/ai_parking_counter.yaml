@@ -1,0 +1,218 @@
+# Version: 1.0.0
+blueprint:
+  name: "🚗 AI - Parking Spot Counter"
+  description:
+    "📦 [Version 1.0.0] Analyzes camera feed with AI to count free and occupied parking
+    spaces upon arrival, updating sensors and sending a notification."
+  domain: automation
+  source_url: https://github.com/r3mcos3/blueprints/blob/main/ai_parking_counter/ai_parking_counter.yaml
+
+  input:
+    person_entity:
+      name: 👤 Person
+      description: The person entity to track for zone arrivals.
+      selector:
+        entity:
+          domain: person
+
+    zone_1:
+      name: 🏘️ Zone 1
+      description: First zone to monitor for arrival (e.g., zone.huibevendreef).
+      selector:
+        entity:
+          domain: zone
+
+    zone_2:
+      name: 🏘️ Zone 2
+      description: Second zone to monitor for arrival (e.g., zone.moerse_dreef).
+      selector:
+        entity:
+          domain: zone
+
+    proximity_sensor:
+      name: 🧭 Proximity Direction Sensor
+      description: Proximity sensor that indicates direction of travel (should have state "towards" when approaching).
+      selector:
+        entity:
+          domain: sensor
+
+    camera_entity:
+      name: 📷 Camera
+      description: Camera to analyze for parking spots (must support snapshot and streaming).
+      selector:
+        entity:
+          domain: camera
+
+    ai_task_entity:
+      name: 🤖 AI Task Entity
+      description: The AI task entity to use for image analysis (e.g., ai_task.google_ai_task).
+      selector:
+        entity:
+          domain: ai_task
+
+    parking_spaces_total:
+      name: 🅿️ Total Parking Spaces
+      description: Total number of parking spaces to count (default is 3).
+      default: 3
+      selector:
+        number:
+          min: 1
+          max: 10
+          mode: slider
+
+    free_spots_sensor:
+      name: 🟢 Free Spots Sensor
+      description: Input number entity to store the count of free parking spots.
+      selector:
+        entity:
+          domain: input_number
+
+    occupied_spots_sensor:
+      name: 🔴 Occupied Spots Sensor
+      description: Input number entity to store the count of occupied parking spots.
+      selector:
+        entity:
+          domain: input_number
+
+    telegram_config_id:
+      name: 📱 Telegram Config Entry
+      description: >
+        Telegram bot configuration entry ID (found in Developer Tools -> Services -> telegram_bot.send_message).
+        Leave empty to disable Telegram notifications.
+      default: ""
+      selector:
+        text:
+
+    snapshot_enabled:
+      name: 📸 Save Snapshot
+      description: Save a camera snapshot when analyzing parking spots.
+      default: true
+      selector:
+        boolean:
+
+    snapshot_path:
+      name: 🗂️ Snapshot Path
+      description: File path to save the snapshot (e.g., /config/www/parking_spot.jpg).
+      default: "/config/www/parking_spot.jpg"
+      selector:
+        text:
+
+    ai_instructions:
+      name: 📝 AI Instructions (Optional)
+      description: >
+        Custom instructions for the AI to analyze parking spots.
+        Leave empty to use default instructions. Use {total_spaces} as placeholder for total spaces.
+      default: ""
+      selector:
+        text:
+          multiline: true
+
+mode: single
+
+trigger:
+  - platform: zone
+    entity_id: !input person_entity
+    zone: !input zone_1
+    event: enter
+    id: zone_1_enter
+  - platform: zone
+    entity_id: !input person_entity
+    zone: !input zone_2
+    event: enter
+    id: zone_2_enter
+
+condition:
+  - condition: state
+    entity_id: !input proximity_sensor
+    state: towards
+
+action:
+  - variables:
+      _camera: !input camera_entity
+      _ai_task: !input ai_task_entity
+      _total_spaces: !input parking_spaces_total
+      _free_sensor: !input free_spots_sensor
+      _occupied_sensor: !input occupied_spots_sensor
+      _telegram_id: !input telegram_config_id
+      _snapshot_enabled: !input snapshot_enabled
+      _snapshot_path: !input snapshot_path
+      _custom_instructions: !input ai_instructions
+      _default_instructions: >
+        Look at this image of the street in front of my house. There are {{ _total_spaces }}
+        parking spaces directly in front of the door. Count how many of these {{ _total_spaces }}
+        spaces are FREE (no car parked) and how many are OCCUPIED (car parked).
+      _final_instructions: >
+        {% if _custom_instructions | trim != "" %}
+          {{ _custom_instructions | replace('{total_spaces}', _total_spaces | string) }}
+        {% else %}
+          {{ _default_instructions }}
+        {% endif %}
+
+  - alias: Analyse camera with AI
+    action: ai_task.generate_data
+    data:
+      instructions: "{{ _final_instructions }}"
+      structure:
+        vrije_plekken:
+          selector:
+            number:
+              min: 0
+              max: !input parking_spaces_total
+        bezette_plekken:
+          selector:
+            number:
+              min: 0
+              max: !input parking_spaces_total
+      entity_id: "{{ _ai_task }}"
+      task_name: Scan Free Park Spaces
+      attachments:
+        media_content_id: "media-source://camera/{{ _camera.split('.')[1] }}"
+        media_content_type: application/vnd.apple.mpegurl
+        metadata:
+          title: "{{ state_attr(_camera, 'friendly_name') | default('Camera') }}"
+          thumbnail: "/api/camera_proxy/{{ _camera }}"
+          media_class: video
+          children_media_class: null
+          navigateIds:
+            - {}
+            - media_content_type: app
+              media_content_id: media-source://camera
+    response_variable: parking_result
+    enabled: true
+
+  - alias: Update free parking spots
+    action: input_number.set_value
+    target:
+      entity_id: "{{ _free_sensor }}"
+    data:
+      value: "{{ parking_result.data.vrije_plekken | int(0) }}"
+
+  - alias: Update occupied parking spots
+    action: input_number.set_value
+    target:
+      entity_id: "{{ _occupied_sensor }}"
+    data:
+      value: "{{ parking_result.data.bezette_plekken | int(0) }}"
+
+  - alias: Send Telegram notification
+    if:
+      - condition: template
+        value_template: "{{ _telegram_id | trim != '' }}"
+    then:
+      - action: telegram_bot.send_message
+        data:
+          config_entry_id: "{{ _telegram_id }}"
+          message: >-
+            Er zijn {{ states(_free_sensor) | int(0) }}
+            parkeerplaatsen 🚗 vrij voor de deur! 🚪
+
+  - alias: Save camera snapshot
+    if:
+      - condition: template
+        value_template: "{{ _snapshot_enabled | bool }}"
+    then:
+      - action: camera.snapshot
+        target:
+          entity_id: "{{ _camera }}"
+        data:
+          filename: "{{ _snapshot_path }}"
