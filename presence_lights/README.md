@@ -1,125 +1,146 @@
 # 💡 Presence - Home/Away Lights
 
-**Version:** 1.0.13
+[![version](https://img.shields.io/badge/version-1.0.13-blue.svg)](https://github.com/r3mco/blueprints)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
-This Home Assistant blueprint automatically controls your lights based on presence detection. Lights turn on when someone arrives home after sunset, and turn off when the last person leaves.
+This blueprint automatically controls your lights based on presence detection. Lights turn on when someone arrives home after sunset, and turn off when the last person leaves. Perfect for a welcoming home and energy savings! 💡
 
-## 📋 Description
+## ✨ Features
 
-When you arrive home after sunset, this automation:
-1. 🏠 Detects arrival in your configured zone
-2. 🌅 Checks if the sun is below the horizon
-3. 💡 Turns on specified lights with custom brightness
-4. 🚪 Turns off lights when everyone leaves (with option to turn off all lights)
+- 🏠 **Presence-Based Control** - Automatically responds to arrivals and departures
+- 🌅 **Sunset-Aware** - Only turns on lights after sunset for energy efficiency
+- ✨ **Customizable Brightness** - Set your preferred arrival brightness level
+- 🔌 **Flexible Turn-Off Options** - Choose to turn off all lights or just specific ones
+- 👥 **Multi-Person Support** - Works with multiple people, only turns off when last person leaves
+- 🔄 **Restart Mode** - Seamlessly handles overlapping arrivals and departures
 
-## ✅ Requirements
+## 📋 Requirements
 
 Before using this blueprint, you need:
 
-### 1. 🏠 Zone Entity
-- A zone entity to monitor for presence (typically `zone.home`)
-- This is usually configured by default in Home Assistant
-
-### 2. 💡 Light Entities
-- One or more light entities to control
-- These can be individual lights, groups, or areas
+1. **Zone Entity** - A zone entity to monitor for presence (typically `zone.home`)
+2. **Light Entities** - One or more light entities to control
+3. **Person Tracking** - Person entities configured in Home Assistant
 
 ## 🚀 Installation
 
-1. Navigate to **Settings** → **Automations & Scenes** → **Blueprints** in Home Assistant
-2. Click **"Import Blueprint"**
-3. Enter the URL:
+### Automatic Installation
+
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fpresence_lights%2Fpresence_lights.yaml)
+
+### Manual Installation
+
+1. In Home Assistant, navigate to **Settings** → **Automations & Scenes** → **Blueprints**
+2. Click the **Import Blueprint** button
+3. Enter the blueprint URL:
    ```
-   https://raw.githubusercontent.com/r3mcos3/blueprints/main/presence_lights/presence_lights.yaml
+   https://github.com/r3mcos3/blueprints/blob/main/presence_lights/presence_lights.yaml
    ```
-4. Click **"Preview"** and then **"Import Blueprint"**
+4. Click **Preview** and then **Import**
 
 ## ⚙️ Configuration
 
-### Required Settings
+When creating an automation from this blueprint, you'll configure:
 
-| Setting | Description | Example |
-|---------|-------------|---------|
-| 💡 Target Lights | Lights to control based on presence | `light.living_room`, `light.hallway` |
-| 🏠 Presence Zone | Zone to monitor for arrivals/departures | `zone.home` |
-
-### Optional Settings
-
-| Setting | Description | Default |
-|---------|-------------|---------|
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| 💡 Target Lights | Lights to control based on presence | - |
+| 🏠 Presence Zone | Zone to monitor for arrivals/departures | - |
 | ✨ Arrival Brightness | Brightness percentage when lights turn on | 33% |
-| 🔌 Turn off all lights on departure | If enabled, turns off ALL lights (not just selected ones) | false |
+| 🔌 Turn off all lights on departure | If enabled, turns off ALL lights when leaving | false |
 
-## 🎯 How It Works
+## 💡 Usage Examples
 
-### Arrival (After Sunset)
-- **Trigger:** Someone enters the configured zone
-- **Condition:** Sun is below the horizon
-- **Action:** Turn on selected lights at configured brightness
+### Example 1: Basic Home Welcome
 
-### Departure
-- **Trigger:** Last person leaves the zone
-- **Action:**
-  - If "Turn off all lights" is **enabled**: Turns off ALL lights in your home
-  - If "Turn off all lights" is **disabled**: Only turns off the selected target lights
+Simple setup for welcoming lights:
 
-## 💡 Tips
-
-- **Arrival Brightness**: Set to 33% for a gentle welcome, or higher for brighter lighting
-- **Turn Off All Lights**: Useful if you want to ensure everything is off when leaving home
-- **Multiple People**: Works automatically with multiple people - lights only turn off when the LAST person leaves
-- **Daytime Arrivals**: Lights will NOT turn on during daytime (sun above horizon)
-
-## 📖 Examples
-
-### Example 1: Basic Home Arrival
-- **Target Lights:** Living room, hallway, kitchen
-- **Zone:** zone.home
-- **Brightness:** 50%
-- **Turn off all:** No
+```yaml
+Target Lights: light.living_room, light.hallway, light.kitchen
+Presence Zone: zone.home
+Arrival Brightness: 50%
+Turn off all lights: No
+```
 
 Result: When arriving home after dark, living room, hallway, and kitchen turn on at 50%. When leaving, only these lights turn off.
 
-### Example 2: Complete Shutdown
-- **Target Lights:** Entrance lights
-- **Zone:** zone.home
-- **Brightness:** 80%
-- **Turn off all:** Yes
+### Example 2: Complete Home Shutdown
 
-Result: Entrance lights turn on bright when arriving. When leaving, ALL lights in the house turn off.
+Ensure everything is off when leaving:
+
+```yaml
+Target Lights: light.entrance, light.hallway
+Presence Zone: zone.home
+Arrival Brightness: 80%
+Turn off all lights: Yes
+```
+
+Result: Entrance and hallway turn on bright when arriving. When leaving, ALL lights in the house turn off for complete energy savings.
 
 ### Example 3: Subtle Welcome
-- **Target Lights:** Pathway lights, porch light
-- **Zone:** zone.home
-- **Brightness:** 20%
-- **Turn off all:** No
 
-Result: Low-brightness pathway and porch lights create a subtle welcome.
+Low-brightness for a gentle welcome:
+
+```yaml
+Target Lights: light.pathway, light.porch
+Presence Zone: zone.home
+Arrival Brightness: 20%
+Turn off all lights: No
+```
+
+Result: Pathway and porch lights create a subtle, low-brightness welcome after sunset.
 
 ## 🔧 Troubleshooting
 
-### Lights turn on during the day
-- This shouldn't happen - the blueprint checks if the sun is below the horizon
-- Verify that your `sun.sun` entity is working correctly
+### Lights Turn On During Daytime
 
-### Lights don't turn off when leaving
-- Check that people are properly tracked in the zone
-- Verify your zone configuration in Home Assistant
-- Make sure person entities are correctly set up
+1. This shouldn't happen - verify that your `sun.sun` entity is working correctly
+2. Check the sun elevation in Developer Tools → States
+3. Ensure Home Assistant has correct timezone and location settings
 
-### Lights turn off while someone is still home
-- Ensure all household members have person entities configured
-- Check that all person entities are included in your zone
+### Lights Don't Turn Off When Leaving
+
+1. Verify that person entities are properly tracked in the zone
+2. Check your zone configuration in Home Assistant
+3. Ensure all household members have person entities configured
+4. Test by checking zone.home state in Developer Tools
+
+### Lights Turn Off While Someone Is Still Home
+
+1. Ensure all household members have person entities configured
+2. Check that all person entities are tracked by the zone
+3. Verify device_tracker entities for each person are working
+4. Check that person entities show correct location
+
+### Wrong Brightness Level
+
+1. Verify the brightness percentage is set correctly (0-100)
+2. Check that your lights support brightness control
+3. Some lights may have minimum brightness limits
 
 ## 📝 Version History
 
-- **1.0.13** (Current): Latest stable version with boolean filter fix
-- Earlier versions: Various improvements and bug fixes
+### Version 1.0.13 (2025-12-15)
+- 🐛 Fix boolean filter issue
+
+### Version 1.0.12 and earlier
+- Various improvements and bug fixes
+
+### Version 1.0.0
+- 🎉 Initial release
+- 🏠 Presence-based light control
+- 🌅 Sunset-aware triggering
+- ✨ Customizable brightness
+- 🔌 Flexible turn-off options
 
 ## 🤝 Contributing
 
-Found a bug or have a suggestion? Please open an issue on the [GitHub repository](https://github.com/r3mcos3/blueprints).
+Found a bug or have a suggestion? Please [open an issue](https://github.com/r3mcos3/blueprints/issues) on GitHub!
 
 ## 📄 License
 
-This blueprint is licensed under the MIT License.
+This blueprint is provided as-is under the MIT License.
+
+## 🙏 Credits
+
+Created by [r3mcos3](https://github.com/r3mcos3)

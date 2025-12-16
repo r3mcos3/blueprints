@@ -6,6 +6,8 @@ blueprint:
     them off when the last person leaves."
   domain: automation
   source_url: https://github.com/r3mcos3/blueprints/blob/main/presence_lights/presence_lights.yaml
+  homeassistant:
+    min_version: 2025.12.0
 
   input:
     lights_target:
