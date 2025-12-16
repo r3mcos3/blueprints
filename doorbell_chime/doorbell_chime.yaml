@@ -1,0 +1,238 @@
+# Version: 1.0.0
+blueprint:
+  domain: automation
+  name: "\U0001F514 Doorbell Chime"
+  author: r3mcos3
+  source_url: https://github.com/r3mcos3/blueprints/blob/main/doorbell_chime/doorbell_chime.yaml
+  homeassistant:
+    min_version: 2025.12.0
+  description: >
+    Play a chime sound on your media players when the doorbell rings! 🔔
+
+
+    Features:
+
+    - 🔊 Adjustable volume with optional restore
+
+    - 🌙 Time-based conditions (quiet hours)
+
+    - 🚫 Do Not Disturb mode support
+
+    - ⏱️ Built-in cooldown (single mode)
+
+
+    📦 Version: 1.0.0
+
+  input:
+    doorbell_sensor:
+      name: "\U0001F514 Doorbell Sensor"
+      description: >
+        `Required`
+
+
+        The binary sensor that detects when the doorbell is pressed.
+      selector:
+        entity:
+          filter:
+            - domain:
+                - binary_sensor
+
+    media_players_target:
+      name: "\U0001F50A Media Players"
+      description: >
+        `Required`
+
+
+        Select the media players where the chime should be played.
+      selector:
+        target:
+          entity:
+            - domain:
+                - media_player
+
+    media_file:
+      name: "\U0001F3B5 Media File"
+      description: >
+        `Optional`
+
+
+        Path to the chime sound file. Default uses local media source.
+      default: "media-source://media_source/local/Chime.mp3"
+      selector:
+        text:
+
+    chime_volume:
+      name: "\U0001F509 Chime Volume"
+      description: >
+        `Optional`
+
+
+        Volume level for the chime (0.0 - 1.0).
+      default: 0.5
+      selector:
+        number:
+          min: 0.0
+          max: 1.0
+          step: 0.05
+          mode: slider
+
+    restore_volume:
+      name: "\U0001F504 Restore Volume"
+      description: >
+        `Optional`
+
+
+        Restore the original volume after the chime has played.
+      default: true
+      selector:
+        boolean:
+
+    use_time_condition:
+      name: "\U0001F319 Enable Time Condition"
+      description: >
+        `Optional`
+
+
+        Only play the chime between specific hours (e.g., quiet hours at night).
+      default: false
+      selector:
+        boolean:
+
+    time_start:
+      name: "⏰ Start Time"
+      description: >
+        `Conditional`
+
+
+        Start time when the chime is allowed to play (requires time condition enabled).
+      default: "08:00:00"
+      selector:
+        time:
+
+    time_end:
+      name: "⏰ End Time"
+      description: >
+        `Conditional`
+
+
+        End time when the chime is allowed to play (requires time condition enabled).
+      default: "22:00:00"
+      selector:
+        time:
+
+    use_dnd:
+      name: "\U0001F6AB Enable Do Not Disturb"
+      description: >
+        `Optional`
+
+
+        Use a boolean helper to temporarily disable the chime.
+      default: false
+      selector:
+        boolean:
+
+    dnd_helper:
+      name: "\U0001F6AB Do Not Disturb Helper"
+      description: >
+        `Conditional`
+
+
+        An input_boolean helper that silences the chime when turned on (requires DND enabled).
+      default: {}
+      selector:
+        entity:
+          filter:
+            - domain:
+                - input_boolean
+
+mode: single
+max_exceeded: silent
+
+variables:
+  use_time: !input use_time_condition
+  use_dnd_mode: !input use_dnd
+  dnd_entity: !input dnd_helper
+  restore: !input restore_volume
+  target_players: !input media_players_target
+  volume: !input chime_volume
+
+trigger:
+  - platform: state
+    entity_id: !input doorbell_sensor
+    to: "on"
+
+condition:
+  - condition: or
+    conditions:
+      - "{{ not use_time }}"
+      - condition: time
+        after: !input time_start
+        before: !input time_end
+  - condition: or
+    conditions:
+      - "{{ not use_dnd_mode }}"
+      - "{{ dnd_entity == {} }}"
+      - condition: template
+        value_template: "{{ states(dnd_entity) == 'off' }}"
+
+action:
+  - variables:
+      player_entities: >
+        {% set ns = namespace(entities=[]) %}
+        {% if target_players.entity_id is defined %}
+          {% if target_players.entity_id is string %}
+            {% set ns.entities = [target_players.entity_id] %}
+          {% else %}
+            {% set ns.entities = target_players.entity_id %}
+          {% endif %}
+        {% endif %}
+        {% if target_players.device_id is defined %}
+          {% for device in target_players.device_id if target_players.device_id is not string %}
+            {% set ns.entities = ns.entities + [device_entities(device) | select('match', 'media_player.') | list | first] %}
+          {% endfor %}
+          {% if target_players.device_id is string %}
+            {% set ns.entities = ns.entities + [device_entities(target_players.device_id) | select('match', 'media_player.') | list | first] %}
+          {% endif %}
+        {% endif %}
+        {% if target_players.area_id is defined %}
+          {% for area in target_players.area_id if target_players.area_id is not string %}
+            {% set ns.entities = ns.entities + area_entities(area) | select('match', 'media_player.') | list %}
+          {% endfor %}
+          {% if target_players.area_id is string %}
+            {% set ns.entities = ns.entities + area_entities(target_players.area_id) | select('match', 'media_player.') | list %}
+          {% endif %}
+        {% endif %}
+        {{ ns.entities }}
+      original_volumes: >
+        {% set ns = namespace(volumes={}) %}
+        {% for entity in player_entities %}
+          {% set ns.volumes = dict(ns.volumes, **{entity: state_attr(entity, 'volume_level') | float(0.5)}) %}
+        {% endfor %}
+        {{ ns.volumes }}
+
+  - action: media_player.volume_set
+    target: !input media_players_target
+    data:
+      volume_level: !input chime_volume
+
+  - action: media_player.play_media
+    target: !input media_players_target
+    data:
+      media_content_id: !input media_file
+      media_content_type: audio/mpeg
+
+  - delay:
+      seconds: 3
+
+  - if:
+      - condition: template
+        value_template: "{{ restore }}"
+    then:
+      - repeat:
+          for_each: "{{ original_volumes | dict2items }}"
+          sequence:
+            - action: media_player.volume_set
+              target:
+                entity_id: "{{ repeat.item.key }}"
+              data:
+                volume_level: "{{ repeat.item.value }}"
