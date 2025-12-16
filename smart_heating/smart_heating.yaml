@@ -1,4 +1,4 @@
-# Version: 1.2.2
+# Version: 1.2.3
 blueprint:
   domain: automation
   name: "🔥 Smart Heating Controller"
@@ -30,7 +30,7 @@ blueprint:
     - 📱 Optional notifications
 
 
-    📦 Version: 1.2.2
+    📦 Version: 1.2.3
 
   input:
     # ===== REQUIRED: CLIMATE ENTITY =====
@@ -322,6 +322,15 @@ variables:
   night_end_time: !input night_end
 
 triggers:
+  # ===== STARTUP TRIGGERS =====
+  - trigger: homeassistant
+    event: start
+    id: ha_start
+
+  - trigger: event
+    event_type: automation_reloaded
+    id: automation_reload
+
   # ===== PRESENCE TRIGGERS =====
   - trigger: numeric_state
     entity_id: !input presence_zone
@@ -669,6 +678,33 @@ actions:
                 data:
                   message: "⏰ Pre-heating started! Target: {{ target_temp }}°C"
                   title: "🔥 Heating Update"
+
+      # ----- STARTUP / RELOAD (initialize state) -----
+      - conditions:
+          - condition: trigger
+            id:
+              - ha_start
+              - automation_reload
+        sequence:
+          - delay:
+              seconds: 30
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ target_mode == 'eco' }}"
+                sequence:
+                  - action: climate.set_hvac_mode
+                    target:
+                      entity_id: "{{ climate }}"
+                    data:
+                      hvac_mode: "off"
+            default:
+              - action: climate.set_temperature
+                target:
+                  entity_id: "{{ climate }}"
+                data:
+                  temperature: "{{ target_temp }}"
+                  hvac_mode: heat
 
       # ----- PERIODIC CHECK (sync state) -----
       - conditions:
