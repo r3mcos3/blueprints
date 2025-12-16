@@ -1,166 +1,177 @@
-# 🚗 AI - Parking Spot Counter
+# 🚗 AI Parking Spot Counter
 
-**Version:** 1.0.5
+[![version](https://img.shields.io/badge/version-1.0.5-blue.svg)](https://github.com/r3mco/blueprints)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
-This Home Assistant blueprint uses AI to analyze a camera feed and count free and occupied parking spaces when you arrive home. Perfect for keeping track of available parking spots in front of your house!
+This blueprint automatically uses AI to analyze camera feeds and count free and occupied parking spaces when you arrive home. Perfect for keeping track of available parking spots in front of your house! 🅿️
 
-## 📋 Description
+## ✨ Features
 
-When you enter one of the configured zones while traveling towards home, this automation:
-1. 📷 Captures the current camera feed
-2. 🤖 Sends it to an AI task entity for analysis
-3. 🔢 Counts free and occupied parking spaces
-4. 💾 Updates sensor entities with the counts
-5. 📱 Sends a Telegram notification (optional)
-6. 📸 Saves a snapshot (optional)
+- 🤖 **AI-Powered Analysis** - Uses your AI integration to intelligently count parking spaces
+- 📷 **Camera Integration** - Works with any Home Assistant camera that supports snapshots
+- 🧭 **Direction-Aware** - Only triggers when approaching home (not when leaving)
+- 💾 **Automatic Updates** - Updates sensor entities with free and occupied counts
+- 📱 **Telegram Notifications** - Optional notifications with customizable messages
+- 📸 **Snapshot Storage** - Optionally save camera snapshots for review
+- 🎯 **Flexible Configuration** - Customize AI instructions and parking space count
 
-## ✅ Requirements
+## 📋 Requirements
 
-Before using this blueprint, you need to set up the following:
+Before using this blueprint, you need:
 
-### 1. 🤖 AI Task Entity
-- You need an AI task entity configured in Home Assistant (e.g., `ai_task.google_ai_task`)
-- This requires the AI Task integration (available in newer versions of Home Assistant)
-- The AI should be capable of analyzing images
+1. **AI Task Integration** - The AI Task integration configured with a provider (e.g., OpenAI, Google Generative AI, Anthropic)
+2. **Camera Entity** - A camera that supports snapshots and has a clear view of parking spaces
+3. **Person Entity** - A person entity to track for arrivals
+4. **Zone Entities** - At least one zone entity to monitor for arrivals
+5. **Proximity Sensor** - A proximity sensor that indicates direction of travel
+6. **Input Number Helpers** - Two helpers to store free and occupied counts
 
-### 2. 📊 Input Number Helpers
-Create two input number helpers to store the parking spot counts:
+### Setting Up Input Number Helpers
 
-1. Navigate to **Settings** → **Devices & Services** → **Helpers**
-2. Click **"+ CREATE HELPER"** → **Number**
+1. Go to **Settings** → **Devices & Services** → **Helpers**
+2. Click **+ CREATE HELPER** → **Number**
 3. Create two helpers:
-   - **Free Parking Spots** (e.g., `input_number.vrije_parkeerplekken`)
+   - **Free Parking Spots**
      - Min: 0
      - Max: (your total parking spaces)
-   - **Occupied Parking Spots** (e.g., `input_number.bezette_parkeerplekken`)
+   - **Occupied Parking Spots**
      - Min: 0
      - Max: (your total parking spaces)
 
-### 3. 🧭 Proximity Sensor
-- A proximity sensor that tracks your direction of travel
-- Should have a state of "towards" when approaching home
-- See [Home Assistant Proximity documentation](https://www.home-assistant.io/integrations/proximity/)
+### Setting Up Proximity Sensor
 
-### 4. 📷 Camera Entity
-- A camera entity that supports both streaming and snapshots
-- The camera should have a clear view of the parking spaces
-
-### 5. 📱 Telegram Bot (Optional)
-- If you want notifications, first configure the Telegram integration in Home Assistant
-- You can then select your Telegram bot from a dropdown in the blueprint configuration
-- To disable notifications, simply don't select a Telegram bot
+Create a proximity sensor to track direction of travel. See [Home Assistant Proximity documentation](https://www.home-assistant.io/integrations/proximity/).
 
 ## 🚀 Installation
 
-1. Navigate to **Settings** → **Automations & Scenes** → **Blueprints** in Home Assistant
-2. Click **"Import Blueprint"**
-3. Enter the URL:
+### Automatic Installation
+
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fai_parking_counter%2Fai_parking_counter.yaml)
+
+### Manual Installation
+
+1. In Home Assistant, navigate to **Settings** → **Automations & Scenes** → **Blueprints**
+2. Click the **Import Blueprint** button
+3. Enter the blueprint URL:
    ```
-   https://raw.githubusercontent.com/r3mcos3/blueprints/main/ai_parking_counter/ai_parking_counter.yaml
+   https://github.com/r3mcos3/blueprints/blob/main/ai_parking_counter/ai_parking_counter.yaml
    ```
-4. Click **"Preview"** and then **"Import Blueprint"**
+4. Click **Preview** and then **Import**
 
 ## ⚙️ Configuration
 
-### Required Settings
+When creating an automation from this blueprint, you'll configure:
 
-| Setting | Description | Example |
-|---------|-------------|---------|
-| 👤 Person | The person entity to track | `person.remco` |
-| 🏘️ Zone 1 | First zone to monitor | `zone.huibevendreef` |
-| 🏘️ Zone 2 | Second zone to monitor | `zone.moerse_dreef` |
-| 🧭 Proximity Direction Sensor | Sensor showing direction of travel | `sensor.proximity_remco_remco_direction_of_travel` |
-| 📷 Camera | Camera to analyze | `camera.doorbell_camera_generic` |
-| 🤖 AI Task Entity | AI entity for image analysis | `ai_task.google_ai_task` |
-| 🟢 Free Spots Sensor | Input number for free spots | `input_number.vrije_parkeerplekken` |
-| 🔴 Occupied Spots Sensor | Input number for occupied spots | `input_number.bezette_parkeerplekken` |
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| 👤 Person | Person entity to track for zone arrivals | - |
+| 🏘️ Zone 1 | First zone to monitor for arrival | - |
+| 🏘️ Zone 2 | Second zone to monitor for arrival | - |
+| 🧭 Proximity Direction Sensor | Proximity sensor (should be "towards" when approaching) | - |
+| 📷 Camera | Camera to analyze for parking spots | - |
+| 🤖 AI Task Entity | AI entity for image analysis | - |
+| 🅿️ Total Parking Spaces | Total number of parking spaces | 3 |
+| 🟢 Free Spots Sensor | Input number entity for free spots count | - |
+| 🔴 Occupied Spots Sensor | Input number entity for occupied spots count | - |
+| 📱 Telegram Bot | Optional Telegram bot for notifications | None |
+| 💬 Telegram Message | Message to send (use {free_spots} placeholder) | "There are {free_spots} free parking spots 🚗 available! 🚪" |
+| 🏷️ Telegram Title | Optional title for notifications | "" |
+| 📸 Save Snapshot | Whether to save camera snapshot | true |
+| 🗂️ Snapshot Path | File path to save snapshot | /config/www/parking_spot.jpg |
+| 📝 AI Instructions | Custom AI instructions (use {total_spaces} placeholder) | "" |
 
-### Optional Settings
+## 💡 Usage Examples
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| 🅿️ Total Parking Spaces | Number of parking spaces to count | 3 |
-| 📱 Telegram Bot | Select your Telegram bot from the dropdown | None (disabled) |
-| 💬 Telegram Message | Message to send (use {free_spots} as placeholder) | "There are {free_spots} free parking spots 🚗 available! 🚪" |
-| 🏷️ Telegram Title | Optional title for Telegram notification | "" (no title) |
-| 📸 Save Snapshot | Save a camera snapshot | true |
-| 🗂️ Snapshot Path | Path to save the snapshot | `/config/www/parking_spot.jpg` |
-| 📝 AI Instructions | Custom instructions for the AI | "" (use default) |
+### Example 1: Dashboard Display
 
-## 🎯 Custom AI Instructions
+Display parking availability on your dashboard:
 
-If you want to customize the AI analysis, you can provide your own instructions. Use `{total_spaces}` as a placeholder for the total number of parking spaces.
-
-**Example:**
-```
-Analyze this image of my driveway. There are {total_spaces} parking spots visible.
-Count how many spots are FREE (empty) and how many are OCCUPIED (vehicle present).
-Ignore motorcycles and bicycles, only count cars.
-```
-
-## 📱 Telegram Notifications
-
-You can easily enable Telegram notifications by selecting your Telegram bot from a dropdown menu.
-
-### How to Enable Telegram Notifications
-
-1. **Select your Telegram Bot** from the dropdown in the blueprint configuration
-   - If you don't see your bot, make sure the Telegram integration is properly configured in Home Assistant
-   - Leave empty to disable notifications
-
-2. **Customize the Message** (optional)
-   - Use `{free_spots}` as a placeholder for the number of free parking spots
-
-**Example custom message:**
-```
-There are {free_spots} free parking spots! 🅿️
+```yaml
+type: entities
+entities:
+  - entity: input_number.free_parking_spots
+    name: Free Spots 🟢
+  - entity: input_number.occupied_parking_spots
+    name: Occupied Spots 🔴
 ```
 
-**Example with title:**
-- **Title:** "🚗 Parking Update"
-- **Message:** "Good news! {free_spots} spots available right now!"
+### Example 2: View Saved Snapshot
 
-**Default notification (without customization):**
+Display the saved snapshot on your dashboard:
+
+```yaml
+type: picture
+image: /local/parking_spot.jpg
 ```
-There are 2 free parking spots 🚗 available! 🚪
+
+### Example 3: Custom AI Instructions
+
+For more accurate counting, customize the AI instructions:
+
 ```
-
-## 💡 Tips
-
-- **Lighting Conditions**: Make sure your camera has good visibility of the parking spaces, especially at night
-- **AI Accuracy**: Test the AI analysis a few times to ensure it correctly counts your parking spaces
-- **Multiple Zones**: Use two different zones to catch arrivals from different directions
-- **Snapshot Storage**: The snapshot can be viewed later at `http://your-ha-url:8123/local/parking_spot.jpg` (if using default path)
+Analyze this image of my driveway. There are {total_spaces} parking spots visible directly in front of the house entrance. Count how many spots are FREE (completely empty with no vehicle) and how many are OCCUPIED (has any vehicle parked). Ignore motorcycles and bicycles.
+```
 
 ## 🔧 Troubleshooting
 
-### AI not analyzing correctly
-- Check if your AI task entity is properly configured
-- Verify the camera has a clear view of all parking spaces
-- Try customizing the AI instructions to be more specific
+### AI Not Analyzing Correctly
 
-### Notification not sending
-- Verify your Telegram bot is configured correctly
-- Double-check the config entry ID
-- Check Home Assistant logs for any errors
+1. Check if your AI Task integration is properly configured
+2. Verify the camera has a clear view of all parking spaces
+3. Improve lighting conditions if analyzing at night
+4. Try customizing the AI instructions to be more specific
 
-### Snapshot not saving
-- Ensure the `/config/www/` directory exists and is writable
-- Check that your camera supports the `camera.snapshot` service
+### Notification Not Sending
+
+1. Verify your Telegram bot is configured correctly in Home Assistant
+2. Select the correct Telegram bot from the dropdown
+3. Check Home Assistant logs for any errors
+
+### Snapshot Not Saving
+
+1. Ensure the `/config/www/` directory exists and is writable
+2. Check that your camera supports the `camera.snapshot` service
+3. Verify the snapshot path is correct
+
+### Wrong Parking Count
+
+1. Ensure good lighting and camera angle
+2. Customize AI instructions to be more specific about what to count
+3. Adjust total parking spaces setting
+4. Test during different times of day for consistency
 
 ## 📝 Version History
 
-- **1.0.5** (2025-12-15): Translate default Telegram message to English
-- **1.0.4** (2025-12-15): Fix decimal formatting in Telegram message (remove .0 from parking count)
-- **1.0.3** (2025-12-15): Add Telegram bot selector for easy dropdown selection
-- **1.0.2** (2025-12-15): Add customizable Telegram message and optional title fields
-- **1.0.1** (2025-12-15): Fix camera media_content_id to include full entity_id
-- **1.0.0** (2025-12-15): Initial release
+### Version 1.0.5 (2025-12-15)
+- 🌐 Translate default Telegram message to English
+
+### Version 1.0.4 (2025-12-15)
+- 🐛 Fix decimal formatting in Telegram message
+
+### Version 1.0.3 (2025-12-15)
+- ✨ Add Telegram bot config_entry selector
+
+### Version 1.0.2 (2025-12-15)
+- ✨ Add customizable Telegram message and optional title
+
+### Version 1.0.1 (2025-12-15)
+- 🐛 Fix camera media_content_id to include full entity_id
+
+### Version 1.0.0 (2025-12-15)
+- 🎉 Initial release
+- 🤖 AI-powered parking spot counting
+- 📱 Optional Telegram notifications
+- 📸 Camera snapshot support
+- 🎯 Customizable AI instructions
 
 ## 🤝 Contributing
 
-Found a bug or have a suggestion? Please open an issue on the [GitHub repository](https://github.com/r3mcos3/blueprints).
+Found a bug or have a suggestion? Please [open an issue](https://github.com/r3mcos3/blueprints/issues) on GitHub!
 
 ## 📄 License
 
-This blueprint is licensed under the MIT License.
+This blueprint is provided as-is under the MIT License.
+
+## 🙏 Credits
+
+Created by [r3mcos3](https://github.com/r3mcos3)
