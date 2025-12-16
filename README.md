@@ -21,11 +21,13 @@ For more detailed instructions, please refer to the official Home Assistant docu
 
 Currently, this repository offers the following blueprints:
 
-*   **🚗 AI - Parking Spot Counter**: Use AI to analyze camera feed and count free/occupied parking spaces upon arrival. (Found in `ai_parking_counter/ai_parking_counter.yaml`)
-*   **💡 Presence Lights**: Automate your lighting based on presence detection. (Found in `presence_lights/presence_lights.yaml`)
-*   **🔈 Volume Control**: Control the volume of your media players. (Found in `volumecontrol/volumecontrol.yaml`)
-
-*(Further blueprints will be added here as they are developed.)*
+| Blueprint | Description | Import |
+|-----------|-------------|--------|
+| 🚗 **[AI Parking Counter](ai_parking_counter/)** | Use AI to analyze camera feed and count free/occupied parking spaces | [![Import](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fai_parking_counter%2Fai_parking_counter.yaml) |
+| 🌤️ **[AI Weather Report](ai_weather_report/)** | Generate AI-powered weather reports with natural language | [![Import](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fai_weather_report%2Fai_weather_report.yaml) |
+| 🔔 **[Doorbell Chime](doorbell_chime/)** | Play a chime sound on media players when the doorbell rings | [![Import](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fdoorbell_chime%2Fdoorbell_chime.yaml) |
+| 💡 **[Presence Lights](presence_lights/)** | Automate lighting based on presence detection | [![Import](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fpresence_lights%2Fpresence_lights.yaml) |
+| 🔈 **[Volume Control](volumecontrol/)** | Schedule-based volume control for media players | [![Import](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fvolumecontrol%2Fvolumecontrol.yaml) |
 
 ## 🤝 Contributing
 
