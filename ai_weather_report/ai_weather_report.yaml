@@ -1,0 +1,150 @@
+blueprint:
+  name: 🤖 AI Weather Report Generator
+  description: >
+    Fetches weather forecasts at regular intervals, uses AI to create an emoji-rich
+    summary, and stores it in a text helper. Perfect for dashboard displays or
+    notifications! ☀️🌧️⛈️
+
+    Version: 1.0.0
+  domain: automation
+  author: r3mco
+  homeassistant:
+    min_version: 2024.1.0
+  source_url: https://github.com/r3mco/blueprints/blob/main/ai_weather_report/ai_weather_report.yaml
+
+  input:
+    weather_entity:
+      name: 🌤️ Weather Entity
+      description: The weather integration entity to fetch forecasts from
+      selector:
+        entity:
+          filter:
+            domain: weather
+
+    forecast_type:
+      name: 📊 Forecast Type
+      description: Type of weather forecast to retrieve
+      default: hourly
+      selector:
+        select:
+          options:
+            - label: Hourly
+              value: hourly
+            - label: Daily
+              value: daily
+
+    update_frequency:
+      name: ⏰ Update Frequency
+      description: How often to update the weather report
+      default: "/6"
+      selector:
+        select:
+          options:
+            - label: Every hour
+              value: "/1"
+            - label: Every 2 hours
+              value: "/2"
+            - label: Every 3 hours
+              value: "/3"
+            - label: Every 6 hours
+              value: "/6"
+            - label: Every 12 hours
+              value: "/12"
+            - label: Once per day (24 hours)
+              value: "/24"
+
+    ai_task_entity:
+      name: 🧠 AI Task Entity
+      description: The AI task integration entity to use for generating the summary
+      selector:
+        entity:
+          filter:
+            domain: ai_task
+
+    report_length:
+      name: 📝 Report Length
+      description: Maximum length of the AI-generated report in characters (limited to 255 because input_text helpers have a maximum length of 255 characters)
+      default: 150
+      selector:
+        number:
+          min: 50
+          max: 255
+          step: 10
+          unit_of_measurement: characters
+          mode: box
+
+    ai_language:
+      name: 🌍 Report Language
+      description: Language for the AI-generated weather report
+      default: dutch
+      selector:
+        select:
+          options:
+            - label: Nederlands
+              value: dutch
+            - label: English
+              value: english
+            - label: Deutsch
+              value: german
+            - label: Français
+              value: french
+            - label: Español
+              value: spanish
+
+    target_input_text:
+      name: 📄 Target Input Text Helper
+      description: The input_text entity where the AI report will be stored
+      selector:
+        entity:
+          filter:
+            domain: input_text
+
+mode: single
+
+variables:
+  weather_entity_id: !input weather_entity
+  report_max_length: !input report_length
+  selected_language: !input ai_language
+
+triggers:
+  - trigger: time_pattern
+    hours: !input update_frequency
+
+conditions: []
+
+actions:
+  - action: weather.get_forecasts
+    metadata: {}
+    target:
+      entity_id: !input weather_entity
+    data:
+      type: !input forecast_type
+    response_variable: hourly_forecast
+
+  - variables:
+      forecast_list: >
+        {{ hourly_forecast[weather_entity_id].forecast | default([]) }}
+      language_instructions:
+        dutch: "Hier is het weer voor de aankomende uren in JSON: {{ forecast_list | tojson }}. Maak hier een weerbericht van in {{ report_max_length }} letters. Gebruik veel emojis."
+        english: "Here is the weather for the upcoming hours in JSON: {{ forecast_list | tojson }}. Create a weather report in {{ report_max_length }} characters. Use many emojis."
+        german: "Hier ist das Wetter für die kommenden Stunden in JSON: {{ forecast_list | tojson }}. Erstelle einen Wetterbericht in {{ report_max_length }} Zeichen. Verwende viele Emojis."
+        french: "Voici la météo pour les heures à venir en JSON: {{ forecast_list | tojson }}. Créez un rapport météo en {{ report_max_length }} caractères. Utilisez beaucoup d'emojis."
+        spanish: "Aquí está el clima para las próximas horas en JSON: {{ forecast_list | tojson }}. Crea un informe meteorológico en {{ report_max_length }} caracteres. Usa muchos emojis."
+      ai_instructions_text: >
+        {{ language_instructions[selected_language] }}
+
+  - action: ai_task.generate_data
+    metadata: {}
+    data:
+      task_name: weather_forecast_summary
+      entity_id: !input ai_task_entity
+      instructions: "{{ ai_instructions_text }}"
+    response_variable: ai_response
+
+  - action: input_text.set_value
+    metadata: {}
+    target:
+      entity_id: !input target_input_text
+    data:
+      value: >
+        {{ ai_response.data | default('Geen Data Beschikbaar.') }}
