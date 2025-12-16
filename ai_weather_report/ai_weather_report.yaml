@@ -5,7 +5,7 @@ blueprint:
     summary, and stores it in a text helper. Perfect for dashboard displays or
     notifications! ☀️🌧️⛈️
 
-    Version: 1.0.1
+    Version: 1.0.2
   domain: automation
   author: r3mco
   homeassistant:
