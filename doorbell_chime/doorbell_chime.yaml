@@ -1,4 +1,4 @@
-# Version: 1.0.2
+# Version: 1.0.4
 blueprint:
   domain: automation
   name: "\U0001F514 Doorbell Chime"
@@ -21,7 +21,7 @@ blueprint:
     - ⏱️ Built-in cooldown (single mode)
 
 
-    📦 Version: 1.0.2
+    📦 Version: 1.0.4
 
   input:
     doorbell_sensor:
@@ -59,6 +59,8 @@ blueprint:
         Select the chime sound file from your media library.
       selector:
         media:
+          accept:
+            - audio/*
 
     chime_volume:
       name: "\U0001F509 Chime Volume"
@@ -202,6 +204,8 @@ action:
           {% endif %}
         {% endif %}
         {{ ns.entities }}
+
+  - variables:
       original_volumes: >
         {% set ns = namespace(volumes={}) %}
         {% for entity in player_entities %}
