@@ -1,0 +1,686 @@
+# Version: 1.2.0
+blueprint:
+  domain: automation
+  name: "🔥 Smart Heating Controller"
+  author: r3mco
+  source_url: https://github.com/r3mcos3/blueprints/blob/main/smart_heating/smart_heating.yaml
+  homeassistant:
+    min_version: 2025.12.0
+  description: >
+    Intelligent climate control with presence detection, door/window protection,
+    and energy-saving features! 🌡️
+
+
+    Features:
+
+    - 🏠 Presence-based temperature adjustment (home/away)
+
+    - 🚪 Door/window open detection with heating pause
+
+    - 🌡️ Outdoor temperature factor (disable when warm outside)
+
+    - 🌙 Night mode with scheduled temperature reduction
+
+    - ⏰ Pre-heating before wake-up time
+
+    - 💧 Humidity compensation for comfort
+
+    - ❄️ Frost protection (minimum temperature)
+
+    - 📱 Optional notifications
+
+
+    📦 Version: 1.2.0
+
+  input:
+    # ===== REQUIRED: CLIMATE ENTITY =====
+    climate_entity:
+      name: "🌡️ Climate Entity"
+      description: >
+        The thermostat or climate entity to control (e.g., climate.tado).
+      selector:
+        entity:
+          filter:
+            - domain: climate
+
+    # ===== REQUIRED: TEMPERATURE SENSORS =====
+    indoor_temp_sensor:
+      name: "🏠 Indoor Temperature Sensor"
+      description: >
+        Sensor measuring indoor temperature. Used for accurate temperature decisions.
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+              device_class: temperature
+
+    outdoor_temp_sensor:
+      name: "🌤️ Outdoor Temperature Sensor"
+      description: >
+        Sensor measuring outdoor temperature. Heating disabled when above threshold.
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+              device_class: temperature
+
+    # ===== REQUIRED: PRESENCE DETECTION =====
+    presence_zone:
+      name: "👥 Presence Zone"
+      description: >
+        The zone to monitor for presence (typically zone.home).
+      selector:
+        entity:
+          filter:
+            - domain: zone
+
+    # ===== REQUIRED: DOOR/WINDOW SENSORS =====
+    door_window_sensors:
+      name: "🚪 Door/Window Sensors"
+      description: >
+        Binary sensors for doors and windows. Heating pauses when open for too long.
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - domain: binary_sensor
+              device_class:
+                - door
+                - window
+                - opening
+
+    # ===== TEMPERATURE SETTINGS (COLLAPSED) =====
+    temperature_settings:
+      name: "🌡️ Temperature Settings"
+      icon: mdi:thermometer
+      collapsed: true
+      input:
+        comfort_temp:
+          name: "🏠 Comfort Temperature"
+          description: >
+            Target temperature when people are home.
+          default: 21
+          selector:
+            number:
+              min: 15
+              max: 28
+              step: 0.5
+              unit_of_measurement: "°C"
+              mode: slider
+
+        away_temp:
+          name: "🏃 Away Temperature"
+          description: >
+            Target temperature when nobody is home.
+          default: 17
+          selector:
+            number:
+              min: 10
+              max: 22
+              step: 0.5
+              unit_of_measurement: "°C"
+              mode: slider
+
+        frost_protection_temp:
+          name: "❄️ Frost Protection Temperature"
+          description: >
+            Minimum temperature to prevent pipes freezing. Never goes below this.
+          default: 7
+          selector:
+            number:
+              min: 4
+              max: 12
+              step: 0.5
+              unit_of_measurement: "°C"
+              mode: slider
+
+        night_temp:
+          name: "🌙 Night Temperature"
+          description: >
+            Target temperature during sleeping hours.
+          default: 18
+          selector:
+            number:
+              min: 14
+              max: 22
+              step: 0.5
+              unit_of_measurement: "°C"
+              mode: slider
+
+        outdoor_temp_threshold:
+          name: "🌡️ Outdoor Temperature Threshold"
+          description: >
+            When outdoor temperature exceeds this value, heating will be disabled (eco mode).
+          default: 18
+          selector:
+            number:
+              min: 10
+              max: 25
+              step: 0.5
+              unit_of_measurement: "°C"
+              mode: slider
+
+    # ===== DOOR/WINDOW SETTINGS (COLLAPSED) =====
+    door_window_settings:
+      name: "🚪 Door/Window Settings"
+      icon: mdi:door
+      collapsed: true
+      input:
+        door_open_delay:
+          name: "⏱️ Door Open Delay"
+          description: >
+            Time to wait before pausing heating when a door/window opens.
+          default: 120
+          selector:
+            number:
+              min: 30
+              max: 300
+              step: 10
+              unit_of_measurement: "seconds"
+              mode: slider
+
+        door_closed_delay:
+          name: "⏱️ Door Closed Resume Delay"
+          description: >
+            Time to wait before resuming heating after all doors/windows close.
+          default: 60
+          selector:
+            number:
+              min: 10
+              max: 180
+              step: 10
+              unit_of_measurement: "seconds"
+              mode: slider
+
+    # ===== NIGHT MODE SETTINGS (COLLAPSED) =====
+    night_mode_settings:
+      name: "🌙 Night Mode Settings"
+      icon: mdi:weather-night
+      collapsed: true
+      input:
+        use_night_mode:
+          name: "🌙 Enable Night Mode"
+          description: >
+            Enable automatic temperature reduction during sleeping hours.
+          default: true
+          selector:
+            boolean:
+
+        night_start:
+          name: "🌙 Night Start Time"
+          description: >
+            Time when night mode begins.
+          default: "23:00:00"
+          selector:
+            time:
+
+        night_end:
+          name: "☀️ Night End Time"
+          description: >
+            Time when night mode ends.
+          default: "07:00:00"
+          selector:
+            time:
+
+        use_preheat:
+          name: "⏰ Enable Pre-heating"
+          description: >
+            Start heating before night mode ends to reach comfort temperature when you wake up.
+          default: true
+          selector:
+            boolean:
+
+        preheat_minutes:
+          name: "⏰ Pre-heat Duration"
+          description: >
+            How many minutes before night mode ends to start pre-heating.
+          default: 30
+          selector:
+            number:
+              min: 15
+              max: 90
+              step: 5
+              unit_of_measurement: "minutes"
+              mode: slider
+
+    # ===== HUMIDITY SETTINGS (COLLAPSED) =====
+    humidity_settings:
+      name: "💧 Humidity Settings"
+      icon: mdi:water-percent
+      collapsed: true
+      input:
+        use_humidity:
+          name: "💧 Enable Humidity Factor"
+          description: >
+            Adjust target temperature based on humidity (high humidity feels warmer).
+          default: false
+          selector:
+            boolean:
+
+        humidity_sensor:
+          name: "💧 Humidity Sensor"
+          description: >
+            Indoor humidity sensor (optional).
+          default: {}
+          selector:
+            entity:
+              filter:
+                - domain: sensor
+                  device_class: humidity
+
+    # ===== NOTIFICATION SETTINGS (COLLAPSED) =====
+    notification_settings:
+      name: "📱 Notification Settings"
+      icon: mdi:bell
+      collapsed: true
+      input:
+        use_notifications:
+          name: "📱 Enable Notifications"
+          description: >
+            Send notifications when heating mode changes.
+          default: false
+          selector:
+            boolean:
+
+        notify_service:
+          name: "📱 Notification Service"
+          description: >
+            The notification service to use (e.g., notify.mobile_app_phone).
+          default: ""
+          selector:
+            text:
+
+mode: single
+max_exceeded: silent
+
+variables:
+  # Input references
+  climate: !input climate_entity
+  indoor_sensor: !input indoor_temp_sensor
+  outdoor_sensor: !input outdoor_temp_sensor
+  zone: !input presence_zone
+  door_sensors: !input door_window_sensors
+
+  # Temperature settings
+  temp_comfort: !input comfort_temp
+  temp_away: !input away_temp
+  temp_frost: !input frost_protection_temp
+  temp_night: !input night_temp
+  outdoor_threshold: !input outdoor_temp_threshold
+
+  # Feature toggles
+  night_mode_enabled: !input use_night_mode
+  preheat_enabled: !input use_preheat
+  humidity_enabled: !input use_humidity
+  notifications_enabled: !input use_notifications
+
+  # Other settings
+  preheat_mins: !input preheat_minutes
+  humidity_entity: !input humidity_sensor
+  notify_svc: !input notify_service
+  night_start_time: !input night_start
+  night_end_time: !input night_end
+
+triggers:
+  # ===== PRESENCE TRIGGERS =====
+  - trigger: numeric_state
+    entity_id: !input presence_zone
+    above: 0
+    id: arrived_home
+
+  - trigger: numeric_state
+    entity_id: !input presence_zone
+    below: 1
+    id: left_home
+
+  # ===== DOOR/WINDOW TRIGGERS =====
+  - trigger: state
+    entity_id: !input door_window_sensors
+    to: "on"
+    for:
+      seconds: !input door_open_delay
+    id: door_opened
+
+  - trigger: state
+    entity_id: !input door_window_sensors
+    to: "off"
+    for:
+      seconds: !input door_closed_delay
+    id: door_closed
+
+  # ===== OUTDOOR TEMPERATURE TRIGGERS =====
+  - trigger: numeric_state
+    entity_id: !input outdoor_temp_sensor
+    above: !input outdoor_temp_threshold
+    id: outdoor_warm
+
+  - trigger: numeric_state
+    entity_id: !input outdoor_temp_sensor
+    below: !input outdoor_temp_threshold
+    id: outdoor_cold
+
+  # ===== TIME-BASED TRIGGERS =====
+  - trigger: time
+    at: !input night_start
+    id: night_start
+
+  - trigger: time
+    at: !input night_end
+    id: night_end
+
+  # ===== PERIODIC CHECK (every 15 minutes) =====
+  - trigger: time_pattern
+    minutes: "/15"
+    id: periodic_check
+
+conditions: []
+
+actions:
+  # ===== CALCULATE CURRENT STATE =====
+  - variables:
+      current_outdoor: "{{ states(outdoor_sensor) | float(10) }}"
+      current_indoor: "{{ states(indoor_sensor) | float(20) }}"
+      people_count: "{{ states(zone) | int(0) }}"
+      is_outdoor_warm: "{{ current_outdoor >= outdoor_threshold }}"
+
+      # Calculate if it's night time
+      is_night: >
+        {% if night_mode_enabled %}
+          {% set now_time = now().strftime('%H:%M:%S') %}
+          {% set start = night_start_time %}
+          {% set end = night_end_time %}
+          {% if start > end %}
+            {{ now_time >= start or now_time < end }}
+          {% else %}
+            {{ now_time >= start and now_time < end }}
+          {% endif %}
+        {% else %}
+          false
+        {% endif %}
+
+      # Calculate pre-heat time
+      is_preheat_time: >
+        {% if preheat_enabled and night_mode_enabled %}
+          {% set end_parts = night_end_time.split(':') %}
+          {% set end_hour = end_parts[0] | int %}
+          {% set end_min = end_parts[1] | int %}
+          {% set total_mins = end_hour * 60 + end_min - preheat_mins %}
+          {% if total_mins < 0 %}
+            {% set total_mins = total_mins + 1440 %}
+          {% endif %}
+          {% set preheat_hour = (total_mins // 60) | int %}
+          {% set preheat_min = (total_mins % 60) | int %}
+          {% set preheat_time = '%02d:%02d:00' | format(preheat_hour, preheat_min) %}
+          {% set now_time = now().strftime('%H:%M:%S') %}
+          {% if preheat_time > night_end_time %}
+            {{ now_time >= preheat_time or now_time < night_end_time }}
+          {% else %}
+            {{ now_time >= preheat_time and now_time < night_end_time }}
+          {% endif %}
+        {% else %}
+          false
+        {% endif %}
+
+      # Check if any door/window is open
+      any_opening_open: >
+        {% set ns = namespace(open=false) %}
+        {% for sensor in door_sensors %}
+          {% if states(sensor) == 'on' %}
+            {% set ns.open = true %}
+          {% endif %}
+        {% endfor %}
+        {{ ns.open }}
+
+      # Humidity adjustment
+      humidity_adjustment: >
+        {% if humidity_enabled and humidity_entity != {} and humidity_entity != '' %}
+          {% set humidity = states(humidity_entity) | float(50) %}
+          {% if humidity > 70 %}
+            -0.5
+          {% elif humidity < 30 %}
+            0.5
+          {% else %}
+            0
+          {% endif %}
+        {% else %}
+          0
+        {% endif %}
+
+  # ===== DETERMINE TARGET MODE AND TEMPERATURE =====
+  - variables:
+      target_mode: >
+        {% if current_indoor < temp_frost %}
+          frost_protection
+        {% elif is_outdoor_warm %}
+          eco
+        {% elif any_opening_open %}
+          door_open
+        {% elif people_count == 0 %}
+          away
+        {% elif is_preheat_time %}
+          preheat
+        {% elif is_night %}
+          night
+        {% else %}
+          comfort
+        {% endif %}
+
+      target_temp: >
+        {% set adj = humidity_adjustment | float(0) %}
+        {% if target_mode == 'frost_protection' %}
+          {{ temp_frost }}
+        {% elif target_mode == 'eco' %}
+          {{ temp_frost }}
+        {% elif target_mode == 'door_open' %}
+          {{ temp_frost }}
+        {% elif target_mode == 'away' %}
+          {{ temp_away }}
+        {% elif target_mode == 'preheat' %}
+          {{ temp_comfort + adj }}
+        {% elif target_mode == 'night' %}
+          {{ temp_night + adj }}
+        {% else %}
+          {{ temp_comfort + adj }}
+        {% endif %}
+
+      current_target: "{{ state_attr(climate, 'temperature') | float(0) }}"
+      hvac_mode: "{{ states(climate) }}"
+
+  # ===== MAIN CONTROL LOGIC =====
+  - choose:
+      # ----- FROST PROTECTION (highest priority) -----
+      - conditions:
+          - condition: template
+            value_template: "{{ target_mode == 'frost_protection' }}"
+        sequence:
+          - action: climate.set_temperature
+            target:
+              entity_id: "{{ climate }}"
+            data:
+              temperature: "{{ temp_frost }}"
+              hvac_mode: heat
+          - if:
+              - condition: template
+                value_template: "{{ notifications_enabled and notify_svc != '' }}"
+            then:
+              - action: "{{ notify_svc }}"
+                data:
+                  message: "❄️ Frost protection activated! Indoor temp: {{ current_indoor }}°C"
+                  title: "🔥 Heating Alert"
+
+      # ----- OUTDOOR WARM - ECO MODE -----
+      - conditions:
+          - condition: template
+            value_template: "{{ target_mode == 'eco' }}"
+          - condition: template
+            value_template: "{{ hvac_mode != 'off' }}"
+        sequence:
+          - action: climate.set_hvac_mode
+            target:
+              entity_id: "{{ climate }}"
+            data:
+              hvac_mode: "off"
+          - if:
+              - condition: template
+                value_template: "{{ notifications_enabled and notify_svc != '' }}"
+            then:
+              - action: "{{ notify_svc }}"
+                data:
+                  message: "🌡️ Eco mode: outdoor {{ current_outdoor }}°C. Heating disabled."
+                  title: "🔥 Heating Update"
+
+      # ----- DOOR/WINDOW OPEN -----
+      - conditions:
+          - condition: template
+            value_template: "{{ target_mode == 'door_open' }}"
+          - condition: template
+            value_template: "{{ current_target != temp_frost }}"
+        sequence:
+          - action: climate.set_temperature
+            target:
+              entity_id: "{{ climate }}"
+            data:
+              temperature: "{{ temp_frost }}"
+          - if:
+              - condition: template
+                value_template: "{{ notifications_enabled and notify_svc != '' }}"
+            then:
+              - action: "{{ notify_svc }}"
+                data:
+                  message: "🚪 Door/window open. Heating paused."
+                  title: "🔥 Heating Update"
+
+      # ----- AWAY MODE -----
+      - conditions:
+          - condition: trigger
+            id: left_home
+        sequence:
+          - action: climate.set_temperature
+            target:
+              entity_id: "{{ climate }}"
+            data:
+              temperature: "{{ temp_away }}"
+          - if:
+              - condition: template
+                value_template: "{{ notifications_enabled and notify_svc != '' }}"
+            then:
+              - action: "{{ notify_svc }}"
+                data:
+                  message: "🏃 Away mode: temperature set to {{ temp_away }}°C"
+                  title: "🔥 Heating Update"
+
+      # ----- ARRIVED HOME -----
+      - conditions:
+          - condition: trigger
+            id: arrived_home
+        sequence:
+          - action: climate.set_temperature
+            target:
+              entity_id: "{{ climate }}"
+            data:
+              temperature: "{{ target_temp }}"
+              hvac_mode: heat
+          - if:
+              - condition: template
+                value_template: "{{ notifications_enabled and notify_svc != '' }}"
+            then:
+              - action: "{{ notify_svc }}"
+                data:
+                  message: "🏠 Welcome home! Temperature set to {{ target_temp }}°C"
+                  title: "🔥 Heating Update"
+
+      # ----- DOOR CLOSED - RESUME -----
+      - conditions:
+          - condition: trigger
+            id: door_closed
+          - condition: template
+            value_template: "{{ not any_opening_open }}"
+        sequence:
+          - action: climate.set_temperature
+            target:
+              entity_id: "{{ climate }}"
+            data:
+              temperature: "{{ target_temp }}"
+              hvac_mode: heat
+
+      # ----- NIGHT START -----
+      - conditions:
+          - condition: trigger
+            id: night_start
+          - condition: template
+            value_template: "{{ night_mode_enabled }}"
+          - condition: template
+            value_template: "{{ people_count > 0 }}"
+        sequence:
+          - action: climate.set_temperature
+            target:
+              entity_id: "{{ climate }}"
+            data:
+              temperature: "{{ temp_night + humidity_adjustment | float(0) }}"
+
+      # ----- NIGHT END -----
+      - conditions:
+          - condition: trigger
+            id: night_end
+          - condition: template
+            value_template: "{{ people_count > 0 }}"
+        sequence:
+          - action: climate.set_temperature
+            target:
+              entity_id: "{{ climate }}"
+            data:
+              temperature: "{{ temp_comfort + humidity_adjustment | float(0) }}"
+              hvac_mode: heat
+
+      # ----- OUTDOOR COLD AGAIN -----
+      - conditions:
+          - condition: trigger
+            id: outdoor_cold
+          - condition: template
+            value_template: "{{ hvac_mode == 'off' }}"
+        sequence:
+          - action: climate.set_temperature
+            target:
+              entity_id: "{{ climate }}"
+            data:
+              temperature: "{{ target_temp }}"
+              hvac_mode: heat
+
+      # ----- PRE-HEAT MODE -----
+      - conditions:
+          - condition: trigger
+            id: periodic_check
+          - condition: template
+            value_template: "{{ target_mode == 'preheat' }}"
+          - condition: template
+            value_template: "{{ (current_target - target_temp) | abs > 0.5 }}"
+        sequence:
+          - action: climate.set_temperature
+            target:
+              entity_id: "{{ climate }}"
+            data:
+              temperature: "{{ target_temp }}"
+              hvac_mode: heat
+          - if:
+              - condition: template
+                value_template: "{{ notifications_enabled and notify_svc != '' }}"
+            then:
+              - action: "{{ notify_svc }}"
+                data:
+                  message: "⏰ Pre-heating started! Target: {{ target_temp }}°C"
+                  title: "🔥 Heating Update"
+
+      # ----- PERIODIC CHECK (sync state) -----
+      - conditions:
+          - condition: trigger
+            id: periodic_check
+          - condition: template
+            value_template: "{{ target_mode not in ['eco', 'door_open', 'preheat'] }}"
+          - condition: template
+            value_template: "{{ (current_target - target_temp) | abs > 0.5 }}"
+        sequence:
+          - action: climate.set_temperature
+            target:
+              entity_id: "{{ climate }}"
+            data:
+              temperature: "{{ target_temp }}"
