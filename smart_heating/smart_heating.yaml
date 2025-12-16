@@ -1,4 +1,4 @@
-# Version: 1.2.0
+# Version: 1.2.1
 blueprint:
   domain: automation
   name: "🔥 Smart Heating Controller"
@@ -30,7 +30,7 @@ blueprint:
     - 📱 Optional notifications
 
 
-    📦 Version: 1.2.0
+    📦 Version: 1.2.1
 
   input:
     # ===== REQUIRED: CLIMATE ENTITY =====
@@ -102,9 +102,9 @@ blueprint:
           default: 21
           selector:
             number:
-              min: 15
-              max: 28
-              step: 0.5
+              min: 5
+              max: 25
+              step: 1
               unit_of_measurement: "°C"
               mode: slider
 
@@ -115,9 +115,9 @@ blueprint:
           default: 17
           selector:
             number:
-              min: 10
-              max: 22
-              step: 0.5
+              min: 5
+              max: 25
+              step: 1
               unit_of_measurement: "°C"
               mode: slider
 
@@ -128,9 +128,9 @@ blueprint:
           default: 7
           selector:
             number:
-              min: 4
-              max: 12
-              step: 0.5
+              min: 5
+              max: 25
+              step: 1
               unit_of_measurement: "°C"
               mode: slider
 
@@ -141,9 +141,9 @@ blueprint:
           default: 18
           selector:
             number:
-              min: 14
-              max: 22
-              step: 0.5
+              min: 5
+              max: 25
+              step: 1
               unit_of_measurement: "°C"
               mode: slider
 
@@ -154,9 +154,9 @@ blueprint:
           default: 18
           selector:
             number:
-              min: 10
+              min: 5
               max: 25
-              step: 0.5
+              step: 1
               unit_of_measurement: "°C"
               mode: slider
 
