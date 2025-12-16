@@ -1,170 +1,174 @@
 # 🔈 Volume Control
 
-**Version:** 1.0
+[![version](https://img.shields.io/badge/version-1.0-blue.svg)](https://github.com/r3mco/blueprints)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
-This Home Assistant blueprint automates volume control for your media players based on a schedule. Perfect for automatically adjusting speaker volume during different times of the day (e.g., quiet hours at night, louder during the day).
+This blueprint automates volume control for your media players based on a schedule. Perfect for automatically adjusting speaker volume during different times of the day, like quiet hours at night or louder volume during the day! 🔊
 
-## 📋 Description
+## ✨ Features
 
-When your schedule changes state, this automation:
-1. 🗓️ Monitors your configured schedule entity
-2. 🔊 Increases volume when schedule turns ON
-3. 🔉 Decreases volume when schedule turns OFF
-4. 🎬 Optionally executes custom actions
+- 🗓️ **Schedule-Based Control** - Automatically adjusts volume based on your schedule
+- 🔊 **Dual Volume Levels** - Set different volumes for high and low periods
+- 📻 **Multi-Speaker Support** - Control multiple media players simultaneously
+- 🎬 **Custom Actions** - Execute additional actions when schedule changes
+- ⚙️ **Simple Configuration** - Easy slider-based volume settings
+- 🔄 **Single Mode** - Prevents overlapping executions
 
-## ✅ Requirements
+## 📋 Requirements
 
 Before using this blueprint, you need:
 
-### 1. 📻 Media Player Entities
-- One or more media player entities (speakers, receivers, etc.)
-- These must support the `media_player.volume_set` service
+1. **Media Player Entities** - One or more media players that support volume control
+2. **Schedule Helper** - A schedule entity to control timing
 
-### 2. 🗓️ Schedule Helper
-- A schedule helper entity to control timing
-- This determines when volume should be high or low
+### Setting Up a Schedule Helper
 
-**How to create a Schedule Helper:**
 1. Go to **Settings** → **Devices & Services** → **Helpers**
-2. Click **"+ CREATE HELPER"** → **Schedule**
-3. Name it (e.g., "Quiet Hours")
-4. Configure your time periods (when schedule is ON, volume will be high)
+2. Click **+ CREATE HELPER** → **Schedule**
+3. Name it (e.g., "Quiet Hours" or "Loud Hours")
+4. Configure your time periods:
+   - When schedule is **ON**: Volume will be set to "Volume Up Level"
+   - When schedule is **OFF**: Volume will be set to "Volume Down Level"
 
-📚 [More info about Schedules](https://www.home-assistant.io/integrations/schedule/)
+📚 [More information about schedules](https://www.home-assistant.io/integrations/schedule/)
 
 ## 🚀 Installation
 
-1. Navigate to **Settings** → **Automations & Scenes** → **Blueprints** in Home Assistant
-2. Click **"Import Blueprint"**
-3. Enter the URL:
+### Automatic Installation
+
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fvolumecontrol%2Fvolumecontrol.yaml)
+
+### Manual Installation
+
+1. In Home Assistant, navigate to **Settings** → **Automations & Scenes** → **Blueprints**
+2. Click the **Import Blueprint** button
+3. Enter the blueprint URL:
    ```
-   https://raw.githubusercontent.com/r3mcos3/blueprints/main/volumecontrol/volumecontrol.yaml
+   https://github.com/r3mcos3/blueprints/blob/main/volumecontrol/volumecontrol.yaml
    ```
-4. Click **"Preview"** and then **"Import Blueprint"**
+4. Click **Preview** and then **Import**
 
 ## ⚙️ Configuration
 
-### Required Settings
+When creating an automation from this blueprint, you'll configure:
 
-| Setting | Description | Example |
-|---------|-------------|---------|
-| 📻 Media Players | Speakers or media players to control | `media_player.living_room_speaker` |
-| 🗓️ Scheduler | Schedule entity that triggers volume changes | `schedule.quiet_hours` |
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| 📻 Media Players | Speakers or media players to control | - |
+| 🗓️ Scheduler | Schedule entity that triggers volume changes | - |
+| 🔊 Volume Up Level | Volume level when schedule turns ON (0.1-1.0) | 0.6 (60%) |
+| 🔈 Volume Down Level | Volume level when schedule turns OFF (0.1-1.0) | 0.2 (20%) |
+| 🎬 Custom Action | Optional additional action to execute | None |
 
-### Optional Settings
-
-| Setting | Description | Default |
-|---------|-------------|---------|
-| 🔊 Volume Up Level | Volume level when schedule turns ON | 0.6 (60%) |
-| 🔉 Volume Down Level | Volume level when schedule turns OFF | 0.2 (20%) |
-| 🎬 Custom Action | Additional action to execute on schedule change | None |
-
-## 🎯 How It Works
-
-### Schedule Turns ON
-- **Trigger:** Configured schedule changes to "on"
-- **Action:** Set media player volume to "Volume Up Level"
-- **Example:** At 8:00 AM, volume increases to 60%
-
-### Schedule Turns OFF
-- **Trigger:** Configured schedule changes to "off"
-- **Action:** Set media player volume to "Volume Down Level"
-- **Example:** At 10:00 PM, volume decreases to 20%
-
-### Custom Actions (Optional)
-- Executed whenever the schedule changes state (ON or OFF)
-- Can be used for additional automations like notifications, scenes, etc.
-
-## 💡 Tips
-
-- **Volume Levels:** Use 0.1-1.0 range (0.1 = 10%, 1.0 = 100%)
-- **Quiet Hours:** Create a schedule for nighttime to automatically lower volume
-- **Multiple Speakers:** Select multiple media players to control them all simultaneously
-- **Custom Actions:** Use this to trigger scenes, send notifications, or adjust other settings
-
-## 📖 Examples
+## 💡 Usage Examples
 
 ### Example 1: Nighttime Quiet Hours
-- **Schedule:** "Quiet Hours" (ON from 10:00 PM to 8:00 AM)
-- **Media Players:** All speakers in the house
-- **Volume Up:** 0.6 (60%) - During the day
-- **Volume Down:** 0.2 (20%) - During quiet hours
+
+Automatically lower volume during the night:
+
+```yaml
+Media Players: media_player.living_room, media_player.bedroom
+Scheduler: schedule.quiet_hours (ON from 10:00 PM to 8:00 AM)
+Volume Up Level: 0.6 (60%)
+Volume Down Level: 0.2 (20%)
+```
 
 Result: At 10 PM, all speakers lower to 20%. At 8 AM, they increase to 60%.
 
 ### Example 2: Weekend Party Mode
-- **Schedule:** "Weekend Daytime" (ON Sat-Sun 12:00 PM to 6:00 PM)
-- **Media Players:** Living room and kitchen speakers
-- **Volume Up:** 0.8 (80%) - Party time!
-- **Volume Down:** 0.4 (40%) - Normal listening
 
-Result: Weekend afternoons automatically boost volume for entertaining.
+Boost volume on weekend afternoons:
+
+```yaml
+Media Players: media_player.living_room, media_player.kitchen
+Scheduler: schedule.weekend_daytime (ON Sat-Sun 12:00 PM to 6:00 PM)
+Volume Up Level: 0.8 (80%)
+Volume Down Level: 0.4 (40%)
+```
+
+Result: Weekend afternoons automatically boost volume to 80% for entertaining, return to 40% after.
 
 ### Example 3: Work Focus Hours
-- **Schedule:** "Focus Time" (ON weekdays 9:00 AM to 5:00 PM)
-- **Media Players:** Office speaker
-- **Volume Up:** 0.3 (30%) - Quiet background music
-- **Volume Down:** 0.6 (60%) - Louder when not working
 
-Result: During work hours, office speaker stays quiet for concentration.
+Keep office speakers quiet during work hours:
+
+```yaml
+Media Players: media_player.office
+Scheduler: schedule.focus_time (ON weekdays 9:00 AM to 5:00 PM)
+Volume Up Level: 0.3 (30%)
+Volume Down Level: 0.6 (60%)
+```
+
+Result: During work hours, office speaker stays at 30% for concentration. Outside work hours, louder at 60%.
 
 ### Example 4: With Custom Action
-- **Schedule:** "Morning Routine" (ON at 7:00 AM)
-- **Volume Up:** 0.5
-- **Custom Action:** Turn on morning scene + send notification
 
-Result: At 7 AM, speakers increase volume AND your morning scene activates.
+Add scene activation when volume changes:
+
+```yaml
+Media Players: media_player.living_room
+Scheduler: schedule.morning_routine (ON at 7:00 AM)
+Volume Up Level: 0.5 (50%)
+Custom Action:
+  - service: scene.turn_on
+    target:
+      entity_id: scene.morning_lights
+  - service: notify.mobile_app
+    data:
+      message: "Good morning! Volume adjusted."
+```
+
+Result: At 7 AM, speaker volume increases AND morning scene activates with notification.
 
 ## 🔧 Troubleshooting
 
-### Volume doesn't change
-- Verify your media player supports `media_player.volume_set` service
-- Check that the schedule entity is working correctly
-- Test manually changing the schedule to see if it triggers
+### Volume Doesn't Change
 
-### Schedule not triggering
-- Ensure your schedule helper is properly configured
-- Check the schedule has active time periods defined
-- Look at Home Assistant logs for any errors
+1. Verify your media player supports `media_player.volume_set` service
+2. Check that the schedule entity is working correctly
+3. Test manually changing the schedule to see if it triggers
+4. Check Home Assistant logs for any errors
 
-### Wrong volume level
-- Volume uses 0.0-1.0 scale (not 0-100)
-- 0.5 = 50%, 0.8 = 80%, etc.
-- Verify your volume_up and volume_down settings
+### Schedule Not Triggering
 
-## 🎬 Custom Actions Examples
+1. Ensure your schedule helper is properly configured
+2. Verify the schedule has active time periods defined
+3. Check schedule state in Developer Tools → States
+4. Look at Home Assistant automation traces for debugging
 
-### Send Notification When Volume Changes
-```yaml
-service: notify.mobile_app
-data:
-  message: "Volume adjusted for {{ trigger.to_state.state }} period"
-```
+### Wrong Volume Level
 
-### Activate Scene When Schedule Starts
-```yaml
-service: scene.turn_on
-target:
-  entity_id: scene.evening_mode
-```
+1. Volume uses 0.0-1.0 scale (not 0-100)
+   - 0.1 = 10%
+   - 0.5 = 50%
+   - 1.0 = 100%
+2. Verify your volume_up and volume_down settings
+3. Some speakers may have hardware volume limits
 
-### Adjust Multiple Devices
-```yaml
-service: light.turn_on
-target:
-  entity_id: light.living_room
-data:
-  brightness_pct: 50
-```
+### Custom Action Not Executing
+
+1. Check that custom action syntax is correct
+2. Verify custom action is not set to empty/none
+3. Look at automation traces for action execution
+4. Check logs for any action-specific errors
 
 ## 📝 Version History
 
-- **1.0** (2025-12-15): Initial release with schedule-based volume control and custom action support
+### Version 1.0 (2025-12-15)
+- 🎉 Initial release
+- 🗓️ Schedule-based volume control
+- 🔊 Dual volume level support
+- 📻 Multi-speaker support
+- 🎬 Custom action integration
 
 ## 🤝 Contributing
 
-Found a bug or have a suggestion? Please open an issue on the [GitHub repository](https://github.com/r3mcos3/blueprints).
+Found a bug or have a suggestion? Please [open an issue](https://github.com/r3mcos3/blueprints/issues) on GitHub!
 
 ## 📄 License
 
-This blueprint is licensed under the MIT License.
+This blueprint is provided as-is under the MIT License.
+
+## 🙏 Credits
+
+Created by [r3mcos3](https://github.com/r3mcos3)
