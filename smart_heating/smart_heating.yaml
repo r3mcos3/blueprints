@@ -1,8 +1,8 @@
-# Version: 1.2.1
+# Version: 1.2.2
 blueprint:
   domain: automation
   name: "🔥 Smart Heating Controller"
-  author: r3mco
+  author: r3mcos3
   source_url: https://github.com/r3mcos3/blueprints/blob/main/smart_heating/smart_heating.yaml
   homeassistant:
     min_version: 2025.12.0
@@ -30,7 +30,7 @@ blueprint:
     - 📱 Optional notifications
 
 
-    📦 Version: 1.2.1
+    📦 Version: 1.2.2
 
   input:
     # ===== REQUIRED: CLIMATE ENTITY =====
