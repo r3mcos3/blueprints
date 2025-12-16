@@ -1,4 +1,4 @@
-# Version: 1.0.0
+# Version: 1.0.2
 blueprint:
   domain: automation
   name: "\U0001F514 Doorbell Chime"
@@ -21,7 +21,7 @@ blueprint:
     - ⏱️ Built-in cooldown (single mode)
 
 
-    📦 Version: 1.0.0
+    📦 Version: 1.0.2
 
   input:
     doorbell_sensor:
@@ -53,13 +53,12 @@ blueprint:
     media_file:
       name: "\U0001F3B5 Media File"
       description: >
-        `Optional`
+        `Required`
 
 
-        Path to the chime sound file. Default uses local media source.
-      default: "media-source://media_source/local/Chime.mp3"
+        Select the chime sound file from your media library.
       selector:
-        text:
+        media:
 
     chime_volume:
       name: "\U0001F509 Chime Volume"
@@ -217,9 +216,7 @@ action:
 
   - action: media_player.play_media
     target: !input media_players_target
-    data:
-      media_content_id: !input media_file
-      media_content_type: audio/mpeg
+    data: !input media_file
 
   - delay:
       seconds: 3
@@ -229,10 +226,10 @@ action:
         value_template: "{{ restore }}"
     then:
       - repeat:
-          for_each: "{{ original_volumes | dict2items }}"
+          for_each: "{{ player_entities }}"
           sequence:
             - action: media_player.volume_set
               target:
-                entity_id: "{{ repeat.item.key }}"
+                entity_id: "{{ repeat.item }}"
               data:
-                volume_level: "{{ repeat.item.value }}"
+                volume_level: "{{ original_volumes[repeat.item] }}"
