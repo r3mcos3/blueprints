@@ -1,0 +1,129 @@
+# Version: 1.0.0
+blueprint:
+  name: "⏰ Alarm Light"
+  description: >
+    📦 [Version 1.0.0] Turn on lights before your alarm goes off for a gentle
+    wake-up! Only triggers when you're home and it's dark outside. Perfect for
+    gradual morning lighting. 🌅
+  domain: automation
+  author: r3mcos3
+  source_url: https://github.com/r3mcos3/blueprints/blob/main/alarm_light/alarm_light.yaml
+  homeassistant:
+    min_version: 2025.12.0
+
+  input:
+    alarm_sensor:
+      name: ⏰ Next Alarm Sensor
+      description: >
+        The sensor that contains your next alarm time (must have device class 'timestamp').
+        For Android phones, this is typically sensor.PHONE_NAME_next_alarm.
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+              device_class: timestamp
+
+    person_entity:
+      name: 👤 Person
+      description: >
+        The person entity to check if home. Lights only turn on if this person
+        is at home when the alarm triggers.
+      selector:
+        entity:
+          domain: person
+
+    lights_target:
+      name: 💡 Target Lights
+      description: The lights to turn on before your alarm.
+      selector:
+        target:
+          entity:
+            domain: light
+
+    offset_before_alarm:
+      name: ⏱️ Offset Before Alarm
+      description: How many minutes before the alarm should the lights turn on?
+      default: "-00:10:00"
+      selector:
+        select:
+          options:
+            - label: 5 minutes before
+              value: "-00:05:00"
+            - label: 10 minutes before
+              value: "-00:10:00"
+            - label: 15 minutes before
+              value: "-00:15:00"
+            - label: 20 minutes before
+              value: "-00:20:00"
+            - label: 30 minutes before
+              value: "-00:30:00"
+            - label: 45 minutes before
+              value: "-00:45:00"
+            - label: 60 minutes before
+              value: "-01:00:00"
+          mode: dropdown
+
+    brightness_pct:
+      name: ✨ Brightness
+      description: The brightness percentage for the lights.
+      default: 33
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          unit_of_measurement: "%"
+          mode: slider
+
+    weekday_selection:
+      name: 📅 Active Days
+      description: Choose which days this automation should run.
+      default: "all"
+      selector:
+        select:
+          options:
+            - label: All Days
+              value: all
+            - label: Weekdays Only (Mon-Fri)
+              value: weekdays
+            - label: Weekends Only (Sat-Sun)
+              value: weekends
+          mode: dropdown
+
+mode: single
+max_exceeded: silent
+
+variables:
+  weekday_choice: !input weekday_selection
+
+trigger:
+  - trigger: time
+    at:
+      entity_id: !input alarm_sensor
+      offset: !input offset_before_alarm
+
+condition:
+  - condition: state
+    entity_id: !input person_entity
+    state: home
+  - condition: state
+    entity_id: sun.sun
+    state: below_horizon
+  - condition: template
+    value_template: >
+      {% set today = now().weekday() %}
+      {% if weekday_choice == 'all' %}
+        true
+      {% elif weekday_choice == 'weekdays' %}
+        {{ today < 5 }}
+      {% elif weekday_choice == 'weekends' %}
+        {{ today >= 5 }}
+      {% else %}
+        true
+      {% endif %}
+
+action:
+  - action: light.turn_on
+    target: !input lights_target
+    data:
+      brightness_pct: !input brightness_pct
