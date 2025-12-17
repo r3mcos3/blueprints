@@ -1,15 +1,18 @@
-# Version: 1.0.5
+# Version: 2.0.0
 blueprint:
   name: "🚗 AI - Parking Spot Counter"
-  description:
-    "📦 [Version 1.0.5] Analyzes camera feed with AI to count free and occupied parking
-    spaces upon arrival, updating sensors and sending a notification."
+  description: >
+    📦 [Version 2.0.0] Analyzes camera feed with AI to count free and occupied parking
+    spaces upon arrival. Supports 1 required + 4 optional zone detection points.
   domain: automation
   source_url: https://github.com/r3mcos3/blueprints/blob/main/ai_parking_counter/ai_parking_counter.yaml
   homeassistant:
     min_version: 2025.12.0
 
   input:
+    # ══════════════════════════════════════════════════════════════════════════
+    # 👤 PERSON & TRIGGER SETTINGS
+    # ══════════════════════════════════════════════════════════════════════════
     person_entity:
       name: 👤 Person
       description: The person entity to track for zone arrivals.
@@ -18,133 +21,282 @@ blueprint:
           domain: person
 
     zone_1:
-      name: 🏘️ Zone 1
-      description: First zone to monitor for arrival (e.g., zone.huibevendreef).
+      name: 🏘️ Zone 1 (Required)
+      description: Primary zone to monitor for arrival. This detection point is required.
       selector:
         entity:
           domain: zone
 
-    zone_2:
-      name: 🏘️ Zone 2
-      description: Second zone to monitor for arrival (e.g., zone.moerse_dreef).
-      selector:
-        entity:
-          domain: zone
+    proximity_settings:
+      name: 🧭 Proximity Settings
+      icon: mdi:compass
+      description: Optional proximity sensor to check travel direction.
+      collapsed: true
+      input:
+        proximity_sensor_enabled:
+          name: 🧭 Enable Proximity Sensor
+          description: Enable proximity direction check. Disable for easier testing.
+          default: false
+          selector:
+            boolean:
 
-    proximity_sensor:
-      name: 🧭 Proximity Direction Sensor
-      description: Proximity sensor that indicates direction of travel (should have state "towards" when approaching).
-      selector:
-        entity:
-          domain: sensor
+        proximity_sensor:
+          name: 🧭 Proximity Direction Sensor
+          description: Proximity sensor that indicates direction of travel (should have state "towards" when approaching).
+          default: sensor.home_nearest_direction_of_travel
+          selector:
+            entity:
+              domain: sensor
 
-    camera_entity:
-      name: 📷 Camera
-      description: Camera to analyze for parking spots (must support snapshot and streaming).
-      selector:
-        entity:
-          domain: camera
+    # ══════════════════════════════════════════════════════════════════════════
+    # 🏘️ OPTIONAL ZONES (COLLAPSED)
+    # ══════════════════════════════════════════════════════════════════════════
+    optional_zones:
+      name: 🏘️ Optional Zones (2-5)
+      icon: mdi:map-marker-multiple
+      description: Configure additional zones that trigger the parking scan.
+      collapsed: true
+      input:
+        zone_2_enabled:
+          name: 🏘️ Enable Zone 2
+          description: Enable second zone detection point.
+          default: false
+          selector:
+            boolean:
 
-    ai_task_entity:
-      name: 🤖 AI Task Entity
-      description: The AI task entity to use for image analysis (e.g., ai_task.google_ai_task).
-      selector:
-        entity:
-          domain: ai_task
+        zone_2:
+          name: 🏘️ Zone 2
+          description: Second zone to monitor for arrival.
+          default: zone.home
+          selector:
+            entity:
+              domain: zone
 
-    parking_spaces_total:
-      name: 🅿️ Total Parking Spaces
-      description: Total number of parking spaces to count (default is 3).
-      default: 3
-      selector:
-        number:
-          min: 1
-          max: 10
-          mode: slider
+        zone_3_enabled:
+          name: 🏘️ Enable Zone 3
+          description: Enable third zone detection point.
+          default: false
+          selector:
+            boolean:
 
-    free_spots_sensor:
-      name: 🟢 Free Spots Sensor
-      description: Input number entity to store the count of free parking spots.
-      selector:
-        entity:
-          domain: input_number
+        zone_3:
+          name: 🏘️ Zone 3
+          description: Third zone to monitor for arrival.
+          default: zone.home
+          selector:
+            entity:
+              domain: zone
 
-    occupied_spots_sensor:
-      name: 🔴 Occupied Spots Sensor
-      description: Input number entity to store the count of occupied parking spots.
-      selector:
-        entity:
-          domain: input_number
+        zone_4_enabled:
+          name: 🏘️ Enable Zone 4
+          description: Enable fourth zone detection point.
+          default: false
+          selector:
+            boolean:
 
-    telegram_bot:
-      name: 📱 Telegram Bot
-      description: >
-        Select your Telegram bot. Leave empty to disable notifications.
-      default: {}
-      selector:
-        config_entry:
-          integration: telegram_bot
+        zone_4:
+          name: 🏘️ Zone 4
+          description: Fourth zone to monitor for arrival.
+          default: zone.home
+          selector:
+            entity:
+              domain: zone
 
-    telegram_message:
-      name: 💬 Telegram Message
-      description: >
-        Message to send via Telegram. Use {free_spots} as placeholder for number of free parking spots.
-        Only sent when Telegram Bot is selected.
-      default: "There are {free_spots} free parking spots 🚗 available! 🚪"
-      selector:
-        text:
-          multiline: true
+        zone_5_enabled:
+          name: 🏘️ Enable Zone 5
+          description: Enable fifth zone detection point.
+          default: false
+          selector:
+            boolean:
 
-    telegram_title:
-      name: 🏷️ Telegram Title (Optional)
-      description: >
-        Optional title for the Telegram notification. Leave empty for no title.
-      default: ""
-      selector:
-        text:
+        zone_5:
+          name: 🏘️ Zone 5
+          description: Fifth zone to monitor for arrival.
+          default: zone.home
+          selector:
+            entity:
+              domain: zone
 
-    snapshot_enabled:
-      name: 📸 Save Snapshot
-      description: Save a camera snapshot when analyzing parking spots.
-      default: true
-      selector:
-        boolean:
+    # ══════════════════════════════════════════════════════════════════════════
+    # 🤖 AI & CAMERA SETTINGS (COLLAPSED)
+    # ══════════════════════════════════════════════════════════════════════════
+    ai_settings:
+      name: 🤖 AI & Camera Settings
+      icon: mdi:robot
+      description: Configure camera and AI for parking analysis.
+      collapsed: true
+      input:
+        camera_entity:
+          name: 📷 Camera
+          description: Camera to analyze for parking spots (must support snapshot and streaming).
+          default: camera.front_door
+          selector:
+            entity:
+              domain: camera
 
-    snapshot_path:
-      name: 🗂️ Snapshot Path
-      description: File path to save the snapshot (e.g., /config/www/parking_spot.jpg).
-      default: "/config/www/parking_spot.jpg"
-      selector:
-        text:
+        ai_task_entity:
+          name: 🤖 AI Task Entity
+          description: AI task entity for image analysis (e.g., ai_task.google_ai_task).
+          default: ai_task.google_ai_task
+          selector:
+            entity:
+              domain: ai_task
 
-    ai_instructions:
-      name: 📝 AI Instructions (Optional)
-      description: >
-        Custom instructions for the AI to analyze parking spots.
-        Leave empty to use default instructions. Use {total_spaces} as placeholder for total spaces.
-      default: ""
-      selector:
-        text:
-          multiline: true
+        ai_instructions:
+          name: 📝 AI Instructions
+          description: >
+            Custom instructions for the AI to analyze parking spots.
+            Leave empty to use default instructions. Use {total_spaces} as placeholder.
+          default: ""
+          selector:
+            text:
+              multiline: true
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 🅿️ PARKING SETTINGS (COLLAPSED)
+    # ══════════════════════════════════════════════════════════════════════════
+    parking_settings:
+      name: 🅿️ Parking Settings
+      icon: mdi:parking
+      description: Configure parking spaces and sensors.
+      collapsed: true
+      input:
+        parking_spaces_total:
+          name: 🅿️ Total Parking Spaces
+          description: Total number of parking spaces to count.
+          default: 3
+          selector:
+            number:
+              min: 1
+              max: 20
+              mode: slider
+
+        free_spots_sensor:
+          name: 🟢 Free Spots Sensor
+          description: Input number entity to store the count of free parking spots.
+          default: input_number.free_parking_spots
+          selector:
+            entity:
+              domain: input_number
+
+        occupied_spots_sensor:
+          name: 🔴 Occupied Spots Sensor
+          description: Input number entity to store the count of occupied parking spots.
+          default: input_number.occupied_parking_spots
+          selector:
+            entity:
+              domain: input_number
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 📱 NOTIFICATION SETTINGS (COLLAPSED)
+    # ══════════════════════════════════════════════════════════════════════════
+    notification_settings:
+      name: 📱 Notification Settings
+      icon: mdi:bell
+      description: Configure Telegram notifications.
+      collapsed: true
+      input:
+        telegram_bot:
+          name: 📱 Telegram Bot
+          description: Select your Telegram bot. Leave empty to disable notifications.
+          default: {}
+          selector:
+            config_entry:
+              integration: telegram_bot
+
+        telegram_message:
+          name: 💬 Telegram Message
+          description: >
+            Message to send via Telegram. Use {free_spots} as placeholder.
+          default: "There are {free_spots} free parking spots 🚗 available! 🚪"
+          selector:
+            text:
+              multiline: true
+
+        telegram_title:
+          name: 🏷️ Telegram Title
+          description: Optional title for the Telegram notification.
+          default: ""
+          selector:
+            text:
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 📸 SNAPSHOT SETTINGS (COLLAPSED)
+    # ══════════════════════════════════════════════════════════════════════════
+    snapshot_settings:
+      name: 📸 Snapshot Settings
+      icon: mdi:camera
+      description: Configure camera snapshot saving.
+      collapsed: true
+      input:
+        snapshot_enabled:
+          name: 📸 Save Snapshot
+          description: Save a camera snapshot when analyzing parking spots.
+          default: true
+          selector:
+            boolean:
+
+        snapshot_path:
+          name: 🗂️ Snapshot Path
+          description: File path to save the snapshot.
+          default: "/config/www/parking_spot.jpg"
+          selector:
+            text:
 
 mode: single
 
+# Variables for use in triggers and conditions
+trigger_variables:
+  _zone_2_enabled: !input zone_2_enabled
+  _zone_3_enabled: !input zone_3_enabled
+  _zone_4_enabled: !input zone_4_enabled
+  _zone_5_enabled: !input zone_5_enabled
+  _proximity_enabled: !input proximity_sensor_enabled
+  _proximity_sensor: !input proximity_sensor
+
 trigger:
+  # Zone 1 (Required - always active)
   - platform: zone
     entity_id: !input person_entity
     zone: !input zone_1
     event: enter
     id: zone_1_enter
+
+  # Zone 2 (Optional)
   - platform: zone
     entity_id: !input person_entity
     zone: !input zone_2
     event: enter
     id: zone_2_enter
+    enabled: "{{ _zone_2_enabled }}"
+
+  # Zone 3 (Optional)
+  - platform: zone
+    entity_id: !input person_entity
+    zone: !input zone_3
+    event: enter
+    id: zone_3_enter
+    enabled: "{{ _zone_3_enabled }}"
+
+  # Zone 4 (Optional)
+  - platform: zone
+    entity_id: !input person_entity
+    zone: !input zone_4
+    event: enter
+    id: zone_4_enter
+    enabled: "{{ _zone_4_enabled }}"
+
+  # Zone 5 (Optional)
+  - platform: zone
+    entity_id: !input person_entity
+    zone: !input zone_5
+    event: enter
+    id: zone_5_enter
+    enabled: "{{ _zone_5_enabled }}"
 
 condition:
-  - condition: state
-    entity_id: !input proximity_sensor
-    state: towards
+  - condition: template
+    value_template: "{{ not _proximity_enabled or states(_proximity_sensor) == 'towards' }}"
 
 action:
   - variables:
@@ -200,7 +352,6 @@ action:
             - media_content_type: app
               media_content_id: media-source://camera
     response_variable: parking_result
-    enabled: true
 
   - alias: Update free parking spots
     action: input_number.set_value

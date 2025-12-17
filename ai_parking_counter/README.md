@@ -1,6 +1,6 @@
 # 🚗 AI Parking Spot Counter
 
-[![version](https://img.shields.io/badge/version-1.0.5-blue.svg)](https://github.com/r3mco/blueprints)
+[![version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/r3mco/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 This blueprint automatically uses AI to analyze camera feeds and count free and occupied parking spaces when you arrive home. Perfect for keeping track of available parking spots in front of your house! 🅿️
@@ -9,22 +9,24 @@ This blueprint automatically uses AI to analyze camera feeds and count free and 
 
 - 🤖 **AI-Powered Analysis** - Uses your AI integration to intelligently count parking spaces
 - 📷 **Camera Integration** - Works with any Home Assistant camera that supports snapshots
-- 🧭 **Direction-Aware** - Only triggers when approaching home (not when leaving)
+- 🏘️ **Multiple Zones** - 1 required + 4 optional zone detection points
+- 🧭 **Optional Proximity Check** - Only trigger when approaching home (configurable)
 - 💾 **Automatic Updates** - Updates sensor entities with free and occupied counts
 - 📱 **Telegram Notifications** - Optional notifications with customizable messages
 - 📸 **Snapshot Storage** - Optionally save camera snapshots for review
 - 🎯 **Flexible Configuration** - Customize AI instructions and parking space count
+- 📦 **Collapsed Sections** - Clean UI with organized, collapsible input sections
 
 ## 📋 Requirements
 
 Before using this blueprint, you need:
 
-1. **AI Task Integration** - The AI Task integration configured with a provider (e.g., OpenAI, Google Generative AI, Anthropic)
+1. **AI Task Integration** - The AI Task integration configured with a provider (e.g., Google Generative AI, Anthropic)
 2. **Camera Entity** - A camera that supports snapshots and has a clear view of parking spaces
 3. **Person Entity** - A person entity to track for arrivals
 4. **Zone Entities** - At least one zone entity to monitor for arrivals
-5. **Proximity Sensor** - A proximity sensor that indicates direction of travel
-6. **Input Number Helpers** - Two helpers to store free and occupied counts
+5. **Input Number Helpers** - Two helpers to store free and occupied counts
+6. **Proximity Sensor** (Optional) - A proximity sensor that indicates direction of travel
 
 ### Setting Up Input Number Helpers
 
@@ -38,7 +40,7 @@ Before using this blueprint, you need:
      - Min: 0
      - Max: (your total parking spaces)
 
-### Setting Up Proximity Sensor
+### Setting Up Proximity Sensor (Optional)
 
 Create a proximity sensor to track direction of travel. See [Home Assistant Proximity documentation](https://www.home-assistant.io/integrations/proximity/).
 
@@ -62,23 +64,57 @@ Create a proximity sensor to track direction of travel. See [Home Assistant Prox
 
 When creating an automation from this blueprint, you'll configure:
 
+### Main Settings (Always Visible)
+
+| Parameter | Description | Required |
+|-----------|-------------|----------|
+| 👤 Person | Person entity to track for zone arrivals | Yes |
+| 🏘️ Zone 1 | Primary zone to monitor for arrival | Yes |
+
+### 🧭 Proximity Settings (Collapsed)
+
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| 👤 Person | Person entity to track for zone arrivals | - |
-| 🏘️ Zone 1 | First zone to monitor for arrival | - |
-| 🏘️ Zone 2 | Second zone to monitor for arrival | - |
-| 🧭 Proximity Direction Sensor | Proximity sensor (should be "towards" when approaching) | - |
-| 📷 Camera | Camera to analyze for parking spots | - |
-| 🤖 AI Task Entity | AI entity for image analysis | - |
-| 🅿️ Total Parking Spaces | Total number of parking spaces | 3 |
+| Enable Proximity Sensor | Enable/disable proximity direction check | false |
+| Proximity Direction Sensor | Proximity sensor (should be "towards" when approaching) | - |
+
+### 🏘️ Optional Zones 2-5 (Collapsed)
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| Enable Zone 2-5 | Enable/disable each additional zone | false |
+| Zone 2-5 | Additional zones to monitor for arrival | zone.home |
+
+### 🤖 AI & Camera Settings (Collapsed)
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| 📷 Camera | Camera to analyze for parking spots | camera.front_door |
+| 🤖 AI Task Entity | AI entity for image analysis | ai_task.google_ai_task |
+| 📝 AI Instructions | Custom AI instructions (use {total_spaces} placeholder) | "" |
+
+### 🅿️ Parking Settings (Collapsed)
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| 🅿️ Total Parking Spaces | Total number of parking spaces (1-20) | 3 |
 | 🟢 Free Spots Sensor | Input number entity for free spots count | - |
 | 🔴 Occupied Spots Sensor | Input number entity for occupied spots count | - |
+
+### 📱 Notification Settings (Collapsed)
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
 | 📱 Telegram Bot | Optional Telegram bot for notifications | None |
 | 💬 Telegram Message | Message to send (use {free_spots} placeholder) | "There are {free_spots} free parking spots 🚗 available! 🚪" |
 | 🏷️ Telegram Title | Optional title for notifications | "" |
+
+### 📸 Snapshot Settings (Collapsed)
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
 | 📸 Save Snapshot | Whether to save camera snapshot | true |
 | 🗂️ Snapshot Path | File path to save snapshot | /config/www/parking_spot.jpg |
-| 📝 AI Instructions | Custom AI instructions (use {total_spaces} placeholder) | "" |
 
 ## 💡 Usage Examples
 
@@ -120,6 +156,7 @@ Analyze this image of my driveway. There are {total_spaces} parking spots visibl
 2. Verify the camera has a clear view of all parking spaces
 3. Improve lighting conditions if analyzing at night
 4. Try customizing the AI instructions to be more specific
+5. Note: OpenAI may have issues with camera attachments - Google AI is recommended
 
 ### Notification Not Sending
 
@@ -140,7 +177,21 @@ Analyze this image of my driveway. There are {total_spaces} parking spots visibl
 3. Adjust total parking spaces setting
 4. Test during different times of day for consistency
 
+### Trigger Not Working
+
+1. Verify your zone is correctly configured
+2. Check if the person entity is tracking correctly
+3. If using proximity sensor, ensure it's enabled and showing "towards" when approaching
+4. For testing, disable the proximity sensor check
+
 ## 📝 Version History
+
+### Version 2.0.0 (2025-12-17)
+- 🏘️ Support for 1 required + 4 optional zone detection points
+- 🧭 Proximity sensor now optional (with enable toggle)
+- 📦 Organized UI with collapsed input sections
+- 🎯 Increased max parking spaces from 10 to 20
+- 📌 Requires Home Assistant 2025.12.0+
 
 ### Version 1.0.5 (2025-12-15)
 - 🌐 Translate default Telegram message to English
