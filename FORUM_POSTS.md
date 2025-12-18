@@ -304,6 +304,67 @@ Automate volume control for all your speakers!
 
 ---
 
+## 8. 🔄 Update Notifications
+
+**Title:** `🔄 Update Notifications - Get notified about HA updates via Telegram`
+
+**Tags:** `automation`, `telegram`, `notification`, `update`
+
+**Post:**
+
+```markdown
+# Update Notifications 🔄
+
+Get notified about Home Assistant updates via Telegram with actionable buttons!
+
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fupdate_notifications%2Fupdate_notifications.yaml)
+
+## Features
+
+- 🔔 **Update Alerts** - Notifications when updates are available
+- ✅ **Completion Notifications** - Know when updates finish
+- 🔁 **Periodic Reminders** - Configurable reminders for pending updates
+- 🎛️ **Inline Actions** - Install or skip directly from Telegram
+- ⚙️ **Config Check** - Run config check before core updates
+- 💾 **Backup Support** - Create backup before updating
+- 📋 **Changelog Links** - Quick access to release notes
+
+## Requirements
+
+- Home Assistant 2025.12.0+
+- Telegram Bot integration
+- Update entities to monitor
+
+## Notification Examples
+
+**New Update:**
+```
+🆕 Home Assistant Core
+📦 New version: 2025.12.1
+📌 Installed: 2025.12.0
+[✅ Install] [⏭️ Skip]
+```
+
+**Reminder:**
+```
+🔔 Update Reminder
+You have 3 pending updates:
+• Home Assistant Core → 2025.12.1
+• ESPHome → 2024.12.0
+• HACS → 2.0.1
+```
+
+## GitHub
+
+[GitHub Repository](https://github.com/r3mcos3/blueprints/tree/main/update_notifications)
+
+## Note
+
+The inline keyboard buttons require separate callback handler automations. See the README for setup instructions.
+```
+
+---
+
 # Tips voor het posten
 
 1. **Eén post per blueprint** - Maak een aparte post voor elke blueprint
