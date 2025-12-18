@@ -1,8 +1,8 @@
-# Version: 1.0.0
+# Version: 2.0.0
 blueprint:
   name: "🔄 Update Notifications"
   description: >
-    📦 [Version 1.0.0] Get notified about Home Assistant updates via Telegram!
+    📦 [Version 2.0.0] Get notified about Home Assistant updates via Mobile App!
     Receive notifications when updates are available for core, addons, or integrations.
     Includes actionable buttons to install or skip updates directly from the notification. 🚀
   domain: automation
@@ -30,15 +30,17 @@ blueprint:
     notification_settings:
       name: 📱 Notification Settings
       icon: mdi:bell
-      description: Configure Telegram notifications.
+      description: Configure notification settings.
       collapsed: true
       input:
-        telegram_bot:
-          name: 📱 Telegram Bot
-          description: Select your Telegram bot for notifications.
+        mobile_app_device:
+          name: 📱 Mobile Device
+          description: Select your mobile device(s) for notifications.
+          default: []
           selector:
-            config_entry:
-              integration: telegram_bot
+            device:
+              integration: mobile_app
+              multiple: true
 
         send_to_ha:
           name: 🏠 Send to HA
@@ -192,8 +194,21 @@ trigger:
         {{ false }}
       {% endif %}
 
+  # Mobile app callback for install/skip buttons
+  - id: mobile_callback
+    platform: event
+    event_type: mobile_app_notification_action
+    event_data:
+      action: install_update
+
+  - id: mobile_callback_skip
+    platform: event
+    event_type: mobile_app_notification_action
+    event_data:
+      action: skip_update
+
 variables:
-  telegram_bot: !input telegram_bot
+  mobile_app_device: !input mobile_app_device
   send_to_ha: !input send_to_ha
   take_backup: !input take_backup
   _changelog_urls: !input changelog_urls
@@ -208,6 +223,9 @@ variables:
           if (device_attr(u, 'identifiers') | first)[1] == 'OS' %}
         {{ u }}
     {% endfor %}
+  # Callback variables - Mobile App
+  callback_entity_id: "{{ trigger.event.data.action_data.entity_id | default('') if trigger.id in ['mobile_callback', 'mobile_callback_skip'] else '' }}"
+  callback_friendly_name: "{{ state_attr(callback_entity_id, 'friendly_name') | default(callback_entity_id, true) }}"
 
 action:
   choose:
@@ -221,12 +239,16 @@ action:
             entity_id: "{{ trigger.entity_id }}"
             friendly_name: "{{ state_attr(trigger.entity_id, 'friendly_name') }}"
 
-        - alias: Send completion notification
-          action: telegram_bot.send_message
-          data:
-            config_entry_id: "{{ telegram_bot }}"
-            message: "✅ *{{ friendly_name }}* update completed!"
-            parse_mode: markdown
+        - alias: Send Mobile App completion notification
+          repeat:
+            for_each: "{{ mobile_app_device }}"
+            sequence:
+              - action: notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}
+                data:
+                  title: "✅ Update Complete"
+                  message: "{{ friendly_name }} update completed!"
+                  data:
+                    tag: "update_{{ entity_id }}"
 
         - alias: Dismiss HA notification if enabled
           if:
@@ -260,34 +282,27 @@ action:
           after: !input only_after
           before: !input only_before
 
-        - alias: Send Telegram notification
-          action: telegram_bot.send_message
-          data:
-            config_entry_id: "{{ telegram_bot }}"
-            title: "🔄 Update Available"
-            message: >
-              🆕 *{{ friendly_name }}*
-
-              📦 New version: `{{ latest_version }}`
-              📌 Installed: `{{ installed_version }}`
-              {% if release_summary %}
-
-              📝 {{ release_summary | truncate(200) }}
-              {% endif %}
-              {% if release_url %}
-
-              🔗 [View Changelog]({{ release_url }})
-              {% endif %}
-              {% if include_core_check %}
-
-              ⚙️ Config check started...
-              {% endif %}
-            parse_mode: markdown
-            inline_keyboard:
-              - - text: "✅ Install"
-                  callback_data: "/install_update {{ entity_id }}"
-                - text: "⏭️ Skip"
-                  callback_data: "/skip_update {{ entity_id }}"
+        - alias: Send Mobile App notification
+          repeat:
+            for_each: "{{ mobile_app_device }}"
+            sequence:
+              - action: notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}
+                data:
+                  title: "🔄 {{ friendly_name }}"
+                  message: >
+                    📦 {{ latest_version }} (installed: {{ installed_version }})
+                    {% if release_summary %}{{ release_summary | truncate(100) }}{% endif %}
+                  data:
+                    actions:
+                      - action: install_update
+                        title: "✅ Install"
+                      - action: skip_update
+                        title: "⏭️ Skip"
+                    action_data:
+                      entity_id: "{{ entity_id }}"
+                    url: "{{ release_url if release_url else '/config/updates' }}"
+                    clickAction: "{{ release_url if release_url else '/config/updates' }}"
+                    tag: "update_{{ entity_id }}"
 
         - alias: Send to HA if enabled
           if:
@@ -335,12 +350,16 @@ action:
           after: !input only_after
           before: !input only_before
 
-        - alias: Send updating notification
-          action: telegram_bot.send_message
-          data:
-            config_entry_id: "{{ telegram_bot }}"
-            message: "⏳ *{{ friendly_name }}* is updating..."
-            parse_mode: markdown
+        - alias: Send Mobile App updating notification
+          repeat:
+            for_each: "{{ mobile_app_device }}"
+            sequence:
+              - action: notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}
+                data:
+                  title: "⏳ Updating..."
+                  message: "{{ friendly_name }} is updating..."
+                  data:
+                    tag: "update_{{ entity_id }}"
 
     # ════════════════════════════════════════════════════════════════════════
     # CONFIG CHECK COMPLETED
@@ -358,20 +377,23 @@ action:
           after: !input only_after
           before: !input only_before
 
-        - alias: Send config check complete notification
-          action: telegram_bot.send_message
-          data:
-            config_entry_id: "{{ telegram_bot }}"
-            message: >
-              ✅ *Config check completed* for {{ friendly_name }} {{ latest_version }}
-
-              Check the addon logs for results before updating.
-            parse_mode: markdown
-            inline_keyboard:
-              - - text: "✅ Install"
-                  callback_data: "/install_update {{ entity_id }}"
-                - text: "⏭️ Skip"
-                  callback_data: "/skip_update {{ entity_id }}"
+        - alias: Send Mobile App config check notification
+          repeat:
+            for_each: "{{ mobile_app_device }}"
+            sequence:
+              - action: notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}
+                data:
+                  title: "✅ Config Check Complete"
+                  message: "{{ friendly_name }} {{ latest_version }} - Check addon logs before updating"
+                  data:
+                    actions:
+                      - action: install_update
+                        title: "✅ Install"
+                      - action: skip_update
+                        title: "⏭️ Skip"
+                    action_data:
+                      entity_id: "{{ entity_id }}"
+                    tag: "config_check_{{ entity_id }}"
 
     # ════════════════════════════════════════════════════════════════════════
     # HA STARTUP - DISMISS OLD NOTIFICATIONS
@@ -421,14 +443,78 @@ action:
             - condition: template
               value_template: "{{ update_count > 0 }}"
           then:
-            - action: telegram_bot.send_message
-              data:
-                config_entry_id: "{{ telegram_bot }}"
-                message: >
-                  🔔 *Update Reminder*
+            - repeat:
+                for_each: "{{ mobile_app_device }}"
+                sequence:
+                  - variables:
+                      device_name: "{{ device_attr(repeat.item, 'name') | slugify }}"
+                  - repeat:
+                      for_each: "{{ pending_updates }}"
+                      sequence:
+                        - action: "notify.mobile_app_{{ device_name }}"
+                          data:
+                            title: "🔔 Update Reminder"
+                            message: >
+                              {{ state_attr(repeat.item, 'friendly_name') }}
+                              📦 {{ state_attr(repeat.item, 'latest_version') }}
+                            data:
+                              actions:
+                                - action: install_update
+                                  title: "✅ Install"
+                                - action: skip_update
+                                  title: "⏭️ Skip"
+                              action_data:
+                                entity_id: "{{ repeat.item }}"
+                              tag: "reminder_{{ repeat.item }}"
 
-                  You have {{ update_count }} pending update{{ 's' if update_count > 1 else '' }}:
-                  {% for entity_id in pending_updates %}
-                  • {{ state_attr(entity_id, 'friendly_name') }} → {{ state_attr(entity_id, 'latest_version') }}
-                  {% endfor %}
-                parse_mode: markdown
+    # ════════════════════════════════════════════════════════════════════════
+    # MOBILE APP CALLBACK - INSTALL UPDATE
+    # ════════════════════════════════════════════════════════════════════════
+    - alias: Handle Mobile App install callback
+      conditions: "{{ trigger.id == 'mobile_callback' }}"
+      sequence:
+        - alias: Check if entity_id is valid
+          if:
+            - condition: template
+              value_template: "{{ callback_entity_id == '' or states(callback_entity_id) == 'unknown' }}"
+          then:
+            - stop: "Invalid update entity"
+          else:
+            - alias: Check if update is still available
+              if:
+                - condition: template
+                  value_template: "{{ states(callback_entity_id) == 'off' }}"
+              then:
+                - stop: "Already up to date"
+              else:
+                - alias: Install the update
+                  action: update.install
+                  target:
+                    entity_id: "{{ callback_entity_id }}"
+                  data:
+                    backup: "{{ take_backup }}"
+
+    # ════════════════════════════════════════════════════════════════════════
+    # MOBILE APP CALLBACK - SKIP UPDATE
+    # ════════════════════════════════════════════════════════════════════════
+    - alias: Handle Mobile App skip callback
+      conditions: "{{ trigger.id == 'mobile_callback_skip' }}"
+      sequence:
+        - alias: Check if entity_id is valid
+          if:
+            - condition: template
+              value_template: "{{ callback_entity_id == '' or states(callback_entity_id) == 'unknown' }}"
+          then:
+            - stop: "Invalid update entity"
+          else:
+            - alias: Check if update is still available
+              if:
+                - condition: template
+                  value_template: "{{ states(callback_entity_id) == 'off' }}"
+              then:
+                - stop: "Already up to date"
+              else:
+                - alias: Skip the update
+                  action: update.skip
+                  target:
+                    entity_id: "{{ callback_entity_id }}"

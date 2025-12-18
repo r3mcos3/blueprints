@@ -1,12 +1,13 @@
 # 🔄 Update Notifications
 
-[![version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
-Get notified about Home Assistant updates via Telegram! Receive notifications when updates are available for core, addons, or integrations with actionable buttons to install or skip updates directly from the notification. 🚀
+Get notified about Home Assistant updates via Mobile App! Receive notifications when updates are available for core, addons, or integrations with actionable buttons to install or skip updates directly from the notification. 🚀
 
 ## ✨ Features
 
+- 📱 **Mobile Notifications** - Get notified on your iOS or Android device
 - 🔔 **Update Alerts** - Get notified when new updates are available
 - ✅ **Completion Notifications** - Know when updates finish installing
 - ⏳ **Progress Updates** - See when updates start
@@ -15,20 +16,20 @@ Get notified about Home Assistant updates via Telegram! Receive notifications wh
 - ⚙️ **Config Check** - Automatically run config check before core updates
 - 💾 **Backup Support** - Option to create backup before updating
 - 📋 **Changelog Links** - Quick access to release notes
-- 🎛️ **Inline Actions** - Install or skip updates directly from Telegram
+- 🎛️ **Actionable Buttons** - Install or skip updates directly from notifications
 
 ## 📋 Requirements
 
 Before using this blueprint, you need:
 
-1. **Telegram Bot Integration** - A configured Telegram bot in Home Assistant
+1. **Mobile App** - Home Assistant Companion App on iOS or Android
 2. **Update Entities** - The update entities you want to monitor (core, addons, integrations)
 
-### Setting Up Telegram Bot
+### Setting Up Mobile App
 
-1. Create a bot via [@BotFather](https://t.me/botfather) on Telegram
-2. Add the [Telegram Bot integration](https://www.home-assistant.io/integrations/telegram_bot/) to Home Assistant
-3. Configure your chat ID and bot token
+1. Install the [Home Assistant Companion App](https://companion.home-assistant.io/) on your device
+2. Sign in and connect to your Home Assistant instance
+3. The mobile device will automatically appear in the blueprint selector
 
 ## 🚀 Installation
 
@@ -58,7 +59,7 @@ Before using this blueprint, you need:
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| 📱 Telegram Bot | Telegram bot for notifications | - |
+| 📱 Mobile Device | Mobile device(s) for notifications | - |
 | 🏠 Send to HA | Also send persistent notifications in HA | false |
 
 ### ⏰ Reminder Settings (Collapsed)
@@ -77,51 +78,17 @@ Before using this blueprint, you need:
 | ✅ Run Config Check | Run config check for core updates | false |
 | 📋 Custom Changelog URLs | Custom URLs for entities without changelogs | {} |
 
-## 🎛️ Telegram Callback Actions
+## 🎛️ Actionable Notifications
 
-The blueprint sends notifications with inline keyboard buttons. To make these buttons work, you need to create a separate automation to handle the callbacks:
+The blueprint includes built-in callback handling for actionable buttons. When you press a button:
 
-### Install Update Handler
+- ✅ **Install** - Starts the update with optional backup (configured in Advanced Settings)
+- ⏭️ **Skip** - Skips the current version of the update
 
-```yaml
-automation:
-  - alias: "Handle Telegram Install Update"
-    trigger:
-      - platform: event
-        event_type: telegram_callback
-        event_data:
-          command: "/install_update"
-    action:
-      - action: telegram_bot.answer_callback_query
-        data:
-          callback_query_id: "{{ trigger.event.data.id }}"
-          message: "Starting update..."
-      - action: update.install
-        target:
-          entity_id: "{{ trigger.event.data.args[0] }}"
-        data:
-          backup: true
-```
-
-### Skip Update Handler
-
-```yaml
-automation:
-  - alias: "Handle Telegram Skip Update"
-    trigger:
-      - platform: event
-        event_type: telegram_callback
-        event_data:
-          command: "/skip_update"
-    action:
-      - action: telegram_bot.answer_callback_query
-        data:
-          callback_query_id: "{{ trigger.event.data.id }}"
-          message: "Update skipped"
-      - action: update.skip
-        target:
-          entity_id: "{{ trigger.event.data.args[0] }}"
-```
+Features:
+- Notifications include actionable buttons for Install/Skip
+- Tapping the notification opens the changelog or updates page
+- Each update gets a unique notification tag for proper handling
 
 ## 💡 Usage Examples
 
@@ -137,7 +104,8 @@ automation:
           - update.home_assistant_core_update
           - update.home_assistant_operating_system_update
           - update.home_assistant_supervisor_update
-        telegram_bot: <your_telegram_bot_config_entry>
+        mobile_app_device:
+          - <your_mobile_device_id>
         reminder_hours: "6"
 ```
 
@@ -151,7 +119,8 @@ automation:
       input:
         update_entities:
           - update.home_assistant_core_update
-        telegram_bot: <your_telegram_bot_config_entry>
+        mobile_app_device:
+          - <your_mobile_device_id>
         run_config_check: true
         take_backup: true
 ```
@@ -168,7 +137,8 @@ automation:
       input:
         update_entities:
           - update.my_custom_addon
-        telegram_bot: <your_telegram_bot_config_entry>
+        mobile_app_device:
+          - <your_mobile_device_id>
         changelog_urls:
           update.my_custom_addon: "https://github.com/user/addon/releases"
 ```
@@ -177,16 +147,17 @@ automation:
 
 ### Notifications Not Sending
 
-1. Verify your Telegram bot is configured correctly
-2. Check that you've selected the correct bot in the blueprint
+1. Verify the Companion App is connected and working
+2. Check that you've selected the correct device in the blueprint
 3. Ensure the time is within your configured notification window
 4. Check Home Assistant logs for errors
 
 ### Buttons Not Working
 
-1. Make sure you've created the callback handler automations (see above)
-2. Verify the `telegram_callback` event is being received
-3. Check that the entity_id in the callback is correct
+1. Verify the Companion App is connected and working
+2. Check that `mobile_app_notification_action` events are being received in Developer Tools → Events
+3. Ensure the correct device is selected in the blueprint
+4. Ensure the automation is enabled and not paused
 
 ### Reminders Not Triggering
 
@@ -201,6 +172,20 @@ automation:
 3. Make sure the Check Configuration addon is installed
 
 ## 📝 Version History
+
+### Version 2.0.0 (2025-12-18)
+- 📱 Simplified to Mobile App notifications only
+- 🎛️ Actionable notifications with Install/Skip buttons
+- 📱 Multiple mobile device support
+- 🔄 Removed Telegram support for simplicity
+
+### Version 1.2.0 (2025-12-18)
+- 🎛️ Added inline keyboard buttons to reminder notifications
+- 📋 Each pending update now has its own Install/Skip buttons
+
+### Version 1.1.0 (2025-12-18)
+- 🔄 Merged callback handler into main blueprint (single blueprint)
+- 🎛️ Built-in handling for Install/Skip buttons
 
 ### Version 1.0.0 (2025-12-18)
 - 🎉 Initial release
