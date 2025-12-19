@@ -1,8 +1,8 @@
-# Version: 2.2.0
+# Version: 2.3.0
 blueprint:
   name: "🔄 Update Notifications"
   description: >
-    📦 [Version 2.2.0] Get notified about Home Assistant updates via Mobile App!
+    📦 [Version 2.3.0] Get notified about Home Assistant updates via Mobile App!
     Receive notifications when updates are available for core, addons, or integrations.
     Includes actionable buttons to install or skip updates directly from the notification. 🚀
   domain: automation
@@ -216,15 +216,8 @@ variables:
         {{ u }}
     {% endfor %}
   # Callback variables - Mobile App
-  callback_action: "{{ trigger.event.data.action | default(trigger.event.data.actionName | default('')) if trigger.id == 'mobile_callback' else '' }}"
-  callback_entity_id: >
-    {% if trigger.id == 'mobile_callback' %}
-      update.{{ trigger.event.data.tag
-        if trigger.event.data.tag is string and trigger.event.data.tag != ''
-        else trigger.event.data.action_data.tag | default('') }}
-    {% else %}
-
-    {% endif %}
+  callback_action: "{{ trigger.event.data.action | default('') if trigger.id == 'mobile_callback' else '' }}"
+  callback_entity_id: "{{ 'update.' ~ trigger.event.data.tag if trigger.id == 'mobile_callback' and trigger.event.data.tag is string else '' }}"
   callback_friendly_name: "{{ state_attr(callback_entity_id, 'friendly_name') | default(callback_entity_id, true) }}"
 
 action:
@@ -298,8 +291,6 @@ action:
                         title: "✅ Install"
                       - action: skip_update
                         title: "⏭️ Skip"
-                    action_data:
-                      tag: "{{ entity_id[7:] }}"
                     tag: "{{ entity_id[7:] }}"
                     url: "{{ release_url if release_url else '/config/updates' }}"
                     clickAction: "{{ release_url if release_url else '/config/updates' }}"
@@ -391,8 +382,6 @@ action:
                         title: "✅ Install"
                       - action: skip_update
                         title: "⏭️ Skip"
-                    action_data:
-                      tag: "{{ entity_id[7:] }}"
                     tag: "config_check_{{ entity_id[7:] }}"
 
     # ════════════════════════════════════════════════════════════════════════
@@ -463,8 +452,6 @@ action:
                                   title: "✅ Install"
                                 - action: skip_update
                                   title: "⏭️ Skip"
-                              action_data:
-                                tag: "{{ repeat.item[7:] }}"
                               tag: "reminder_{{ repeat.item[7:] }}"
 
     # ════════════════════════════════════════════════════════════════════════
@@ -473,7 +460,7 @@ action:
     - alias: Handle Mobile App install callback
       conditions:
         - "{{ trigger.id == 'mobile_callback' }}"
-        - "{{ callback_action in ['install_update', 'install-update'] }}"
+        - "{{ callback_action == 'install_update' }}"
       sequence:
         - alias: Log callback data for debugging
           action: system_log.write
@@ -509,7 +496,7 @@ action:
     - alias: Handle Mobile App skip callback
       conditions:
         - "{{ trigger.id == 'mobile_callback' }}"
-        - "{{ callback_action in ['skip_update', 'skip-update'] }}"
+        - "{{ callback_action == 'skip_update' }}"
       sequence:
         - alias: Log callback data for debugging
           action: system_log.write
