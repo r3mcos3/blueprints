@@ -1,8 +1,8 @@
-# Version: 2.3.0
+# Version: 2.4.0
 blueprint:
   name: "🔄 Update Notifications"
   description: >
-    📦 [Version 2.3.0] Get notified about Home Assistant updates via Mobile App!
+    📦 [Version 2.4.0] Get notified about Home Assistant updates via Mobile App!
     Receive notifications when updates are available for core, addons, or integrations.
     Includes actionable buttons to install or skip updates directly from the notification. 🚀
   domain: automation
@@ -217,7 +217,14 @@ variables:
     {% endfor %}
   # Callback variables - Mobile App
   callback_action: "{{ trigger.event.data.action | default('') if trigger.id == 'mobile_callback' else '' }}"
-  callback_entity_id: "{{ 'update.' ~ trigger.event.data.tag if trigger.id == 'mobile_callback' and trigger.event.data.tag is string else '' }}"
+  callback_entity_id: >
+    {% if trigger.id == 'mobile_callback' and trigger.event.data.tag is string %}
+      {% set tag = trigger.event.data.tag %}
+      {% set clean_tag = tag | regex_replace('^(reminder_|config_check_)', '') %}
+      {{ 'update.' ~ clean_tag if not clean_tag.startswith('update.') else clean_tag }}
+    {% else %}
+
+    {% endif %}
   callback_friendly_name: "{{ state_attr(callback_entity_id, 'friendly_name') | default(callback_entity_id, true) }}"
 
 action:
@@ -465,7 +472,7 @@ action:
         - alias: Log callback data for debugging
           action: system_log.write
           data:
-            message: "Install callback received - Action: {{ callback_action }}, Entity: {{ callback_entity_id }}"
+            message: "Install callback received - Action: {{ callback_action }}, Raw tag: {{ trigger.event.data.tag }}, Clean Entity: {{ callback_entity_id }}"
             level: info
             logger: blueprints.update_notifications
 
@@ -501,7 +508,7 @@ action:
         - alias: Log callback data for debugging
           action: system_log.write
           data:
-            message: "Skip callback received - Action: {{ callback_action }}, Entity: {{ callback_entity_id }}"
+            message: "Skip callback received - Action: {{ callback_action }}, Raw tag: {{ trigger.event.data.tag }}, Clean Entity: {{ callback_entity_id }}"
             level: info
             logger: blueprints.update_notifications
 
