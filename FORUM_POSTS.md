@@ -362,6 +362,100 @@ Full documentation, version history, and troubleshooting: [GitHub Repository](ht
 
 ---
 
+## 9. 🔄 Update Notifications (Telegram)
+
+**Title:** `🔄 Update Notifications (Telegram) - Get notified about HA updates via Telegram`
+
+**Tags:** `automation`, `telegram`, `notification`, `update`
+
+**Post:**
+
+```markdown
+# Update Notifications 🔄 (Telegram)
+
+Get notified about Home Assistant updates via Telegram with inline keyboard buttons!
+
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Ftelegram_update_notifications%2Ftelegram_update_notifications.yaml)
+
+## Features
+
+- 💬 **Telegram Bot Integration** - Get notified via your Telegram bot
+- 🔔 **Update Alerts** - Notifications when updates are available
+- 🎛️ **Inline Keyboard Buttons** - Install, skip, or view changelog directly from messages
+- 📋 **Changelog Button** - Quick access to release notes (when available)
+- ✅ **Completion Notifications** - Know when updates finish
+- ⏳ **Progress Updates** - See when updates start
+- 🔁 **Periodic Reminders** - Configurable reminders (5min - 24h intervals)
+- ⚙️ **Config Check** - Run config check before core updates
+- 💾 **Backup Support** - Create backup before updating
+- 💬 **Instant Feedback** - Immediate responses when buttons are pressed
+
+## Requirements
+
+- Home Assistant 2025.12.0+
+- **Telegram Bot** (create via @BotFather)
+- **Telegram Integration** configured in Home Assistant
+- Your **Chat ID**
+- Update entities to monitor
+
+## Quick Setup
+
+1. **Create a Bot:**
+   - Open Telegram, search for @BotFather
+   - Send `/newbot` and follow instructions
+   - Save your bot token
+
+2. **Get Your Chat ID:**
+   - Send a message to your bot
+   - Visit: `https://api.telegram.org/bot<TOKEN>/getUpdates`
+   - Find your chat_id in the response
+
+3. **Configure Home Assistant:**
+   ```yaml
+   telegram_bot:
+     - platform: polling
+       api_key: YOUR_BOT_TOKEN
+       allowed_chat_ids:
+         - YOUR_CHAT_ID
+
+   notify:
+     - platform: telegram
+       name: telegram
+       chat_id: YOUR_CHAT_ID
+   ```
+
+## How It Works
+
+When an update is available, you'll receive a Telegram message with:
+- Update name and version info
+- ✅ **Install** button to start the update
+- ⏭️ **Skip** button to skip this version
+- 📋 **Changelog** button to view release notes (when available)
+
+Click any button and get instant feedback!
+
+## Quick Testing
+
+Want to test it out quickly? Use the "Every 5 minutes (testing)" reminder interval to get test notifications without waiting hours. Don't forget to change it back to a longer interval after testing!
+
+## Comparison
+
+**Telegram vs Mobile App version:**
+- ✅ Telegram: Works on any device with Telegram app
+- ✅ Telegram: Inline keyboard buttons directly in chat
+- ✅ Telegram: Instant feedback messages
+- ✅ Mobile App (Android): Native Android notifications
+- ✅ Mobile App (Android): Integrates with notification system
+
+Choose the version that fits your preferred notification platform!
+
+## GitHub
+
+Full documentation, setup guide, and troubleshooting: [GitHub Repository](https://github.com/r3mcos3/blueprints/tree/main/telegram_update_notifications)
+```
+
+---
+
 # Tips voor het posten
 
 1. **Eén post per blueprint** - Maak een aparte post voor elke blueprint

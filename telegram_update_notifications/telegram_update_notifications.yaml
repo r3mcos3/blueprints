@@ -1,0 +1,528 @@
+# Version: 1.1.0
+blueprint:
+  name: "📱 Telegram Update Notifications"
+  description: >
+    📦 [Version 1.1.0] Get notified about Home Assistant updates via Telegram!
+    Receive notifications when updates are available for core, addons, or integrations.
+    Includes inline keyboard buttons to install or skip updates directly from Telegram. 🚀
+  domain: automation
+  author: r3mcos3
+  source_url: https://github.com/r3mcos3/blueprints/blob/main/telegram_update_notifications/telegram_update_notifications.yaml
+  homeassistant:
+    min_version: 2025.12.0
+
+  input:
+    # ══════════════════════════════════════════════════════════════════════════
+    # 🔄 UPDATE SETTINGS
+    # ══════════════════════════════════════════════════════════════════════════
+    update_entities:
+      name: 🔄 Update Entities
+      description: >
+        Select the update entities to monitor. You'll be notified when any of these have an update available.
+      selector:
+        entity:
+          domain: update
+          multiple: true
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 📱 NOTIFICATION SETTINGS (COLLAPSED)
+    # ══════════════════════════════════════════════════════════════════════════
+    notification_settings:
+      name: 📱 Notification Settings
+      icon: mdi:bell
+      description: Configure Telegram notification settings.
+      collapsed: true
+      input:
+        telegram_bot_config:
+          name: 📱 Telegram Bot
+          description: >
+            Select your Telegram bot from the dropdown.
+            The notify service and chat ID will automatically be used from the bot configuration.
+          selector:
+            config_entry:
+              integration: telegram_bot
+
+        send_to_ha:
+          name: 🏠 Send to HA
+          description: Also send as a persistent notification in Home Assistant.
+          default: false
+          selector:
+            boolean:
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # ⏰ REMINDER SETTINGS (COLLAPSED)
+    # ══════════════════════════════════════════════════════════════════════════
+    reminder_settings:
+      name: ⏰ Reminder Settings
+      icon: mdi:clock-alert
+      description: Configure periodic reminders for pending updates.
+      collapsed: true
+      input:
+        reminder_hours:
+          name: ⏰ Reminder Interval
+          description: >
+            Send reminders for pending updates every X hours/minutes.
+            Set to "None" to disable reminders.
+          default: "3"
+          selector:
+            select:
+              options:
+                - label: Disabled
+                  value: "None"
+                - label: Every 5 minutes (testing)
+                  value: "0.083"
+                - label: Every 15 minutes (testing)
+                  value: "0.25"
+                - label: Every 30 minutes (testing)
+                  value: "0.5"
+                - label: Every hour
+                  value: "1"
+                - label: Every 2 hours
+                  value: "2"
+                - label: Every 3 hours
+                  value: "3"
+                - label: Every 6 hours
+                  value: "6"
+                - label: Every 12 hours
+                  value: "12"
+                - label: Every 24 hours
+                  value: "24"
+
+        only_after:
+          name: 🌅 Only After
+          description: Only send notifications after this time.
+          default: "07:00:00"
+          selector:
+            time:
+
+        only_before:
+          name: 🌙 Only Before
+          description: Only send notifications before this time.
+          default: "22:00:00"
+          selector:
+            time:
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 🔧 ADVANCED SETTINGS (COLLAPSED)
+    # ══════════════════════════════════════════════════════════════════════════
+    advanced_settings:
+      name: 🔧 Advanced Settings
+      icon: mdi:cog
+      description: Backup and config check options.
+      collapsed: true
+      input:
+        take_backup:
+          name: 💾 Take Backup
+          description: Create a partial backup before updating (if supported).
+          default: true
+          selector:
+            boolean:
+
+        run_config_check:
+          name: ✅ Run Config Check
+          description: >
+            Run the "Check Configuration" addon when a core update is available.
+            You must include the core update entity in your monitored entities.
+          default: false
+          selector:
+            boolean:
+
+        changelog_urls:
+          name: 📋 Custom Changelog URLs
+          description: >
+            Optional: Provide custom changelog URLs for entities that don't have one.
+            Format: {"update.addon_name": "https://github.com/..."}
+          default: {}
+          selector:
+            object:
+
+mode: parallel
+max: 100
+
+trigger_variables:
+  _reminder_hours: !input reminder_hours
+  reminder_hours: "{{ _reminder_hours | default('None') }}"
+  reminder_hours_float: "{{ 0 if reminder_hours == 'None' else reminder_hours | float(0) }}"
+  reminder_minutes: "{{ (reminder_hours_float * 60) | int(0) }}"
+  run_config_check: !input run_config_check
+  update_entities: !input update_entities
+
+trigger:
+  # New update available
+  - id: new
+    platform: state
+    entity_id: !input update_entities
+    to: "on"
+
+  # Update started
+  - id: started
+    platform: state
+    entity_id: !input update_entities
+    attribute: in_progress
+    from: false
+    to: true
+
+  # Update completed
+  - id: done
+    platform: state
+    entity_id: !input update_entities
+    from: "on"
+    to: "off"
+
+  # HA startup - check for pending updates
+  - id: ha_start
+    platform: homeassistant
+    event: start
+
+  # Periodic reminder
+  - id: reminder
+    platform: template
+    value_template: >
+      {% set total_minutes = now().hour * 60 + now().minute %}
+      {{ states.update | selectattr('state', 'eq', 'on') | list | count > 0
+        and reminder_minutes > 0
+        and total_minutes % reminder_minutes == 0 }}
+
+  # Core config check completed
+  - id: core_check
+    platform: template
+    value_template: >
+      {% set ns = namespace(core=none) %}
+      {% for u in integration_entities('hassio') | select('in', update_entities)
+            if (device_attr(u, 'identifiers') | first)[1] == 'core' %}
+          {% set ns.core = u %}
+      {% endfor %}
+      {% if run_config_check and ns.core is string and expand(ns.core) | first | attr('state') == 'on' %}
+        {% for e in expand(integration_entities('hassio')) | selectattr('attributes.device_class', 'eq', 'running')
+              if (device_attr(e.entity_id, 'identifiers') | first)[1] == 'core_check_config' %}
+            {{ e.state == 'off' and e.last_changed > expand(ns.core) | first | attr('last_changed') }}
+        {% endfor %}
+      {% else %}
+        {{ false }}
+      {% endif %}
+
+  # Telegram callback for install/skip buttons
+  - id: telegram_callback
+    platform: event
+    event_type: telegram_callback
+
+variables:
+  send_to_ha: !input send_to_ha
+  take_backup: !input take_backup
+  _changelog_urls: !input changelog_urls
+  changelog_urls: "{{ _changelog_urls if _changelog_urls is mapping else {} }}"
+  core_update_entity: >
+    {% for u in integration_entities('hassio') | select('search', '^update[.]')
+          if (device_attr(u, 'identifiers') | first)[1] == 'core' %}
+        {{ u }}
+    {% endfor %}
+  os_update_entity: >
+    {% for u in integration_entities('hassio') | select('search', '^update[.]')
+          if (device_attr(u, 'identifiers') | first)[1] == 'OS' %}
+        {{ u }}
+    {% endfor %}
+  # Callback variables - Telegram
+  callback_data: "{{ trigger.event.data.data | default('') if trigger.id == 'telegram_callback' else '' }}"
+  callback_parts: "{{ callback_data.split('|') if callback_data else [] }}"
+  callback_action: "{{ callback_parts[0] if callback_parts | length > 0 else '' }}"
+  callback_entity_id: "{{ callback_parts[1] if callback_parts | length > 1 else '' }}"
+  callback_friendly_name: "{{ state_attr(callback_entity_id, 'friendly_name') | default(callback_entity_id, true) }}"
+
+action:
+  choose:
+    # ════════════════════════════════════════════════════════════════════════
+    # UPDATE COMPLETED
+    # ════════════════════════════════════════════════════════════════════════
+    - alias: Update completed
+      conditions: "{{ trigger.id == 'done' }}"
+      sequence:
+        - variables:
+            entity_id: "{{ trigger.entity_id }}"
+            friendly_name: "{{ state_attr(trigger.entity_id, 'friendly_name') }}"
+
+        - alias: Send Telegram completion notification
+          action: telegram_bot.send_message
+          data:
+            message: "✅ *Update Complete*\n\n{{ friendly_name }} update completed!"
+            parse_mode: Markdown
+
+        - alias: Dismiss HA notification if enabled
+          if:
+            - condition: template
+              value_template: "{{ send_to_ha }}"
+          then:
+            - action: persistent_notification.dismiss
+              data:
+                notification_id: "update_{{ entity_id[7:] }}"
+
+    # ════════════════════════════════════════════════════════════════════════
+    # NEW UPDATE AVAILABLE
+    # ════════════════════════════════════════════════════════════════════════
+    - alias: New update available
+      conditions: "{{ trigger.id == 'new' }}"
+      sequence:
+        - variables:
+            entity_id: "{{ trigger.entity_id }}"
+            friendly_name: "{{ state_attr(entity_id, 'friendly_name') }}"
+            latest_version: "{{ state_attr(entity_id, 'latest_version') }}"
+            installed_version: "{{ state_attr(entity_id, 'installed_version') }}"
+            release_summary: "{{ state_attr(entity_id, 'release_summary') | default('', true) }}"
+            release_url: >
+              {{ state_attr(entity_id, 'release_url')
+                | default(changelog_urls[entity_id] | default('', true), true) }}
+            ids: "{{ device_attr(entity_id, 'identifiers') | first }}"
+            include_core_check: "{{ run_config_check and ids[0] == 'hassio' and ids[1] == 'core' }}"
+
+        - alias: Check time window
+          condition: time
+          after: !input only_after
+          before: !input only_before
+
+        - alias: Send Telegram notification
+          action: telegram_bot.send_message
+          data:
+            message: >
+              🔄 *{{ friendly_name }}*
+
+              📦 {{ latest_version }} (installed: {{ installed_version }})
+              {% if release_summary %}
+
+              {{ release_summary | truncate(100) }}
+              {% endif %}
+            parse_mode: Markdown
+            inline_keyboard: >-
+              [[["✅ Install", "install|{{ entity_id }}"], ["⏭️ Skip", "skip|{{ entity_id }}"]]{% if release_url %}, [["📋 Changelog", "{{ release_url }}"]]{% endif %}]
+
+        - alias: Send to HA if enabled
+          if:
+            - condition: template
+              value_template: "{{ send_to_ha }}"
+          then:
+            - action: persistent_notification.create
+              data:
+                notification_id: "update_{{ entity_id[7:] }}"
+                title: "🔄 {{ friendly_name }}"
+                message: >
+                  **New version:** {{ latest_version }}
+
+                  **Installed:** {{ installed_version }}
+                  {% if release_summary %}
+
+                  {{ release_summary }}
+                  {% endif %}
+                  {% if release_url %}
+
+                  [View Changelog]({{ release_url }})
+                  {% endif %}
+
+        - alias: Start config check if core update
+          if:
+            - condition: template
+              value_template: "{{ include_core_check }}"
+          then:
+            - action: hassio.addon_start
+              data:
+                addon: core_check_config
+
+    # ════════════════════════════════════════════════════════════════════════
+    # UPDATE STARTED
+    # ════════════════════════════════════════════════════════════════════════
+    - alias: Update started
+      conditions: "{{ trigger.id == 'started' }}"
+      sequence:
+        - variables:
+            entity_id: "{{ trigger.entity_id }}"
+            friendly_name: "{{ state_attr(entity_id, 'friendly_name') }}"
+
+        - alias: Check time window
+          condition: time
+          after: !input only_after
+          before: !input only_before
+
+        - alias: Send Telegram updating notification
+          action: telegram_bot.send_message
+          data:
+            message: "⏳ *Updating...*\n\n{{ friendly_name }} is updating..."
+            parse_mode: Markdown
+
+    # ════════════════════════════════════════════════════════════════════════
+    # CONFIG CHECK COMPLETED
+    # ════════════════════════════════════════════════════════════════════════
+    - alias: Core config check completed
+      conditions: "{{ trigger.id == 'core_check' }}"
+      sequence:
+        - variables:
+            entity_id: "{{ core_update_entity }}"
+            friendly_name: "{{ state_attr(entity_id, 'friendly_name') }}"
+            latest_version: "{{ state_attr(entity_id, 'latest_version') }}"
+            release_url: >
+              {{ state_attr(entity_id, 'release_url')
+                | default(changelog_urls[entity_id] | default('', true), true) }}
+
+        - alias: Check time window
+          condition: time
+          after: !input only_after
+          before: !input only_before
+
+        - alias: Send Telegram config check notification
+          action: telegram_bot.send_message
+          data:
+            message: >
+              ✅ *Config Check Complete*
+
+              {{ friendly_name }} {{ latest_version }} - Check addon logs before updating
+            parse_mode: Markdown
+            inline_keyboard: >-
+              [[["✅ Install", "install|{{ entity_id }}"], ["⏭️ Skip", "skip|{{ entity_id }}"]]{% if release_url %}, [["📋 Changelog", "{{ release_url }}"]]{% endif %}]
+
+    # ════════════════════════════════════════════════════════════════════════
+    # HA STARTUP - DISMISS OLD NOTIFICATIONS
+    # ════════════════════════════════════════════════════════════════════════
+    - alias: On HA startup, dismiss completed update notifications
+      conditions: "{{ trigger.id == 'ha_start' }}"
+      sequence:
+        - alias: Dismiss core notification if no longer needed
+          if:
+            - condition: template
+              value_template: "{{ core_update_entity != '' and expand(core_update_entity) | first | attr('state') == 'off' }}"
+          then:
+            - action: persistent_notification.dismiss
+              data:
+                notification_id: "update_{{ core_update_entity[7:] }}"
+
+        - alias: Dismiss OS notification if no longer needed
+          if:
+            - condition: template
+              value_template: "{{ os_update_entity != '' and expand(os_update_entity) | first | attr('state') == 'off' }}"
+          then:
+            - action: persistent_notification.dismiss
+              data:
+                notification_id: "update_{{ os_update_entity[7:] }}"
+
+    # ════════════════════════════════════════════════════════════════════════
+    # PERIODIC REMINDERS
+    # ════════════════════════════════════════════════════════════════════════
+    - alias: Send periodic reminders
+      conditions: "{{ trigger.id == 'reminder' }}"
+      sequence:
+        - variables:
+            pending_updates: >
+              {{ states.update
+                | selectattr('state', 'eq', 'on')
+                | rejectattr('attributes.in_progress', 'true')
+                | map(attribute='entity_id') | list }}
+            update_count: "{{ pending_updates | count }}"
+
+        - alias: Check time window
+          condition: time
+          after: !input only_after
+          before: !input only_before
+
+        - alias: Send reminder if updates pending
+          if:
+            - condition: template
+              value_template: "{{ update_count > 0 }}"
+          then:
+            - repeat:
+                for_each: "{{ pending_updates }}"
+                sequence:
+                  - variables:
+                      reminder_entity_id: "{{ repeat.item }}"
+                      reminder_friendly_name: "{{ state_attr(repeat.item, 'friendly_name') }}"
+                      reminder_latest_version: "{{ state_attr(repeat.item, 'latest_version') }}"
+                      reminder_release_url: >
+                        {{ state_attr(repeat.item, 'release_url')
+                          | default(changelog_urls[repeat.item] | default('', true), true) }}
+
+                  - action: telegram_bot.send_message
+                    data:
+                      message: >
+                        🔔 *Update Reminder*
+
+                        {{ reminder_friendly_name }}
+                        📦 {{ reminder_latest_version }}
+                      parse_mode: Markdown
+                      inline_keyboard: >-
+                        [[["✅ Install", "install|{{ reminder_entity_id }}"], ["⏭️ Skip", "skip|{{ reminder_entity_id }}"]]{% if reminder_release_url %}, [["📋 Changelog", "{{ reminder_release_url }}"]]{% endif %}]
+
+    # ════════════════════════════════════════════════════════════════════════
+    # TELEGRAM CALLBACK - INSTALL UPDATE
+    # ════════════════════════════════════════════════════════════════════════
+    - alias: Handle Telegram install callback
+      conditions:
+        - "{{ trigger.id == 'telegram_callback' }}"
+        - "{{ callback_action == 'install' }}"
+      sequence:
+        - alias: Check if entity_id is valid
+          if:
+            - condition: template
+              value_template: "{{ callback_entity_id == '' or states(callback_entity_id) == 'unknown' }}"
+          then:
+            - action: telegram_bot.send_message
+              data:
+                message: "❌ Invalid update entity"
+                parse_mode: Markdown
+            - stop: "Invalid update entity"
+          else:
+            - alias: Check if update is still available
+              if:
+                - condition: template
+                  value_template: "{{ states(callback_entity_id) == 'off' }}"
+              then:
+                - action: telegram_bot.send_message
+                  data:
+                    message: "✅ {{ callback_friendly_name }} is already up to date"
+                    parse_mode: Markdown
+                - stop: "Already up to date"
+              else:
+                - action: telegram_bot.send_message
+                  data:
+                    message: "🔄 Installing {{ callback_friendly_name }}..."
+                    parse_mode: Markdown
+        
+                - alias: Install the update
+                  action: update.install
+                  target:
+                    entity_id: "{{ callback_entity_id }}"
+                  data:
+                    backup: "{{ take_backup }}"
+
+    # ════════════════════════════════════════════════════════════════════════
+    # TELEGRAM CALLBACK - SKIP UPDATE
+    # ════════════════════════════════════════════════════════════════════════
+    - alias: Handle Telegram skip callback
+      conditions:
+        - "{{ trigger.id == 'telegram_callback' }}"
+        - "{{ callback_action == 'skip' }}"
+      sequence:
+        - alias: Check if entity_id is valid
+          if:
+            - condition: template
+              value_template: "{{ callback_entity_id == '' or states(callback_entity_id) == 'unknown' }}"
+          then:
+            - action: telegram_bot.send_message
+              data:
+                message: "❌ Invalid update entity"
+                parse_mode: Markdown
+            - stop: "Invalid update entity"
+          else:
+            - alias: Check if update is still available
+              if:
+                - condition: template
+                  value_template: "{{ states(callback_entity_id) == 'off' }}"
+              then:
+                - action: telegram_bot.send_message
+                  data:
+                    message: "✅ {{ callback_friendly_name }} is already up to date"
+                    parse_mode: Markdown
+                - stop: "Already up to date"
+              else:
+                - action: telegram_bot.send_message
+                  data:
+                    message: "⏭️ Skipping {{ callback_friendly_name }} update"
+                    parse_mode: Markdown
+        
+                - alias: Skip the update
+                  action: update.skip
+                  target:
+                    entity_id: "{{ callback_entity_id }}"
