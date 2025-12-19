@@ -1,8 +1,8 @@
-# Version: 2.0.0
+# Version: 2.1.0
 blueprint:
   name: "🔄 Update Notifications"
   description: >
-    📦 [Version 2.0.0] Get notified about Home Assistant updates via Mobile App!
+    📦 [Version 2.1.0] Get notified about Home Assistant updates via Mobile App!
     Receive notifications when updates are available for core, addons, or integrations.
     Includes actionable buttons to install or skip updates directly from the notification. 🚀
   domain: automation
@@ -198,14 +198,6 @@ trigger:
   - id: mobile_callback
     platform: event
     event_type: mobile_app_notification_action
-    event_data:
-      action: install_update
-
-  - id: mobile_callback_skip
-    platform: event
-    event_type: mobile_app_notification_action
-    event_data:
-      action: skip_update
 
 variables:
   mobile_app_device: !input mobile_app_device
@@ -224,7 +216,8 @@ variables:
         {{ u }}
     {% endfor %}
   # Callback variables - Mobile App
-  callback_entity_id: "{{ trigger.event.data.action_data.entity_id | default('') if trigger.id in ['mobile_callback', 'mobile_callback_skip'] else '' }}"
+  callback_action: "{{ trigger.event.data.action | default('') if trigger.id == 'mobile_callback' else '' }}"
+  callback_entity_id: "{{ trigger.event.data.action_data.entity_id | default('') if trigger.id == 'mobile_callback' else '' }}"
   callback_friendly_name: "{{ state_attr(callback_entity_id, 'friendly_name') | default(callback_entity_id, true) }}"
 
 action:
@@ -471,8 +464,17 @@ action:
     # MOBILE APP CALLBACK - INSTALL UPDATE
     # ════════════════════════════════════════════════════════════════════════
     - alias: Handle Mobile App install callback
-      conditions: "{{ trigger.id == 'mobile_callback' }}"
+      conditions:
+        - "{{ trigger.id == 'mobile_callback' }}"
+        - "{{ callback_action == 'install_update' }}"
       sequence:
+        - alias: Log callback data for debugging
+          action: system_log.write
+          data:
+            message: "Install callback received - Action: {{ callback_action }}, Entity: {{ callback_entity_id }}"
+            level: info
+            logger: blueprints.update_notifications
+
         - alias: Check if entity_id is valid
           if:
             - condition: template
@@ -498,8 +500,17 @@ action:
     # MOBILE APP CALLBACK - SKIP UPDATE
     # ════════════════════════════════════════════════════════════════════════
     - alias: Handle Mobile App skip callback
-      conditions: "{{ trigger.id == 'mobile_callback_skip' }}"
+      conditions:
+        - "{{ trigger.id == 'mobile_callback' }}"
+        - "{{ callback_action == 'skip_update' }}"
       sequence:
+        - alias: Log callback data for debugging
+          action: system_log.write
+          data:
+            message: "Skip callback received - Action: {{ callback_action }}, Entity: {{ callback_entity_id }}"
+            level: info
+            logger: blueprints.update_notifications
+
         - alias: Check if entity_id is valid
           if:
             - condition: template
@@ -518,3 +529,15 @@ action:
                   action: update.skip
                   target:
                     entity_id: "{{ callback_entity_id }}"
+
+  default:
+    - alias: Log unhandled callback event
+      if:
+        - condition: template
+          value_template: "{{ trigger.id == 'mobile_callback' }}"
+      then:
+        - action: system_log.write
+          data:
+            message: "Unhandled callback - Trigger: {{ trigger.id }}, Action: {{ callback_action }}, Entity: {{ callback_entity_id }}, Full event: {{ trigger.event }}"
+            level: warning
+            logger: blueprints.update_notifications
