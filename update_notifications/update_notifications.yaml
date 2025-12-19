@@ -1,8 +1,8 @@
-# Version: 2.5.0
+# Version: 2.6.0
 blueprint:
   name: "🔄 Update Notifications"
   description: >
-    📦 [Version 2.5.0] Get notified about Home Assistant updates via Mobile App!
+    📦 [Version 2.6.0] Get notified about Home Assistant updates via Mobile App!
     Receive notifications when updates are available for core, addons, or integrations.
     Includes actionable buttons to install or skip updates directly from the notification. 🚀
   domain: automation
@@ -300,11 +300,15 @@ action:
                     📦 {{ latest_version }} (installed: {{ installed_version }})
                     {% if release_summary %}{{ release_summary | truncate(100) }}{% endif %}
                   data:
-                    actions:
-                      - action: install_update
-                        title: "✅ Install"
-                      - action: skip_update
-                        title: "⏭️ Skip"
+                    actions: >
+                      {% set actions = [
+                        {'action': 'install_update', 'title': '✅ Install'},
+                        {'action': 'skip_update', 'title': '⏭️ Skip'}
+                      ] %}
+                      {% if release_url %}
+                        {% set actions = actions + [{'action': 'URI', 'title': '📋 Changelog', 'uri': release_url}] %}
+                      {% endif %}
+                      {{ actions }}
                     tag: "{{ entity_id[7:] }}"
                     url: "{{ release_url if release_url else '/config/updates' }}"
                     clickAction: "{{ release_url if release_url else '/config/updates' }}"
@@ -376,6 +380,9 @@ action:
             entity_id: "{{ core_update_entity }}"
             friendly_name: "{{ state_attr(entity_id, 'friendly_name') }}"
             latest_version: "{{ state_attr(entity_id, 'latest_version') }}"
+            release_url: >
+              {{ state_attr(entity_id, 'release_url')
+                | default(changelog_urls[entity_id] | default('', true), true) }}
 
         - alias: Check time window
           condition: time
@@ -391,11 +398,15 @@ action:
                   title: "✅ Config Check Complete"
                   message: "{{ friendly_name }} {{ latest_version }} - Check addon logs before updating"
                   data:
-                    actions:
-                      - action: install_update
-                        title: "✅ Install"
-                      - action: skip_update
-                        title: "⏭️ Skip"
+                    actions: >
+                      {% set actions = [
+                        {'action': 'install_update', 'title': '✅ Install'},
+                        {'action': 'skip_update', 'title': '⏭️ Skip'}
+                      ] %}
+                      {% if release_url %}
+                        {% set actions = actions + [{'action': 'URI', 'title': '📋 Changelog', 'uri': release_url}] %}
+                      {% endif %}
+                      {{ actions }}
                     tag: "config_check_{{ entity_id[7:] }}"
 
     # ════════════════════════════════════════════════════════════════════════
@@ -454,6 +465,10 @@ action:
                   - repeat:
                       for_each: "{{ pending_updates }}"
                       sequence:
+                        - variables:
+                            reminder_release_url: >
+                              {{ state_attr(repeat.item, 'release_url')
+                                | default(changelog_urls[repeat.item] | default('', true), true) }}
                         - action: "notify.mobile_app_{{ device_name }}"
                           data:
                             title: "🔔 Update Reminder"
@@ -461,11 +476,15 @@ action:
                               {{ state_attr(repeat.item, 'friendly_name') }}
                               📦 {{ state_attr(repeat.item, 'latest_version') }}
                             data:
-                              actions:
-                                - action: install_update
-                                  title: "✅ Install"
-                                - action: skip_update
-                                  title: "⏭️ Skip"
+                              actions: >
+                                {% set actions = [
+                                  {'action': 'install_update', 'title': '✅ Install'},
+                                  {'action': 'skip_update', 'title': '⏭️ Skip'}
+                                ] %}
+                                {% if reminder_release_url %}
+                                  {% set actions = actions + [{'action': 'URI', 'title': '📋 Changelog', 'uri': reminder_release_url}] %}
+                                {% endif %}
+                                {{ actions }}
                               tag: "reminder_{{ repeat.item[7:] }}"
 
     # ════════════════════════════════════════════════════════════════════════
