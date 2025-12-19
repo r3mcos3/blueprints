@@ -1,8 +1,8 @@
-# Version: 2.4.0
+# Version: 2.5.0
 blueprint:
   name: "🔄 Update Notifications"
   description: >
-    📦 [Version 2.4.0] Get notified about Home Assistant updates via Mobile App!
+    📦 [Version 2.5.0] Get notified about Home Assistant updates via Mobile App!
     Receive notifications when updates are available for core, addons, or integrations.
     Includes actionable buttons to install or skip updates directly from the notification. 🚀
   domain: automation
@@ -61,7 +61,7 @@ blueprint:
         reminder_hours:
           name: ⏰ Reminder Interval
           description: >
-            Send reminders for pending updates every X hours.
+            Send reminders for pending updates every X hours/minutes.
             Set to "None" to disable reminders.
           default: "3"
           selector:
@@ -69,6 +69,12 @@ blueprint:
               options:
                 - label: Disabled
                   value: "None"
+                - label: Every 5 minutes (testing)
+                  value: "0.083"
+                - label: Every 15 minutes (testing)
+                  value: "0.25"
+                - label: Every 30 minutes (testing)
+                  value: "0.5"
                 - label: Every hour
                   value: "1"
                 - label: Every 2 hours
@@ -136,7 +142,8 @@ max: 100
 trigger_variables:
   _reminder_hours: !input reminder_hours
   reminder_hours: "{{ _reminder_hours | default('None') }}"
-  reminder_hours_int: "{{ 0 if reminder_hours == 'None' else reminder_hours | int(0) }}"
+  reminder_hours_float: "{{ 0 if reminder_hours == 'None' else reminder_hours | float(0) }}"
+  reminder_minutes: "{{ (reminder_hours_float * 60) | int(0) }}"
   run_config_check: !input run_config_check
   update_entities: !input update_entities
 
@@ -171,10 +178,10 @@ trigger:
   - id: reminder
     platform: template
     value_template: >
+      {% set total_minutes = now().hour * 60 + now().minute %}
       {{ states.update | selectattr('state', 'eq', 'on') | list | count > 0
-        and reminder_hours_int > 0
-        and now().hour % reminder_hours_int == 0
-        and now().minute == 0 }}
+        and reminder_minutes > 0
+        and total_minutes % reminder_minutes == 0 }}
 
   # Core config check completed
   - id: core_check
