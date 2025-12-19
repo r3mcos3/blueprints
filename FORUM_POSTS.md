@@ -304,49 +304,60 @@ Automate volume control for all your speakers!
 
 ---
 
-## 8. 🔄 Update Notifications
+## 8. 🔄 Update Notifications (Android)
 
-**Title:** `🔄 Update Notifications - Get notified about HA updates via Mobile App`
+**Title:** `🔄 Update Notifications (Android) - Get notified about HA updates via Mobile App`
 
-**Tags:** `automation`, `mobile-app`, `notification`, `update`
+**Tags:** `automation`, `mobile-app`, `android`, `notification`, `update`
 
 **Post:**
 
 ```markdown
-# Update Notifications 🔄
+# Update Notifications 🔄 (Android)
 
 Get notified about Home Assistant updates via Mobile App with actionable buttons!
 
 [![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fupdate_notifications%2Fupdate_notifications.yaml)
 
+> **⚠️ Platform Support:** This blueprint is specifically designed and tested for **Android devices only**. iOS support has not been tested and may not work as expected.
+
 ## Features
 
-- 📱 **Mobile Notifications** - Get notified on iOS or Android
+- 📱 **Android Notifications** - Get notified on your Android device
 - 🔔 **Update Alerts** - Notifications when updates are available
+- 🎛️ **3 Actionable Buttons** - Install, skip, or view changelog directly from notification
+- 📋 **Changelog Button** - Quick access to release notes (when available)
 - ✅ **Completion Notifications** - Know when updates finish
-- 🔁 **Periodic Reminders** - Configurable reminders for pending updates
-- 🎛️ **Actionable Buttons** - Install or skip directly from notification
+- ⏳ **Progress Updates** - See when updates start
+- 🔁 **Periodic Reminders** - Configurable reminders (5min - 24h intervals)
 - ⚙️ **Config Check** - Run config check before core updates
 - 💾 **Backup Support** - Create backup before updating
-- 📋 **Changelog Links** - Quick access to release notes
+- 🐛 **Debug Logging** - Built-in logging for troubleshooting
 
 ## Requirements
 
 - Home Assistant 2025.12.0+
-- Home Assistant Companion App (iOS/Android)
+- **Android Device** with Home Assistant Companion App
 - Update entities to monitor
 
 ## How It Works
 
 When an update is available, you'll receive a notification with:
 - Update name and version info
-- **Install** button to start the update
-- **Skip** button to skip this version
-- Tap notification to view changelog
+- ✅ **Install** button to start the update
+- ⏭️ **Skip** button to skip this version
+- 📋 **Changelog** button to view release notes (when available)
+- Tap notification body to view changelog or updates page
+
+Android supports maximum 3 notification actions, and this blueprint uses all three!
+
+## Quick Testing
+
+Want to test it out quickly? Use the "Every 5 minutes (testing)" reminder interval to get test notifications without waiting hours. Don't forget to change it back to a longer interval after testing!
 
 ## GitHub
 
-[GitHub Repository](https://github.com/r3mcos3/blueprints/tree/main/update_notifications)
+Full documentation, version history, and troubleshooting: [GitHub Repository](https://github.com/r3mcos3/blueprints/tree/main/update_notifications)
 ```
 
 ---
