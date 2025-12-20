@@ -1,7 +1,7 @@
-# Version: 1.1.1
+# Version: 1.1.2
 blueprint:
   name: "☀️ Sun Notifications"
-  description: "🌅 Get notified at sunrise and sunset via Telegram. Version 1.1.1"
+  description: "🌅 Get notified at sunrise and sunset via Telegram. Version 1.1.2"
   domain: automation
   author: r3mcos3
   source_url: https://github.com/r3mcos3/blueprints/blob/main/sun_notifications/sun_notifications.yaml
@@ -72,20 +72,18 @@ variables:
   # We still define them as variables for cleaner code in the action section.
   sunrise_enabled_var: !input sunrise_enabled
   sunset_enabled_var: !input sunset_enabled
-  sunrise_offset_var: !input sunrise_offset
   sunrise_message_var: !input sunrise_message
-  sunset_offset_var: !input sunset_offset
   sunset_message_var: !input sunset_message
 
 
 trigger:
   - platform: sun
     event: sunrise
-    offset: "{{ sunrise_offset_var }}"
+    offset: !input sunrise_offset
     id: sunrise_trigger
   - platform: sun
     event: sunset
-    offset: "{{ sunset_offset_var }}"
+    offset: !input sunset_offset
     id: sunset_trigger
 
 action:
