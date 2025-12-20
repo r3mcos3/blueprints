@@ -1,7 +1,7 @@
-# Version: 1.1.0
+# Version: 1.1.1
 blueprint:
   name: "☀️ Sun Notifications"
-  description: "🌅 Get notified at sunrise and sunset via Telegram. Version 1.1.0"
+  description: "🌅 Get notified at sunrise and sunset via Telegram. Version 1.1.1"
   domain: automation
   author: r3mcos3
   source_url: https://github.com/r3mcos3/blueprints/blob/main/sun_notifications/sun_notifications.yaml
@@ -96,8 +96,6 @@ action:
             value_template: "{{ trigger.id == 'sunrise_trigger' and sunrise_enabled_var }}"
         sequence:
           - service: telegram_bot.send_message
-            target:
-              config_entry_id: !input notification_target
             data:
               message: "{{ sunrise_message_var }}"
       # Sunset Case
@@ -106,8 +104,6 @@ action:
             value_template: "{{ trigger.id == 'sunset_trigger' and sunset_enabled_var }}"
         sequence:
           - service: telegram_bot.send_message
-            target:
-              config_entry_id: !input notification_target
             data:
               message: "{{ sunset_message_var }}"
 mode: single
