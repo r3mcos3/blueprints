@@ -456,6 +456,126 @@ Full documentation, setup guide, and troubleshooting: [GitHub Repository](https:
 
 ---
 
+## 10. ☀️ Sun-aware Motion Light
+
+**Title:** `☀️ Sun-aware Motion Light - Motion-activated lights with day/night brightness`
+
+**Tags:** `automation`, `light`, `motion`, `sun`
+
+**Post:**
+
+```markdown
+# Sun-aware Motion Light ☀️
+
+Smart motion-activated lighting that adapts to the sun's position!
+
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fsun_aware_motion_light%2Fsun_aware_motion_light.yaml)
+
+## Features
+
+- 🏃‍♂️ **Motion Detection** - Automatically turns lights on when motion is detected
+- ☀️ **Sun-Aware Mode** - Different brightness levels for day and night
+- 🌓 **Flexible Brightness** - Customizable brightness for both day and night
+- ⏱️ **Auto Turn-Off** - Configurable delay before lights turn off
+- 🔆 **Default Brightness** - Option to use single brightness level instead of sun-aware mode
+- 🔄 **Restart Mode** - Seamlessly handles continuous motion detection
+
+## Requirements
+
+- Home Assistant 2025.12.0+
+- Motion sensor (binary sensor with motion device class)
+- Light entity
+- Sun integration (built-in)
+
+## Perfect For
+
+- Hallways with bright daytime, dim nighttime lighting
+- Bathrooms with consistent brightness
+- Outdoor paths with adaptive safety lighting
+- Any motion-activated scenario where brightness should vary by time of day
+
+## Configuration
+
+| Input | Description | Default |
+|-------|-------------|---------|
+| Motion Sensor | Binary sensor detecting motion | - |
+| Target Light | Light(s) to control | - |
+| Sun-aware Mode | Enable day/night brightness | Enabled |
+| Brightness (Day) | Brightness when sun is up | 100% |
+| Brightness (Night) | Brightness when sun is down | 10% |
+| Turn-off Delay | Minutes before turning off | 5 min |
+
+## GitHub
+
+Full documentation with examples: [GitHub Repository](https://github.com/r3mcos3/blueprints/tree/main/sun_aware_motion_light)
+```
+
+---
+
+## 11. ☀️ Sun Notifications
+
+**Title:** `☀️ Sun Notifications - Get notified at sunrise and sunset via Telegram`
+
+**Tags:** `automation`, `telegram`, `notification`, `sun`
+
+**Post:**
+
+```markdown
+# Sun Notifications ☀️
+
+Get notified at sunrise and sunset via Telegram with customizable messages and time offsets!
+
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fsun_notifications%2Fsun_notifications.yaml)
+
+## Features
+
+- 🌅 **Sunrise Notifications** - Get notified when the sun rises
+- 🌇 **Sunset Notifications** - Get notified when the sun sets
+- ⏰ **Time Offsets** - Set notifications before or after sunrise/sunset
+- 💬 **Custom Messages** - Personalize your notification messages with templates
+- 🔔 **Telegram Integration** - Receive notifications via Telegram Bot
+- ⚙️ **Independent Control** - Enable/disable sunrise and sunset notifications separately
+- 🌍 **Automatic Calculation** - Uses your Home Assistant location for accurate times
+
+## Requirements
+
+- Home Assistant 2025.12.0+
+- Telegram Bot (create via @BotFather)
+- Telegram Integration configured in Home Assistant
+- Sun integration (built-in)
+
+## Perfect For
+
+- Morning wake-up reminders
+- Evening routine triggers
+- Photography golden hour alerts
+- Planning outdoor activities
+- Automating home routines based on daylight
+
+## Configuration
+
+| Input | Description | Default |
+|-------|-------------|---------|
+| Telegram Bot | Your Telegram bot integration | - |
+| Enable Sunrise | Toggle sunrise notifications | Enabled |
+| Sunrise Offset | Time before/after sunrise | 00:00:00 |
+| Sunrise Message | Custom sunrise message | "De zon komt op ☀️" |
+| Enable Sunset | Toggle sunset notifications | Enabled |
+| Sunset Offset | Time before/after sunset | 00:00:00 |
+| Sunset Message | Custom sunset message | "De zon gaat onder 🌃" |
+
+### Offset Examples
+- `-00:30:00` = 30 minutes before
+- `00:00:00` = Exactly at sunrise/sunset
+- `00:15:00` = 15 minutes after
+
+## GitHub
+
+Full documentation with template examples: [GitHub Repository](https://github.com/r3mcos3/blueprints/tree/main/sun_notifications)
+```
+
+---
+
 # Tips voor het posten
 
 1. **Eén post per blueprint** - Maak een aparte post voor elke blueprint
