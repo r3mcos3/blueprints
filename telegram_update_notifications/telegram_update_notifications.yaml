@@ -1,8 +1,8 @@
-# Version: 1.1.0
+# Version: 1.2.0
 blueprint:
   name: "📱 Telegram Update Notifications"
   description: >
-    📦 [Version 1.1.0] Get notified about Home Assistant updates via Telegram!
+    📦 [Version 1.2.0] Get notified about Home Assistant updates via Telegram!
     Receive notifications when updates are available for core, addons, or integrations.
     Includes inline keyboard buttons to install or skip updates directly from Telegram. 🚀
   domain: automation
@@ -453,6 +453,12 @@ action:
         - "{{ trigger.id == 'telegram_callback' }}"
         - "{{ callback_action == 'install' }}"
       sequence:
+        - alias: Answer callback query
+          action: telegram_bot.answer_callback_query
+          data:
+            callback_query_id: "{{ trigger.event.data.id }}"
+            message: "Installing update..."
+
         - alias: Check if entity_id is valid
           if:
             - condition: template
@@ -479,7 +485,7 @@ action:
                   data:
                     message: "🔄 Installing {{ callback_friendly_name }}..."
                     parse_mode: Markdown
-        
+
                 - alias: Install the update
                   action: update.install
                   target:
@@ -495,6 +501,12 @@ action:
         - "{{ trigger.id == 'telegram_callback' }}"
         - "{{ callback_action == 'skip' }}"
       sequence:
+        - alias: Answer callback query
+          action: telegram_bot.answer_callback_query
+          data:
+            callback_query_id: "{{ trigger.event.data.id }}"
+            message: "Skipping update..."
+
         - alias: Check if entity_id is valid
           if:
             - condition: template
@@ -521,7 +533,7 @@ action:
                   data:
                     message: "⏭️ Skipping {{ callback_friendly_name }} update"
                     parse_mode: Markdown
-        
+
                 - alias: Skip the update
                   action: update.skip
                   target:
