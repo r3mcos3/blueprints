@@ -1,5 +1,8 @@
 # ☀️ Sun-aware Motion Light
 
+[![version](https://img.shields.io/badge/version-1.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
+
 This blueprint creates an automation that turns on a light when motion is detected. It can optionally use different brightness levels based on the sun's position.
 
 ## Version
