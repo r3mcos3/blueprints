@@ -1,8 +1,8 @@
-# Version: 1.2.0
+# Version: 1.3.0
 blueprint:
   name: "📱 Telegram Update Notifications"
   description: >
-    📦 [Version 1.2.0] Get notified about Home Assistant updates via Telegram!
+    📦 [Version 1.3.0] Get notified about Home Assistant updates via Telegram!
     Receive notifications when updates are available for core, addons, or integrations.
     Includes inline keyboard buttons to install or skip updates directly from Telegram. 🚀
   domain: automation
@@ -430,6 +430,8 @@ action:
                       reminder_entity_id: "{{ repeat.item }}"
                       reminder_friendly_name: "{{ state_attr(repeat.item, 'friendly_name') }}"
                       reminder_latest_version: "{{ state_attr(repeat.item, 'latest_version') }}"
+                      reminder_installed_version: "{{ state_attr(repeat.item, 'installed_version') }}"
+                      reminder_release_summary: "{{ state_attr(repeat.item, 'release_summary') | default('', true) }}"
                       reminder_release_url: >
                         {{ state_attr(repeat.item, 'release_url')
                           | default(changelog_urls[repeat.item] | default('', true), true) }}
@@ -444,6 +446,30 @@ action:
                       parse_mode: Markdown
                       inline_keyboard: >-
                         [[["✅ Install", "install|{{ reminder_entity_id }}"], ["⏭️ Skip", "skip|{{ reminder_entity_id }}"]]{% if reminder_release_url %}, [["📋 Changelog", "{{ reminder_release_url }}"]]{% endif %}]
+
+                  - alias: Send reminder to HA if enabled
+                    if:
+                      - condition: template
+                        value_template: "{{ send_to_ha }}"
+                    then:
+                      - action: persistent_notification.create
+                        data:
+                          notification_id: "update_{{ reminder_entity_id[7:] }}"
+                          title: "🔔 {{ reminder_friendly_name }}"
+                          message: >
+                            **Reminder:** Update available
+
+                            **New version:** {{ reminder_latest_version }}
+
+                            **Installed:** {{ reminder_installed_version }}
+                            {% if reminder_release_summary %}
+
+                            {{ reminder_release_summary }}
+                            {% endif %}
+                            {% if reminder_release_url %}
+
+                            [View Changelog]({{ reminder_release_url }})
+                            {% endif %}
 
     # ════════════════════════════════════════════════════════════════════════
     # TELEGRAM CALLBACK - INSTALL UPDATE
