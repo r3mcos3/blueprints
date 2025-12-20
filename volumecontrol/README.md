@@ -1,6 +1,6 @@
 # 🔈 Volume Control
 
-[![version](https://img.shields.io/badge/version-1.0-blue.svg)](https://github.com/r3mco/blueprints)
+[![version](https://img.shields.io/badge/version-1.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 This blueprint automates volume control for your media players based on a schedule. Perfect for automatically adjusting speaker volume during different times of the day, like quiet hours at night or louder volume during the day! 🔊

@@ -1,6 +1,6 @@
 # 💡 Presence - Home/Away Lights
 
-[![version](https://img.shields.io/badge/version-1.0.13-blue.svg)](https://github.com/r3mco/blueprints)
+[![version](https://img.shields.io/badge/version-1.0.13-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 This blueprint automatically controls your lights based on presence detection. Lights turn on when someone arrives home after sunset, and turn off when the last person leaves. Perfect for a welcoming home and energy savings! 💡

@@ -1,6 +1,6 @@
 # 🤖 AI Weather Report Generator
 
-[![version](https://img.shields.io/badge/version-1.0.2-blue.svg)](https://github.com/r3mco/blueprints)
+[![version](https://img.shields.io/badge/version-1.0.2-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 This blueprint automatically fetches weather forecasts at regular intervals, uses AI to create an emoji-rich summary, and stores it in a text helper. Perfect for displaying on dashboards, sending in notifications, or using in other automations! ☀️🌧️⛈️
@@ -44,7 +44,7 @@ Before using this blueprint, you need:
 2. Click the **Import Blueprint** button
 3. Enter the blueprint URL:
    ```
-   https://github.com/r3mco/blueprints/blob/main/ai_weather_report/ai_weather_report.yaml
+   https://github.com/r3mcos3/blueprints/blob/main/ai_weather_report/ai_weather_report.yaml
    ```
 4. Click **Preview** and then **Import**
 
@@ -133,7 +133,7 @@ Adjust the **Report Length** parameter to your desired character count. Note tha
 
 ## 🤝 Contributing
 
-Found a bug or have a suggestion? Please [open an issue](https://github.com/r3mco/blueprints/issues) on GitHub!
+Found a bug or have a suggestion? Please [open an issue](https://github.com/r3mcos3/blueprints/issues) on GitHub!
 
 ## 📄 License
 

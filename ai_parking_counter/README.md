@@ -1,6 +1,6 @@
 # 🚗 AI Parking Spot Counter
 
-[![version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/r3mco/blueprints)
+[![version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 This blueprint automatically uses AI to analyze camera feeds and count free and occupied parking spaces when you arrive home. Perfect for keeping track of available parking spots in front of your house! 🅿️
