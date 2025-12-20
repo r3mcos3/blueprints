@@ -1,4 +1,4 @@
-# Version: 1.2.3
+# Version: 1.2.4
 blueprint:
   domain: automation
   name: "🔥 Smart Heating Controller"
@@ -27,10 +27,8 @@ blueprint:
 
     - ❄️ Frost protection (minimum temperature)
 
-    - 📱 Optional notifications
 
-
-    📦 Version: 1.2.3
+    📦 Version: 1.2.4
 
   input:
     # ===== REQUIRED: CLIMATE ENTITY =====
@@ -268,28 +266,6 @@ blueprint:
                 - domain: sensor
                   device_class: humidity
 
-    # ===== NOTIFICATION SETTINGS (COLLAPSED) =====
-    notification_settings:
-      name: "📱 Notification Settings"
-      icon: mdi:bell
-      collapsed: true
-      input:
-        use_notifications:
-          name: "📱 Enable Notifications"
-          description: >
-            Send notifications when heating mode changes.
-          default: false
-          selector:
-            boolean:
-
-        notify_service:
-          name: "📱 Notification Service"
-          description: >
-            The notification service to use (e.g., notify.mobile_app_phone).
-          default: ""
-          selector:
-            text:
-
 mode: single
 max_exceeded: silent
 
@@ -312,12 +288,10 @@ variables:
   night_mode_enabled: !input use_night_mode
   preheat_enabled: !input use_preheat
   humidity_enabled: !input use_humidity
-  notifications_enabled: !input use_notifications
 
   # Other settings
   preheat_mins: !input preheat_minutes
   humidity_entity: !input humidity_sensor
-  notify_svc: !input notify_service
   night_start_time: !input night_start
   night_end_time: !input night_end
 
@@ -508,14 +482,6 @@ actions:
             data:
               temperature: "{{ temp_frost }}"
               hvac_mode: heat
-          - if:
-              - condition: template
-                value_template: "{{ notifications_enabled and notify_svc != '' }}"
-            then:
-              - action: "{{ notify_svc }}"
-                data:
-                  message: "❄️ Frost protection activated! Indoor temp: {{ current_indoor }}°C"
-                  title: "🔥 Heating Alert"
 
       # ----- OUTDOOR WARM - ECO MODE -----
       - conditions:
@@ -529,14 +495,6 @@ actions:
               entity_id: "{{ climate }}"
             data:
               hvac_mode: "off"
-          - if:
-              - condition: template
-                value_template: "{{ notifications_enabled and notify_svc != '' }}"
-            then:
-              - action: "{{ notify_svc }}"
-                data:
-                  message: "🌡️ Eco mode: outdoor {{ current_outdoor }}°C. Heating disabled."
-                  title: "🔥 Heating Update"
 
       # ----- DOOR/WINDOW OPEN -----
       - conditions:
@@ -550,14 +508,6 @@ actions:
               entity_id: "{{ climate }}"
             data:
               temperature: "{{ temp_frost }}"
-          - if:
-              - condition: template
-                value_template: "{{ notifications_enabled and notify_svc != '' }}"
-            then:
-              - action: "{{ notify_svc }}"
-                data:
-                  message: "🚪 Door/window open. Heating paused."
-                  title: "🔥 Heating Update"
 
       # ----- AWAY MODE -----
       - conditions:
@@ -569,14 +519,6 @@ actions:
               entity_id: "{{ climate }}"
             data:
               temperature: "{{ temp_away }}"
-          - if:
-              - condition: template
-                value_template: "{{ notifications_enabled and notify_svc != '' }}"
-            then:
-              - action: "{{ notify_svc }}"
-                data:
-                  message: "🏃 Away mode: temperature set to {{ temp_away }}°C"
-                  title: "🔥 Heating Update"
 
       # ----- ARRIVED HOME -----
       - conditions:
@@ -589,14 +531,6 @@ actions:
             data:
               temperature: "{{ target_temp }}"
               hvac_mode: heat
-          - if:
-              - condition: template
-                value_template: "{{ notifications_enabled and notify_svc != '' }}"
-            then:
-              - action: "{{ notify_svc }}"
-                data:
-                  message: "🏠 Welcome home! Temperature set to {{ target_temp }}°C"
-                  title: "🔥 Heating Update"
 
       # ----- DOOR CLOSED - RESUME -----
       - conditions:
@@ -670,14 +604,6 @@ actions:
             data:
               temperature: "{{ target_temp }}"
               hvac_mode: heat
-          - if:
-              - condition: template
-                value_template: "{{ notifications_enabled and notify_svc != '' }}"
-            then:
-              - action: "{{ notify_svc }}"
-                data:
-                  message: "⏰ Pre-heating started! Target: {{ target_temp }}°C"
-                  title: "🔥 Heating Update"
 
       # ----- STARTUP / RELOAD (initialize state) -----
       - conditions:
