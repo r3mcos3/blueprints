@@ -1,0 +1,110 @@
+# Version: 1.0.0
+blueprint:
+  name: "☀️ Sun Notifications"
+  description: "🌅 Get notified at sunrise and sunset. Version 1.0.0"
+  domain: automation
+  author: r3mcos3
+  source_url: https://github.com/r3mcos3/blueprints/blob/main/sun_notifications/sun_notifications.yaml
+  homeassistant:
+    min_version: 2025.12.0
+
+  input:
+    # ══════════════════════════════════════════════════════════════════════════
+    # NOTIFICATION SETTINGS
+    # ══════════════════════════════════════════════════════════════════════════
+    notification_target:
+      name: 📱 Notification Target
+      description: The target for notifications (e.g., a device or a group).
+      selector:
+        target:
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # SUNRISE SETTINGS
+    # ══════════════════════════════════════════════════════════════════════════
+    sunrise_enabled:
+      name: 🌅 Enable Sunrise Notification
+      description: "If enabled, sends a notification when the sun rises."
+      default: true
+      selector:
+        boolean:
+
+    sunrise_offset:
+      name: ⏰ Sunrise Offset
+      description: "Offset from the sunrise event (e.g., '-00:30:00' for 30 minutes before)."
+      default: "00:00:00"
+      selector:
+        time:
+
+    sunrise_message:
+      name: 💬 Sunrise Message
+      description: "The message to send at sunrise. Templates are supported."
+      default: "De zon komt op ☀️"
+      selector:
+        text:
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # SUNSET SETTINGS
+    # ══════════════════════════════════════════════════════════════════════════
+    sunset_enabled:
+      name: 🌇 Enable Sunset Notification
+      description: "If enabled, sends a notification when the sun sets."
+      default: true
+      selector:
+        boolean:
+
+    sunset_offset:
+      name: ⏰ Sunset Offset
+      description: "Offset from the sunset event (e.g., '00:15:00' for 15 minutes after)."
+      default: "00:00:00"
+      selector:
+        time:
+
+    sunset_message:
+      name: 💬 Sunset Message
+      description: "The message to send at sunset. Templates are supported."
+      default: "De zon gaat onder 🌃"
+      selector:
+        text:
+
+variables:
+  # The inputs are directly accessible now, no need for nested references.
+  # We still define them as variables for cleaner code in the action section.
+  sunrise_enabled_var: !input sunrise_enabled
+  sunset_enabled_var: !input sunset_enabled
+  sunrise_offset_var: !input sunrise_offset
+  sunrise_message_var: !input sunrise_message
+  sunset_offset_var: !input sunset_offset
+  sunset_message_var: !input sunset_message
+
+
+trigger:
+  - platform: sun
+    event: sunrise
+    offset: "{{ sunrise_offset_var }}"
+    id: sunrise_trigger
+  - platform: sun
+    event: sunset
+    offset: "{{ sunset_offset_var }}"
+    id: sunset_trigger
+
+action:
+  - choose:
+      # Sunrise Case
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.id == 'sunrise_trigger' and sunrise_enabled_var }}"
+        sequence:
+          - service: notify.notify
+            data:
+              message: "{{ sunrise_message_var }}"
+            target: !input notification_target
+      # Sunset Case
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.id == 'sunset_trigger' and sunset_enabled_var }}"
+        sequence:
+          - service: notify.notify
+            data:
+              message: "{{ sunset_message_var }}"
+            target: !input notification_target
+mode: single
