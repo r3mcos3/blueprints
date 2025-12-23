@@ -576,6 +576,56 @@ Full documentation with template examples: [GitHub Repository](https://github.co
 
 ---
 
+## 12. 📸 Camera Motion Snapshot
+
+**Title:** `📸 Camera Motion Snapshot - Captures and sends a camera snapshot via Telegram`
+
+**Tags:** `automation`, `camera`, `motion`, `telegram`, `notification`
+
+**Post:**
+
+```markdown
+# Camera Motion Snapshot 📸
+
+Automatically capture a snapshot from your camera when motion is detected and send it instantly via your Telegram bot!
+
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fcamera_motion_snapshot%2Fcamera_motion_snapshot.yaml)
+
+## Features
+
+- 📸 **Instant Snapshot** - Captures an image the moment motion is detected
+- 🏃‍♂️ **Motion Triggered** - Works with any motion sensor
+- 🤖 **Telegram Support** - Send images to specific Telegram Chat IDs
+- ✍️ **Custom Caption** - You decide the message text
+- ⏱️ **Cooldown Timer** - Built-in timeout to prevent notification spam
+- 💾 **Local Path** - Fully customizable storage location
+
+## Requirements
+
+- Home Assistant 2025.12.0+
+- Camera entity
+- Motion sensor (binary sensor)
+- Telegram Bot integration
+- Writable local directory
+
+## Configuration
+
+| Input | Description |
+|-------|-------------|
+| Motion Sensor | Sensor that triggers the snapshot |
+| Camera | Camera to take the snapshot from |
+| Telegram Bot | Telegram Bot instance to use |
+| Target Chat ID | ID of the chat to receive the photo |
+| Message Caption | Text sent with the photo |
+| Timeout | Cooldown period between snapshots |
+
+## GitHub
+
+[GitHub Repository](https://github.com/r3mcos3/blueprints/tree/main/camera_motion_snapshot)
+```
+
+---
+
 # Tips voor het posten
 
 1. **Eén post per blueprint** - Maak een aparte post voor elke blueprint
