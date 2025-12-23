@@ -1,0 +1,72 @@
+blueprint:
+  name: 📸 Camera Snapshot on Motion to Telegram 🤖
+  description: >
+    🚀 Automatically capture a snapshot from your camera 📷 when motion is detected 🏃‍♂️ and send it instantly via your Telegram bot 📨.
+    
+    ✨ Features:
+    - 📸 Instant high-quality snapshot.
+    - 🏃‍♂️ Triggered by any motion sensor.
+    - 🤖 Supports multiple Telegram bots via Config Entry and Chat ID.
+    - ✍️ Fully customizable message caption.
+
+    Version: 1.5.0 🏷️
+  domain: automation
+  input:
+    motion_sensor:
+      name: 🏃‍♂️ Motion Sensor
+      description: 🔍 Select the sensor that should trigger the snapshot.
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class: motion
+    camera:
+      name: 📷 Camera
+      description: 🖼️ Choose the camera to take the snapshot from.
+      selector:
+        entity:
+          domain: camera
+    telegram_bot_entry:
+      name: 🤖 Telegram Bot Instance
+      description: 🔌 Select the Telegram Bot integration instance to use.
+      selector:
+        config_entry:
+          integration: telegram_bot
+    target_chat_id:
+      name: 🆔 Target Chat ID
+      description: ✉️ The specific Telegram Chat ID to send the photo to.
+      selector:
+        text: {}
+    message_caption:
+      name: ✍️ Message Caption
+      description: 📝 The full message to be sent as a caption with the photo.
+      default: "🚨 Motion detected! 📸"
+      selector:
+        text: {}
+    snapshot_path:
+      name: 📂 Snapshot Path
+      description: 💾 Local path to save the image (e.g., /config/www/snapshot.jpg).
+      default: "/config/www/snapshot_motion.jpg"
+      selector:
+        text: {}
+
+variables:
+  target_chat_id_var: !input target_chat_id
+
+trigger:
+  - platform: state
+    entity_id: !input motion_sensor
+    from: "off"
+    to: "on"
+
+action:
+  - service: camera.snapshot
+    target:
+      entity_id: !input camera
+    data:
+      filename: !input snapshot_path
+  - delay: "00:00:02"
+  - service: telegram_bot.send_photo
+    data:
+      target: "{{ target_chat_id_var }}"
+      file: !input snapshot_path
+      caption: !input message_caption
