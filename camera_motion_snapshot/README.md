@@ -30,7 +30,8 @@ This blueprint 🏗️ automatically takes a snapshot 🖼️ from a specified c
 3. ✅ Save and stay informed!
 
 ## 🏷️ Version History
-- **1.5.0**: ✍️ Made the message caption fully customizable (no more hardcoded prefixes).
+- **1.6.0**: 🛠️ Added `author` and `source_url` for better integration with Home Assistant.
+- **1.5.0**: ✍️ Made the message caption fully customizable.
 - **1.4.0**: 🏷️ Added custom notification name and 🤖 Config Entry picker.
 - **1.3.0**: 🐛 Fixed "UndefinedError" for manual testing.
 - **1.2.0**: ✨ Added more emojis and polished descriptions.
