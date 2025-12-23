@@ -184,6 +184,12 @@ Analyze this image of my driveway. There are {total_spaces} parking spots visibl
 3. If using proximity sensor, ensure it's enabled and showing "towards" when approaching
 4. For testing, disable the proximity sensor check
 
+## Screenshot
+
+<img width="938" height="828" alt="Screenshot 2025-12-23 193919" src="https://github.com/user-attachments/assets/155b47a5-6ee8-4569-bf0f-d4960e569de0" />
+
+
+
 ## 📝 Version History
 
 ### Version 2.0.0 (2025-12-17)
