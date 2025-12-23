@@ -31,6 +31,11 @@ This blueprint 🏗️ automatically takes a snapshot 🖼️ from a specified c
 2. ⚙️ Configure your sensors, camera, bot, chat ID, and message.
 3. ✅ Save and stay informed!
 
+## Screenshot
+
+<img width="934" height="784" alt="Screenshot 2025-12-23 194736" src="https://github.com/user-attachments/assets/b66a3827-be1c-4039-953b-08bd8397535f" />
+
+
 ## 🏷️ Version History
 - **1.7.0**: ⏱️ Added a customizable timeout (cooldown) to prevent multiple snapshots in a short period.
 - **1.6.0**: 🛠️ Added `author` and `source_url` for better integration with Home Assistant.
