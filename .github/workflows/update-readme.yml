@@ -70,9 +70,9 @@ jobs:
               display_name="$blueprint_name_raw"
               # Extract emoji from name or assign based on directory
               case "$dir_name_basename" in
-                ai_parking*) emoji="🚗" ;; 
-                ai_weather*) emoji="🌤️" ;; 
-                doorbell*) emoji="🔔" ;; 
+                ai_parking*) emoji="🚗" ;;
+                ai_weather*) emoji="🌤️" ;;
+                doorbell*) emoji="🔔" ;;
                 presence_lights*) emoji="💡" ;; # Added specific worktree case
                 volumecontrol*) emoji="🔈" ;; # Added specific worktree case
                 *) emoji="🏠" ;; # Default emoji
@@ -140,50 +140,66 @@ jobs:
           cat /tmp/blueprint_table.md
 
       - name: Update README
+        shell: python
         run: |
-          # Read the generated table
-          new_table=$(cat /tmp/blueprint_table.md)
+          import os
 
-          # Create awk script to handle the replacement
-          # Using a temporary file avoids YAML syntax conflicts with awk code
-          cat << 'EOF' > /tmp/update_readme.awk
-          BEGIN { in_section = 0 }
-          /^## ✨ Available Blueprints/ {
-            print
-            print ""
-            print "Currently, this repository offers the following blueprints:"
-            print ""
-            print new_table_content
-            print ""
-            in_section = 1
-            next
-          }
-          /^## / && in_section {
-            in_section = 0
-          }
-          !in_section {
-            print
-          }
-          EOF
+          # Read current README
+          try:
+              with open('README.md', 'r', encoding='utf-8') as f:
+                  readme_lines = f.readlines()
+          except FileNotFoundError:
+              print("README.md not found, creating new one.")
+              readme_lines = []
 
-          # Execute the awk script
-          awk -v new_table_content="$new_table" -f /tmp/update_readme.awk README.md > README.md.new
+          # Read new table
+          try:
+              with open('/tmp/blueprint_table.md', 'r', encoding='utf-8') as f:
+                  new_table = f.read()
+          except FileNotFoundError:
+              print("Table file not found!")
+              exit(1)
 
-          # Check if the replacement actually happened, if not, append the table.
-          # This is a fallback in case the "## ✨ Available Blueprints" header wasn't found.
-          if ! grep -q "Currently, this repository offers the following blueprints:" README.md.new; then
-            echo "Warning: Could not find the section '## ✨ Available Blueprints' in README.md. Appending table instead."
-            echo -e "\n## ✨ Available Blueprints\n" >> README.md.new
-            echo "Currently, this repository offers the following blueprints:" >> README.md.new
-            echo "" >> README.md.new
-            cat /tmp/blueprint_table.md >> README.md.new
-            echo "" >> README.md.new
-          fi
+          new_content = []
+          in_target_section = False
+          section_header_prefix = "## ✨ Available Blueprints"
+          found_header = False
 
-          mv README.md.new README.md
+          for line in readme_lines:
+              # Check if line starts with the header prefix (ignoring leading/trailing whitespace variations if any)
+              if line.strip().startswith(section_header_prefix):
+                  found_header = True
+                  new_content.append(line) # Keep the header line
+                  new_content.append("\n")
+                  new_content.append("Currently, this repository offers the following blueprints:\n")
+                  new_content.append("\n")
+                  new_content.append(new_table)
+                  new_content.append("\n")
+                  in_target_section = True
+                  continue
+              
+              if in_target_section:
+                  # If we hit the next section (starting with ##), stop skipping
+                  # Ensure we don't match the header we just found if it was repeated for some reason
+                  if line.strip().startswith("## ") and not line.strip().startswith(section_header_prefix):
+                      in_target_section = False
+                      new_content.append(line)
+                  # Otherwise, we are in the section to replace, so we skip the old content
+              else:
+                  new_content.append(line)
 
-          echo "Updated README.md:"
-          cat README.md
+          # Fallback if header not found
+          if not found_header:
+              print("Header not found, appending...")
+              new_content.append("\n" + section_header_prefix + "\n")
+              new_content.append("\nCurrently, this repository offers the following blueprints:\n\n")
+              new_content.append(new_table)
+              new_content.append("\n")
+
+          with open('README.md', 'w', encoding='utf-8') as f:
+              f.writelines(new_content)
+          
+          print("README.md updated successfully.")
 
       - name: Check for changes
         id: check
