@@ -127,14 +127,14 @@ jobs:
               fi
             fi
 
-        # Final formatted description for README
-        formatted_description="$version - $short_desc"
+            # Final formatted description for README
+            formatted_description="$version - $short_desc"
 
-        # Generate import URL
-        import_url="https://my.home-assistant.io/redirect/blueprint/?blueprint_url=https://github.com/$GITHUB_REPOSITORY/blob/main/$repo_path_for_url"
+            # Generate import URL
+            import_url="https://my.home-assistant.io/redirect/blueprint/?blueprint_url=https://github.com/$GITHUB_REPOSITORY/blob/main/$repo_path_for_url"
 
-        # Add row to table
-        echo "| $emoji **[$display_name]($repo_path_for_url)** | $formatted_description | [![Import](https://my.home-assistant.io/badges/blueprint_import.svg)]($import_url) |" >> /tmp/blueprint_table.md
+            # Add row to table
+            echo "| $emoji **[$display_name]($repo_path_for_url)** | $formatted_description | [![Import](https://my.home-assistant.io/badges/blueprint_import.svg)]($import_url) |" >> /tmp/blueprint_table.md
           done
 
           # Table generation complete
