@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    Play a chime sound on your media players when the doorbell rings! 🔔
+    📦 [Version 1.0.4] Play a chime sound on your media players when the doorbell rings! 🔔
 
 
     Features:
@@ -19,9 +19,6 @@ blueprint:
     - 🚫 Do Not Disturb mode support
 
     - ⏱️ Built-in cooldown (single mode)
-
-
-    📦 Version: 1.0.4
 
   input:
     doorbell_sensor:
