@@ -8,7 +8,8 @@ on:
       - '**/*.yaml'
       - '!.github/**'
 
-workflow_dispatch:
+  # Voeg workflow_dispatch toe zodat je hem handmatig kunt testen via de website
+  workflow_dispatch:
 
 jobs:
   update-readme:
@@ -22,9 +23,9 @@ jobs:
 
       - name: Setup yq
         run: |
-          # Download en installeer yq direct
-          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
-          chmod +x /usr/bin/yq
+          # Download naar de huidige map (./yq) om 'Permission denied' in /usr/bin/ te voorkomen
+          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O ./yq
+          chmod +x ./yq
 
       - name: Generate blueprint table
         id: generate
@@ -51,9 +52,9 @@ jobs:
 
             repo_path_for_url=${yaml_file#./}
 
-            # Use yq to extract name and description
-            blueprint_name_raw=$(yq -r '.blueprint.name // ""' "$yaml_file" 2>/dev/null)
-            blueprint_desc_raw=$(yq -r '.blueprint.description // ""' "$yaml_file" 2>/dev/null)
+            # Gebruik ./yq omdat we het lokaal hebben geïnstalleerd
+            blueprint_name_raw=$(./yq -r '.blueprint.name // ""' "$yaml_file" 2>/dev/null)
+            blueprint_desc_raw=$(./yq -r '.blueprint.description // ""' "$yaml_file" 2>/dev/null)
 
             # Fallback for name (Python fix voor nette tekst)
             if [[ -z "$blueprint_name_raw" ]]; then
