@@ -64,7 +64,7 @@ jobs:
             # Fallback for name if not found or contains unicode escapes
             if [[ -z "$blueprint_name_raw" ]] || [[ "$blueprint_name_raw" == *"\U"* ]]; then
               # Try to get a human-readable name from the directory name
-              display_name=$(echo "$dir_name_basename" | sed 's/_/ /g' | sed 's/\b\(.\)/\u\1/g')
+              display_name=$(echo "$dir_name_basename" | sed 's/_/ /g' | sed 's/\b(.)/ሴ/g')
               emoji="🏠" # Default emoji
             else
               display_name="$blueprint_name_raw"
@@ -141,38 +141,33 @@ jobs:
 
       - name: Update README
         run: |
-          # Read the current README
-          readme_content=$(cat README.md)
-
           # Read the generated table
           new_table=$(cat /tmp/blueprint_table.md)
 
-          # Create new README with updated table
-          # Use a more robust awk command to replace the section.
-          # The content of new_table is passed as an awk variable.
-          awk -v new_table_content="$new_table" ' 
-            # Match the header to insert the table
-            /^## ✨ Available Blueprints/ {
-              print
-              print ""
-              print "Currently, this repository offers the following blueprints:"
-              print ""
-              print new_table_content # Use the passed variable
-              print ""
-              # Start skipping lines after the new table is inserted
-              # This prevents duplicating the section if it appears multiple times
-              in_section=1
-              next
-            }
-            # If we are inside the section to be replaced and encounter another header, stop skipping
-            /^## / && in_section {
-              in_section=0
-            }
-            # If not inside the section to be replaced, print the line
-            !in_section {
-              print
-            }
-          ' README.md > README.md.new
+          # Create awk script to handle the replacement
+          # Using a temporary file avoids YAML syntax conflicts with awk code
+          cat << 'EOF' > /tmp/update_readme.awk
+          BEGIN { in_section = 0 }
+          /^## ✨ Available Blueprints/ {
+            print
+            print ""
+            print "Currently, this repository offers the following blueprints:"
+            print ""
+            print new_table_content
+            print ""
+            in_section = 1
+            next
+          }
+          /^## / && in_section {
+            in_section = 0
+          }
+          !in_section {
+            print
+          }
+          EOF
+
+          # Execute the awk script
+          awk -v new_table_content="$new_table" -f /tmp/update_readme.awk README.md > README.md.new
 
           # Check if the replacement actually happened, if not, append the table.
           # This is a fallback in case the "## ✨ Available Blueprints" header wasn't found.
