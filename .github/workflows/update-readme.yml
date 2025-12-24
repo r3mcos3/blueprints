@@ -179,7 +179,7 @@ jobs:
 
       - name: Setup SSH Agent and Key
         if: steps.check.outputs.changed == 'true'
-        uses: webfactory/ssh-agent@v0.9.0
+        uses: webfactory/ssh-agent@v0.9.1
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
