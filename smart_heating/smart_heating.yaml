@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    Intelligent climate control with presence detection, door/window protection,
+    📦 [Version 1.2.4] Intelligent climate control with presence detection, door/window protection,
     and energy-saving features! 🌡️
 
 
@@ -26,9 +26,6 @@ blueprint:
     - 💧 Humidity compensation for comfort
 
     - ❄️ Frost protection (minimum temperature)
-
-
-    📦 Version: 1.2.4
 
   input:
     # ===== REQUIRED: CLIMATE ENTITY =====
