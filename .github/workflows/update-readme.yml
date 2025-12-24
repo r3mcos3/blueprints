@@ -8,7 +8,7 @@ on:
       - '**/**.yaml'
       - '!.github/**'
 
-workflow_dispatch: 
+  workflow_dispatch: 
 
 jobs:
   update-readme:
