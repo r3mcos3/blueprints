@@ -20,7 +20,7 @@ jobs:
 
       - name: Setup yq
         run: |
-          # Download en installeer yq direct (sneller en betrouwbaarder)
+          # Download en installeer yq direct
           wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
           chmod +x /usr/bin/yq
 
@@ -34,7 +34,6 @@ jobs:
           echo "|-----------|-------------|--------|" >> /tmp/blueprint_table.md
 
           # Find all blueprint yaml files
-          # -print0 en read -d '' zorgen voor correcte afhandeling van bestandsnamen met spaties
           find . -maxdepth 3 -name "*.yaml" -type f ! -path "./.github/*" ! -path "./.git/*" ! -path "./.worktrees/*/.auto-claude/*" -print0 | while IFS= read -r -d '' yaml_file; do
             
             # Skip files inside .auto-claude/specs within worktrees
@@ -51,13 +50,11 @@ jobs:
             repo_path_for_url=${yaml_file#./}
 
             # Use yq to extract name and description
-            # De toevoeging ' // ""' zorgt ervoor dat 'null' wordt omgezet in een lege string
             blueprint_name_raw=$(yq -r '.blueprint.name // ""' "$yaml_file" 2>/dev/null)
             blueprint_desc_raw=$(yq -r '.blueprint.description // ""' "$yaml_file" 2>/dev/null)
 
-            # Fallback for name
+            # Fallback for name (Python fix voor nette tekst)
             if [[ -z "$blueprint_name_raw" ]]; then
-              # Gebruik python voor nette string formatting (vervangt underscores met spaties en Title Case)
               display_name=$(python3 -c "import sys; print(sys.stdin.read().strip().replace('_', ' ').title())" <<< "$dir_name_basename")
               emoji="🏠"
             else
@@ -78,7 +75,6 @@ jobs:
             short_desc=""
 
             if [[ -n "$blueprint_desc_raw" ]]; then
-              # Regex om versie en beschrijving te scheiden
               if [[ "$blueprint_desc_raw" =~ ^v([0-9]+\.[0-9]+(\.[0-9]+)?)\s*-\s*(.*)$ ]]; then
                 version="v${BASH_REMATCH[1]}"
                 short_desc="${BASH_REMATCH[3]}"
@@ -95,7 +91,7 @@ jobs:
             # Clean up short description
             short_desc=$(echo "$short_desc" | sed 's/^ *- *//' | sed 's/ *$//' | sed 's/Features:.*//' | sed 's/^ *//')
 
-            # Truncate logic (omschrijving inkorten als deze te lang is)
+            # Truncate logic
             max_total_len=80
             current_version_len=${#version}
             remaining_len=$((max_total_len - current_version_len - 3)) 
@@ -118,21 +114,17 @@ jobs:
             echo "| $emoji **[$display_name]($repo_path_for_url)** | $formatted_description | [![Import](https://my.home-assistant.io/badges/blueprint_import.svg)]($import_url) |" >> /tmp/blueprint_table.md
           done
 
-          # Debug output
           cat /tmp/blueprint_table.md
 
       - name: Update README
         shell: python
         run: |
-          # Read current README
           try:
               with open('README.md', 'r', encoding='utf-8') as f:
                   readme_lines = f.readlines()
           except FileNotFoundError:
-              print("README.md not found, creating new one.")
               readme_lines = []
 
-          # Read new table
           try:
               with open('/tmp/blueprint_table.md', 'r', encoding='utf-8') as f:
                   new_table = f.read()
@@ -146,10 +138,9 @@ jobs:
           found_header = False
 
           for line in readme_lines:
-              # Check if line starts with the header prefix
               if line.strip().startswith(section_header_prefix):
                   found_header = True
-                  new_content.append(line) # Keep the header line
+                  new_content.append(line) 
                   new_content.append("\n")
                   new_content.append("Currently, this repository offers the following blueprints:\n")
                   new_content.append("\n")
@@ -159,15 +150,12 @@ jobs:
                   continue
               
               if in_target_section:
-                  # If we hit the next section (starting with ##), stop skipping
                   if line.strip().startswith("## ") and not line.strip().startswith(section_header_prefix):
                       in_target_section = False
                       new_content.append(line)
-                  # Otherwise, we are in the section to replace, so we skip the old content
               else:
                   new_content.append(line)
 
-          # Fallback if header not found
           if not found_header:
               print("Header not found, appending...")
               new_content.append("\n" + section_header_prefix + "\n")
@@ -183,21 +171,29 @@ jobs:
       - name: Check for changes
         id: check
         run: |
-          # Check if README.md has been modified
           if git diff --quiet README.md; then
             echo "changed=false" >> $GITHUB_OUTPUT
           else
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
+      - name: Setup SSH Agent and Key
+        if: steps.check.outputs.changed == 'true'
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
       - name: Commit and push
-        # Only run if changes were detected
         if: steps.check.outputs.changed == 'true'
         run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
+          # Configureren wie de commit maakt
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Forceer git om SSH te gebruiken voor de push (in plaats van HTTPS)
+          git remote set-url origin git@github.com:$GITHUB_REPOSITORY.git
+
           git add README.md
-          COMMIT_MESSAGE="🤖 Auto-update README with blueprint list and versioned descriptions"
-          git commit -m "$COMMIT_MESSAGE"
+          git commit -m "🤖 Auto-update README with blueprint list and versioned descriptions"
           echo "Pushing changes..."
           git push
