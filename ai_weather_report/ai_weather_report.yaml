@@ -1,11 +1,9 @@
 blueprint:
   name: 🤖 AI Weather Report Generator
   description: >
-    Fetches weather forecasts at regular intervals, uses AI to create an emoji-rich
+    📦 [Version 1.0.2] Fetches weather forecasts at regular intervals, uses AI to create an emoji-rich
     summary, and stores it in a text helper. Perfect for dashboard displays or
     notifications! ☀️🌧️⛈️
-
-    Version: 1.0.2
   domain: automation
   author: r3mcos3
   homeassistant:
