@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - '**/**.yaml'
+      - '**/*.yaml'
       - '!.github/**'
 
 jobs:
@@ -16,7 +16,13 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
+
+      - name: Setup yq
+        run: |
+          # Download en installeer yq direct (sneller en betrouwbaarder)
+          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
+          chmod +x /usr/bin/yq
 
       - name: Generate blueprint table
         id: generate
@@ -24,101 +30,160 @@ jobs:
           echo "Scanning for blueprints..."
 
           # Start building the table
-          TABLE="| Blueprint | Description | Import |
-          |-----------|-------------|--------|"
+          echo "| Blueprint | Description | Import |" > /tmp/blueprint_table.md
+          echo "|-----------|-------------|--------|" >> /tmp/blueprint_table.md
 
-          # Find all blueprint yaml files (excluding .github)
-          for dir in */; do
-            dir_name="${dir%/}"
+          # Find all blueprint yaml files
+          # -print0 en read -d '' zorgen voor correcte afhandeling van bestandsnamen met spaties
+          find . -maxdepth 3 -name "*.yaml" -type f ! -path "./.github/*" ! -path "./.git/*" ! -path "./.worktrees/*/.auto-claude/*" -print0 | while IFS= read -r -d '' yaml_file; do
+            
+            # Skip files inside .auto-claude/specs within worktrees
+            if [[ "$yaml_file" == *"/.worktrees/"* ]] && [[ "$(basename $(dirname "$yaml_file"))" == "specs" ]]; then
+                continue
+            fi
 
-            # Skip hidden directories and non-blueprint folders
-            [[ "$dir_name" == .* ]] && continue
+            dir_name=$(dirname "$yaml_file")
+            dir_name_basename=$(basename "$dir_name")
+            
+            # Skip hidden directories
+            [[ "$dir_name_basename" == .* ]] && continue
 
-            # Look for yaml file in the directory
-            yaml_file=$(find "$dir_name" -maxdepth 1 -name "*.yaml" -type f | head -1)
+            repo_path_for_url=${yaml_file#./}
 
-            if [[ -n "$yaml_file" ]]; then
-              echo "Processing: $yaml_file"
+            # Use yq to extract name and description
+            # De toevoeging ' // ""' zorgt ervoor dat 'null' wordt omgezet in een lege string
+            blueprint_name_raw=$(yq -r '.blueprint.name // ""' "$yaml_file" 2>/dev/null)
+            blueprint_desc_raw=$(yq -r '.blueprint.description // ""' "$yaml_file" 2>/dev/null)
 
-              # Extract blueprint name (with emoji)
-              name=$(grep -A1 "^blueprint:" "$yaml_file" | grep "name:" | sed 's/.*name: *"\?\([^"]*\)"\?/\1/' | head -1)
-
-              # If name has unicode escapes, try to get clean name
-              if [[ "$name" == *"\\U"* ]] || [[ -z "$name" ]]; then
-                # Fallback: use directory name with title case
-                name=$(echo "$dir_name" | sed 's/_/ /g' | sed 's/\b\(.\)/\u\1/g')
-              fi
-
-              # Extract description (first line only)
-              description=$(grep -A5 "description:" "$yaml_file" | grep -v "description:" | grep -v "^$" | head -1 | sed 's/^ *//' | sed 's/Features:.*//' | cut -c1-80)
-
-              # Clean up description
-              description=$(echo "$description" | sed 's/^ *- *//' | sed 's/ *$//')
-
-              # Get emoji from name or assign based on directory
-              case "$dir_name" in
+            # Fallback for name
+            if [[ -z "$blueprint_name_raw" ]]; then
+              # Gebruik python voor nette string formatting (vervangt underscores met spaties en Title Case)
+              display_name=$(python3 -c "import sys; print(sys.stdin.read().strip().replace('_', ' ').title())" <<< "$dir_name_basename")
+              emoji="🏠"
+            else
+              display_name="$blueprint_name_raw"
+              # Extract emoji based on directory name
+              case "$dir_name_basename" in
                 ai_parking*) emoji="🚗" ;;
                 ai_weather*) emoji="🌤️" ;;
                 doorbell*) emoji="🔔" ;;
-                presence*) emoji="💡" ;;
-                volume*) emoji="🔈" ;;
+                presence_lights*) emoji="💡" ;;
+                volumecontrol*) emoji="🔈" ;;
                 *) emoji="🏠" ;;
               esac
-
-              # Create import URL
-              yaml_filename=$(basename "$yaml_file")
-              import_url="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2F${dir_name}%2F${yaml_filename}"
-
-              # Create display name
-              display_name=$(echo "$dir_name" | sed 's/_/ /g' | sed 's/\b\(.\)/\u\1/g')
-
-              # Add row to table
-              TABLE="$TABLE
-          | $emoji **[$display_name]($dir_name/)** | $description | [![Import](https://my.home-assistant.io/badges/blueprint_import.svg)]($import_url) |"
             fi
+            
+            # Process description
+            version="v?"
+            short_desc=""
+
+            if [[ -n "$blueprint_desc_raw" ]]; then
+              # Regex om versie en beschrijving te scheiden
+              if [[ "$blueprint_desc_raw" =~ ^v([0-9]+\.[0-9]+(\.[0-9]+)?)\s*-\s*(.*)$ ]]; then
+                version="v${BASH_REMATCH[1]}"
+                short_desc="${BASH_REMATCH[3]}"
+              elif [[ "$blueprint_desc_raw" =~ ^v([0-9]+\.[0-9]+(\.[0-9]+)?)$ ]]; then
+                version="v${BASH_REMATCH[1]}"
+                short_desc="No specific description provided."
+              else
+                short_desc="$blueprint_desc_raw"
+              fi
+            else
+              short_desc="No description found."
+            fi
+
+            # Clean up short description
+            short_desc=$(echo "$short_desc" | sed 's/^ *- *//' | sed 's/ *$//' | sed 's/Features:.*//' | sed 's/^ *//')
+
+            # Truncate logic (omschrijving inkorten als deze te lang is)
+            max_total_len=80
+            current_version_len=${#version}
+            remaining_len=$((max_total_len - current_version_len - 3)) 
+
+            if [[ $remaining_len -lt 5 ]]; then
+                remaining_len=5
+            fi
+
+            if [[ "$short_desc" != "No description found." && "$short_desc" != "No specific description provided." ]]; then
+              if [[ ${#short_desc} -gt $remaining_len ]]; then
+                short_desc="${short_desc:0:$((remaining_len-3))}..."
+              fi
+            elif [[ ${#short_desc} -gt $remaining_len ]]; then
+                short_desc="${short_desc:0:$((remaining_len-3))}..."
+            fi
+
+            formatted_description="$version - $short_desc"
+            import_url="https://my.home-assistant.io/redirect/blueprint/?blueprint_url=https://github.com/$GITHUB_REPOSITORY/blob/main/$repo_path_for_url"
+
+            echo "| $emoji **[$display_name]($repo_path_for_url)** | $formatted_description | [![Import](https://my.home-assistant.io/badges/blueprint_import.svg)]($import_url) |" >> /tmp/blueprint_table.md
           done
 
-          # Save table to file
-          echo "$TABLE" > /tmp/blueprint_table.md
+          # Debug output
           cat /tmp/blueprint_table.md
 
       - name: Update README
+        shell: python
         run: |
-          # Read the current README
-          readme_content=$(cat README.md)
+          # Read current README
+          try:
+              with open('README.md', 'r', encoding='utf-8') as f:
+                  readme_lines = f.readlines()
+          except FileNotFoundError:
+              print("README.md not found, creating new one.")
+              readme_lines = []
 
-          # Read the generated table
-          new_table=$(cat /tmp/blueprint_table.md)
+          # Read new table
+          try:
+              with open('/tmp/blueprint_table.md', 'r', encoding='utf-8') as f:
+                  new_table = f.read()
+          except FileNotFoundError:
+              print("Table file not found!")
+              exit(1)
 
-          # Create new README with updated table
-          # Find the section between "## ✨ Available Blueprints" and the next "##"
-          awk -v table="$new_table" '
-            /^## ✨ Available Blueprints/ {
-              print
-              print ""
-              print "Currently, this repository offers the following blueprints:"
-              print ""
-              print table
-              print ""
-              skip=1
-              next
-            }
-            /^## / && skip {
-              skip=0
-            }
-            !skip {
-              print
-            }
-          ' README.md > README.md.new
+          new_content = []
+          in_target_section = False
+          section_header_prefix = "## ✨ Available Blueprints"
+          found_header = False
 
-          mv README.md.new README.md
+          for line in readme_lines:
+              # Check if line starts with the header prefix
+              if line.strip().startswith(section_header_prefix):
+                  found_header = True
+                  new_content.append(line) # Keep the header line
+                  new_content.append("\n")
+                  new_content.append("Currently, this repository offers the following blueprints:\n")
+                  new_content.append("\n")
+                  new_content.append(new_table)
+                  new_content.append("\n")
+                  in_target_section = True
+                  continue
+              
+              if in_target_section:
+                  # If we hit the next section (starting with ##), stop skipping
+                  if line.strip().startswith("## ") and not line.strip().startswith(section_header_prefix):
+                      in_target_section = False
+                      new_content.append(line)
+                  # Otherwise, we are in the section to replace, so we skip the old content
+              else:
+                  new_content.append(line)
 
-          echo "Updated README.md:"
-          cat README.md
+          # Fallback if header not found
+          if not found_header:
+              print("Header not found, appending...")
+              new_content.append("\n" + section_header_prefix + "\n")
+              new_content.append("\nCurrently, this repository offers the following blueprints:\n\n")
+              new_content.append(new_table)
+              new_content.append("\n")
+
+          with open('README.md', 'w', encoding='utf-8') as f:
+              f.writelines(new_content)
+          
+          print("README.md updated successfully.")
 
       - name: Check for changes
         id: check
         run: |
+          # Check if README.md has been modified
           if git diff --quiet README.md; then
             echo "changed=false" >> $GITHUB_OUTPUT
           else
@@ -126,10 +191,13 @@ jobs:
           fi
 
       - name: Commit and push
+        # Only run if changes were detected
         if: steps.check.outputs.changed == 'true'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add README.md
-          git commit -m "🤖 Auto-update README with blueprint list"
+          COMMIT_MESSAGE="🤖 Auto-update README with blueprint list and versioned descriptions"
+          git commit -m "$COMMIT_MESSAGE"
+          echo "Pushing changes..."
           git push
