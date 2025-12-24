@@ -34,11 +34,13 @@ jobs:
           # Use find command to get relative paths for yq and URL encoding
           find . -maxdepth 3 -name "*.yaml" -type f ! -path "./.github/*" ! -path "./.worktrees/*/.auto-claude/*" -print0 | while IFS= read -r yaml_file; do
             # Ensure we only process yaml files directly or within a blueprint folder
+            # Skip files inside .auto-claude/specs within worktrees
             if [[ "$yaml_file" == *"/.worktrees/"* ]] && [[ "$(basename $(dirname "$yaml_file"))" == "specs" ]]; then
-                continue # Skip files inside .auto-claude/specs within worktrees
+                continue
             fi
+            # Skip files inside .github
             if [[ "$yaml_file" == *"/.github/"* ]]; then
-                continue # Skip files inside .github
+                continue
             fi
 
             # Get directory name and blueprint name (from file system or inside YAML)
@@ -60,7 +62,7 @@ jobs:
             blueprint_desc_raw=$(yq -r '.blueprint.description' "$yaml_file" 2>/dev/null)
 
             # Fallback for name if not found or contains unicode escapes
-            if [[ -z "$blueprint_name_raw" ]] || [[ "$blueprint_name_raw" == *"\\U"* ]]; then
+            if [[ -z "$blueprint_name_raw" ]] || [[ "$blueprint_name_raw" == *"\U"* ]]; then
               # Try to get a human-readable name from the directory name
               display_name=$(echo "$dir_name_basename" | sed 's/_/ /g' | sed 's/\b\(.\)/\u\1/g')
               emoji="🏠" # Default emoji
@@ -146,23 +148,28 @@ jobs:
           new_table=$(cat /tmp/blueprint_table.md)
 
           # Create new README with updated table
-          # Find the section between "## ✨ Available Blueprints" and the next "##"
-          # Using awk to replace the section. The 'skip' variable controls when to print.
-          awk -v table="$new_table" '
+          # Use a more robust awk command to replace the section.
+          # The content of new_table is passed as an awk variable.
+          awk -v new_table_content="$new_table" ' 
+            # Match the header to insert the table
             /^## ✨ Available Blueprints/ {
               print
               print ""
               print "Currently, this repository offers the following blueprints:"
               print ""
-              print table
+              print new_table_content # Use the passed variable
               print ""
-              skip=1 # Start skipping lines after the new table is inserted
+              # Start skipping lines after the new table is inserted
+              # This prevents duplicating the section if it appears multiple times
+              in_section=1
               next
             }
-            /^## / && skip { # If we encounter another section header and are skipping
-              skip=0 # Stop skipping
+            # If we are inside the section to be replaced and encounter another header, stop skipping
+            /^## / && in_section {
+              in_section=0
             }
-            !skip { # If not skipping, print the line
+            # If not inside the section to be replaced, print the line
+            !in_section {
               print
             }
           ' README.md > README.md.new
