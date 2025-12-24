@@ -1,4 +1,4 @@
-# 🏡 Home Assistant Blueprints!
+# 🏡 Home Assistant Blueprints
 
 Welcome to the Home Assistant Blueprints repository! This repository contains a collection of useful and community-driven blueprints for Home Assistant, designed to simplify the automation of your smart home.
 
