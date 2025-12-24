@@ -1,7 +1,8 @@
 # Version: 1.1.2
 blueprint:
   name: "☀️ Sun Notifications"
-  description: "📦 [Version 1.1.2] Get notified at sunrise and sunset via Telegram. 🌅"
+  description: >
+    📦 [Version 1.1.2] Get notified at sunrise and sunset via Telegram. 🌅
   domain: automation
   author: r3mcos3
   source_url: https://github.com/r3mcos3/blueprints/blob/main/sun_notifications/sun_notifications.yaml
