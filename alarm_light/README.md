@@ -152,6 +152,11 @@ Turn on multiple lights at different times for a gradual sunrise effect by creat
 
 If lights turn on at the wrong time, check your Home Assistant timezone configuration in **Settings** → **System** → **General**.
 
+## Screenshot
+
+<img width="935" height="784" alt="Screenshot 2025-12-23 194516" src="https://github.com/user-attachments/assets/fffac945-86e8-4dd8-b4f3-4173e2288b39" />
+
+
 ## 📝 Version History
 
 ### Version 1.0.0 (2025-12-17)

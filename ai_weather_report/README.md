@@ -116,6 +116,11 @@ Use the report with your voice assistant:
 
 Adjust the **Report Length** parameter to your desired character count. Note that the AI may not always respect the exact length, but will try to stay close to it.
 
+## Screenshot
+
+<img width="778" height="805" alt="Screenshot 2025-12-23 194254" src="https://github.com/user-attachments/assets/68c3b054-228f-4209-ac9a-a5af826217f4" />
+
+
 ## 📝 Version History
 
 ### Version 1.0.2 (2025-12-16)
