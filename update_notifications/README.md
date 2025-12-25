@@ -212,6 +212,11 @@ Install callback received - Action: install_update, Raw tag: reminder_home_assis
 2. You can provide custom URLs via the "Custom Changelog URLs" setting in Advanced Settings
 3. Some addons don't have changelog URLs available
 
+## Screenshot
+
+<img width="1035" height="689" alt="Screenshot 2025-12-25 121709" src="https://github.com/user-attachments/assets/40e5af1c-3759-4923-9e35-71403c214645" />
+
+
 ## 📝 Version History
 
 ### Version 2.6.0 (2025-12-19)
