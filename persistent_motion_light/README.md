@@ -1,5 +1,7 @@
 # 🛡️ Persistent Motion Light 💡
 
+> **Version:** 1.0
+
 This blueprint turns on a light or switch when motion is detected and ensures it **stays on** as long as motion is present.
 
 ## ✨ Features

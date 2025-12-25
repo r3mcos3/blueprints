@@ -1,5 +1,8 @@
+# Version: 1.0
 blueprint:
   name: 🛡️ Persistent Motion Light 💡
+  author: r3mcos3
+  source_url: https://github.com/r3mcos3/blueprints/blob/main/persistent_motion_light/persistent_motion_light.yaml
   description: >
     ## 💡 Control a light based on motion
     
