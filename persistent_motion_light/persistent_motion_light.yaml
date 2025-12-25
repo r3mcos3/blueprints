@@ -1,23 +1,28 @@
 blueprint:
-  name: 🛡️ Persistent Motion Light
+  name: 🛡️ Persistent Motion Light 💡
   description: >
-    Turn on a light or switch when motion is detected.
+    ## 💡 Control a light based on motion
     
-    🛑 **Safety Feature:** If the light is turned off manually while motion is still detected, 
-    this blueprint will immediately turn it back on.
+    This blueprint ensures your light stays **ON** as long as there is motion.
     
-    The light will only turn off after motion has stopped and the wait time has passed.
+    ### 🛡️ Safety Feature
+    If the light is turned **OFF** manually while motion is still detected, 
+    this automation will **immediately turn it back on**. 
+    
+    The light will only turn off after:
+    1. 🛑 Motion has completely stopped.
+    2. ⏳ The wait time has passed.
   domain: automation
   input:
     motion_entity:
-      name: Motion Sensor
+      name: 👀 Motion Sensor
       description: The sensor that detects motion.
       selector:
         entity:
           domain: binary_sensor
           device_class: motion
     light_entity:
-      name: Light or Switch
+      name: 💡 Light or Switch
       description: The light or switch to control. This entity will be monitored for manual turn-off attempts.
       selector:
         entity:
@@ -25,7 +30,7 @@ blueprint:
             - light
             - switch
     no_motion_wait:
-      name: Wait time
+      name: ⏳ Wait time (No Motion)
       description: Time to leave the light on after motion stops.
       default: 120
       selector:

@@ -1,21 +1,21 @@
-# 🛡️ Persistent Motion Light
+# 🛡️ Persistent Motion Light 💡
 
 This blueprint turns on a light or switch when motion is detected and ensures it **stays on** as long as motion is present.
 
 ## ✨ Features
 
-*   **Motion Activation:** Turns on the light immediately upon motion.
+*   **👀 Motion Activation:** Turns on the light immediately upon motion.
 *   **🛡️ Anti-Turn-Off Protection:** If someone manually turns off the switch while motion is still detected, the blueprint will **immediately turn it back on**.
-*   **Smart Delay:** The light only turns off after motion has stopped AND a configurable wait time has passed.
-*   **Restart Logic:** Each new motion event resets the timer, ensuring the light never goes out while you are active.
+*   **⏳ Smart Delay:** The light only turns off after motion has stopped AND a configurable wait time has passed.
+*   **🔄 Restart Logic:** Each new motion event resets the timer, ensuring the light never goes out while you are active.
 
 ## ⚙️ Configuration
 
 | Input | Description |
 | :--- | :--- |
-| **Motion Sensor** | The binary sensor that detects motion. |
-| **Light or Switch** | The target entity (light or switch) to control. |
-| **Wait time** | How long to wait (in seconds) after motion stops before turning off. |
+| **👀 Motion Sensor** | The binary sensor that detects motion. |
+| **💡 Light or Switch** | The target entity (light or switch) to control. |
+| **⏳ Wait time** | How long to wait (in seconds) after motion stops before turning off. |
 
 ## 📝 How it works
 
