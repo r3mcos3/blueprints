@@ -1,0 +1,76 @@
+blueprint:
+  name: 🛡️ Persistent Motion Light
+  description: >
+    Turn on a light or switch when motion is detected.
+    
+    🛑 **Safety Feature:** If the light is turned off manually while motion is still detected, 
+    this blueprint will immediately turn it back on.
+    
+    The light will only turn off after motion has stopped and the wait time has passed.
+  domain: automation
+  input:
+    motion_entity:
+      name: Motion Sensor
+      description: The sensor that detects motion.
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class: motion
+    light_entity:
+      name: Light or Switch
+      description: The light or switch to control. This entity will be monitored for manual turn-off attempts.
+      selector:
+        entity:
+          domain:
+            - light
+            - switch
+    no_motion_wait:
+      name: Wait time
+      description: Time to leave the light on after motion stops.
+      default: 120
+      selector:
+        number:
+          min: 0
+          max: 3600
+          unit_of_measurement: seconds
+          mode: slider
+
+# If motion is detected OR the light is turned off, we restart the logic.
+mode: restart
+max_exceeded: silent
+
+trigger:
+  - platform: state
+    entity_id: !input motion_entity
+    from: "off"
+    to: "on"
+  - platform: state
+    entity_id: !input light_entity
+    from: "on"
+    to: "off"
+
+action:
+  # Crucial Check: Only proceed if there is currently motion.
+  # If the light was turned off and there is NO motion, we respect that and do nothing (it stays off).
+  # If motion started the automation, this condition is obviously true.
+  - condition: state
+    entity_id: !input motion_entity
+    state: "on"
+  
+  # Force the light ON
+  - service: homeassistant.turn_on
+    entity_id: !input light_entity
+  
+  # Wait until motion stops
+  - wait_for_trigger:
+      - platform: state
+        entity_id: !input motion_entity
+        from: "on"
+        to: "off"
+  
+  # Wait for the cooldown period
+  - delay: !input no_motion_wait
+  
+  # Turn off the light
+  - service: homeassistant.turn_off
+    entity_id: !input light_entity
