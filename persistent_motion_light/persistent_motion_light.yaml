@@ -1,14 +1,12 @@
-# Version: 1.0
+# Version: 1.1
 blueprint:
   name: 🛡️ Persistent Motion Light 💡
   author: r3mcos3
   source_url: https://github.com/r3mcos3/blueprints/blob/main/persistent_motion_light/persistent_motion_light.yaml
   description: >
-    📦 [Version 1.0]
+    📦 [Version 1.1] This blueprint ensures your light stays **ON** as long as there is motion.
     
     ## 💡 Control a light based on motion
-    
-    This blueprint ensures your light stays **ON** as long as there is motion.
     
     ### 🛡️ Safety Feature
     If the light is turned **OFF** manually while motion is still detected, 
