@@ -152,6 +152,11 @@ Result: At 7 AM, speaker volume increases AND morning scene activates with notif
 3. Look at automation traces for action execution
 4. Check logs for any action-specific errors
 
+## screenshot
+
+<img width="1049" height="664" alt="Screenshot 2025-12-24 074702" src="https://github.com/user-attachments/assets/456d39df-a0c5-4170-b178-de6dc89ec779" />
+
+
 ## 📝 Version History
 
 ### Version 1.0 (2025-12-15)
