@@ -1,6 +1,6 @@
 # 🔋 Accu Saver - Battery Health Manager
 
-[![version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 Smart battery health management for laptop servers! Automatically controls charging via smart plug to maintain optimal battery levels and extend battery lifespan. 🔌⚡
@@ -11,6 +11,7 @@ Smart battery health management for laptop servers! Automatically controls charg
 - ⚡ **Automatic Charge Control** - Smart plug controls charging automatically
 - 🎯 **Configurable Thresholds** - Customize upper/lower battery limits
 - 🔄 **Immediate Response** - No delays, instant switching
+- ⏰ **Periodic Status Checks** - Automatic sync every X minutes (configurable)
 - 🛡️ **Battery Protection** - Prevents overcharging and deep discharge
 - 🚀 **Startup Sync** - Correct state even after HA restarts
 
@@ -43,6 +44,7 @@ Smart battery health management for laptop servers! Automatically controls charg
 | 🔌 Smart Plug | Switch controlling charger | Required |
 | ⬆️ Upper Threshold | Stop charging at this % | 80% |
 | ⬇️ Lower Threshold | Start charging at this % | 20% |
+| ⏰ Check Interval | Periodic sync interval in minutes (0 to disable) | 30 min |
 
 ## 🎯 How It Works
 
@@ -70,6 +72,7 @@ automation:
         smart_plug: switch.laptop_charger_plug
         upper_threshold: 80
         lower_threshold: 20
+        check_interval: 30  # Check every 30 minutes (optional)
 ```
 
 ## 🔧 Troubleshooting
@@ -105,6 +108,12 @@ automation:
 - Blueprint detects sensor unavailable/unknown states
 - No actions taken on invalid data
 - When sensor recovers, state syncs automatically
+
+**Q: How does the periodic check work?**
+- Checks and syncs battery/plug state every X minutes (default: 30)
+- Ensures correct state even after manual overrides
+- Set to 0 to disable periodic checks
+- Useful for maintaining consistent state without waiting for threshold triggers
 
 ## 🔄 Advanced Scenarios
 

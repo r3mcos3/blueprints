@@ -1,4 +1,4 @@
-# Version: 1.0.0
+# Version: 1.1.0
 blueprint:
   domain: automation
   name: "🔋 Accu Saver - Battery Health Manager"
@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    📦 [Version 1.0.0] Smart battery health management for laptop servers!
+    📦 [Version 1.1.0] Smart battery health management for laptop servers!
     Automatically controls charging via smart plug to maintain optimal battery levels
     and extend battery lifespan. 🔌⚡
 
@@ -21,6 +21,8 @@ blueprint:
     - 🎯 Configurable upper/lower battery limits
 
     - 🔄 Immediate response - no delays
+
+    - ⏰ Periodic status checks for automatic synchronization
 
     - 🛡️ Prevents overcharging and deep discharge
 
@@ -84,6 +86,21 @@ blueprint:
               unit_of_measurement: "%"
               mode: slider
 
+        check_interval:
+          name: "⏰ Periodic Check Interval"
+          description: >
+            How often to check and sync battery/plug state (in minutes).
+            Helps maintain correct state even after manual overrides.
+            Set to 0 to disable periodic checks.
+          default: 30
+          selector:
+            number:
+              min: 0
+              max: 120
+              step: 5
+              unit_of_measurement: "min"
+              mode: slider
+
 mode: single
 max_exceeded: silent
 
@@ -93,6 +110,7 @@ variables:
   plug: !input smart_plug
   upper_limit: !input upper_threshold
   lower_limit: !input lower_threshold
+  check_interval: !input check_interval
 
   # Current state calculations
   current_battery_level: "{{ states(battery) | float(0) }}"
@@ -127,6 +145,11 @@ triggers:
       - "unavailable"
       - "unknown"
     id: sensor_recovered
+
+  # ===== PERIODIC CHECK TRIGGER =====
+  - trigger: time_pattern
+    minutes: "/1"
+    id: periodic_check
 
 conditions: []
 
@@ -199,6 +222,40 @@ actions:
         sequence:
           - delay:
               seconds: 10
+          - choose:
+              # Battery above upper threshold - ensure charging is OFF
+              - conditions:
+                  - condition: template
+                    value_template: "{{ current_battery_level >= upper_limit }}"
+                  - condition: template
+                    value_template: "{{ plug_is_on }}"
+                sequence:
+                  - action: switch.turn_off
+                    target:
+                      entity_id: "{{ plug }}"
+
+              # Battery below lower threshold - ensure charging is ON
+              - conditions:
+                  - condition: template
+                    value_template: "{{ current_battery_level <= lower_limit }}"
+                  - condition: template
+                    value_template: "{{ not plug_is_on }}"
+                sequence:
+                  - action: switch.turn_on
+                    target:
+                      entity_id: "{{ plug }}"
+
+      # ===== PERIODIC CHECK - SYNC STATE =====
+      - conditions:
+          - condition: trigger
+            id: periodic_check
+          - condition: template
+            value_template: "{{ check_interval > 0 }}"
+          - condition: template
+            value_template: "{{ now().minute % check_interval == 0 }}"
+          - condition: template
+            value_template: "{{ battery_sensor_available }}"
+        sequence:
           - choose:
               # Battery above upper threshold - ensure charging is OFF
               - conditions:
