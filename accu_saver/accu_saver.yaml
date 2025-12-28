@@ -1,4 +1,4 @@
-# Version: 1.1.0
+# Version: 1.2.0
 blueprint:
   domain: automation
   name: "🔋 Accu Saver - Battery Health Manager"
@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    📦 [Version 1.1.0] Smart battery health management for laptop servers!
+    📦 [Version 1.2.0] Smart battery health management for laptop servers!
     Automatically controls charging via smart plug to maintain optimal battery levels
     and extend battery lifespan. 🔌⚡
 
@@ -22,7 +22,7 @@ blueprint:
 
     - 🔄 Immediate response - no delays
 
-    - ⏰ Periodic status checks for automatic synchronization
+    - ⏰ Periodic status checks every 5 minutes
 
     - 🛡️ Prevents overcharging and deep discharge
 
@@ -86,21 +86,6 @@ blueprint:
               unit_of_measurement: "%"
               mode: slider
 
-        check_interval:
-          name: "⏰ Periodic Check Interval"
-          description: >
-            How often to check and sync battery/plug state (in minutes).
-            Helps maintain correct state even after manual overrides.
-            Set to 0 to disable periodic checks.
-          default: 30
-          selector:
-            number:
-              min: 0
-              max: 120
-              step: 5
-              unit_of_measurement: "min"
-              mode: slider
-
 mode: single
 max_exceeded: silent
 
@@ -110,7 +95,6 @@ variables:
   plug: !input smart_plug
   upper_limit: !input upper_threshold
   lower_limit: !input lower_threshold
-  check_interval: !input check_interval
 
   # Current state calculations
   current_battery_level: "{{ states(battery) | float(0) }}"
@@ -148,7 +132,7 @@ triggers:
 
   # ===== PERIODIC CHECK TRIGGER =====
   - trigger: time_pattern
-    minutes: "/1"
+    minutes: "/5"
     id: periodic_check
 
 conditions: []
@@ -249,10 +233,6 @@ actions:
       - conditions:
           - condition: trigger
             id: periodic_check
-          - condition: template
-            value_template: "{{ check_interval > 0 }}"
-          - condition: template
-            value_template: "{{ now().minute % check_interval == 0 }}"
           - condition: template
             value_template: "{{ battery_sensor_available }}"
         sequence:
