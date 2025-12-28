@@ -15,7 +15,7 @@ Templates voor het plaatsen van blueprints op https://community.home-assistant.i
 ```markdown
 # AI Parking Spot Counter 🚗
 
-Automatically count free and occupied parking spaces using AI vision when you arrive home!
+**Version 2.0.0** | Automatically count free and occupied parking spaces using AI vision when you arrive home!
 
 [![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fai_parking_counter%2Fai_parking_counter.yaml)
 
@@ -75,7 +75,7 @@ Full documentation and source code: [GitHub Repository](https://github.com/r3mco
 ```markdown
 # Alarm Light ⏰
 
-Wake up gently with lights that turn on before your phone alarm!
+**Version 1.0.0** | Wake up gently with lights that turn on before your phone alarm!
 
 [![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Falarm_light%2Falarm_light.yaml)
 
@@ -134,7 +134,7 @@ iOS doesn't natively expose alarm data. Use iOS Shortcuts to sync your alarm to 
 ```markdown
 # AI Weather Report Generator 🤖
 
-Generate beautiful emoji-rich weather summaries using AI!
+**Version 1.0.2** | Generate beautiful emoji-rich weather summaries using AI!
 
 [![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fai_weather_report%2Fai_weather_report.yaml)
 
@@ -171,7 +171,7 @@ Generate beautiful emoji-rich weather summaries using AI!
 ```markdown
 # Doorbell Chime 🔔
 
-Play a chime sound on your media players when the doorbell rings!
+**Version 1.0.4** | Play a chime sound on your media players when the doorbell rings!
 
 [![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fdoorbell_chime%2Fdoorbell_chime.yaml)
 
@@ -182,6 +182,7 @@ Play a chime sound on your media players when the doorbell rings!
 - 🎵 **Custom Sounds** - Use any audio file as your chime
 - 📱 **Multiple Speakers** - Play on one or many media players
 - 🚪 **Any Trigger** - Works with any doorbell sensor or button
+- ⏱️ **Built-in Cooldown** - Prevent chime spam
 
 ## Requirements
 
@@ -208,7 +209,7 @@ Play a chime sound on your media players when the doorbell rings!
 ```markdown
 # Presence Home/Away Lights 💡
 
-Automatically control lights based on presence - lights on when someone arrives, off when everyone leaves!
+**Version 1.0.13** | Automatically control lights based on presence - lights on when someone arrives, off when everyone leaves!
 
 [![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fpresence_lights%2Fpresence_lights.yaml)
 
@@ -218,13 +219,14 @@ Automatically control lights based on presence - lights on when someone arrives,
 - 👋 **Departure Detection** - Lights off when last person leaves
 - 🌅 **Sun Awareness** - Only activates after sunset
 - 👥 **Multi-Person** - Tracks multiple people
-- 💡 **Any Lights** - Control any light, switch, or group
+- 💡 **Flexible Control** - Control any light, switch, or group
 
 ## Requirements
 
 - Home Assistant 2025.12.0+
 - Person entities with device trackers
 - Light/switch entities
+- Zone entity
 
 ## GitHub
 
@@ -233,7 +235,58 @@ Automatically control lights based on presence - lights on when someone arrives,
 
 ---
 
-## 6. 🔥 Smart Heating Controller
+## 6. 🛡️ Persistent Motion Light
+
+**Title:** `🛡️ Persistent Motion Light - Keep lights ON with motion protection`
+
+**Tags:** `automation`, `light`, `motion`, `safety`
+
+**Post:**
+
+```markdown
+# Persistent Motion Light 🛡️
+
+**Version 1.1** | Keep your lights ON as long as there's motion - with protection against manual turn-off!
+
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fpersistent_motion_light%2Fpersistent_motion_light.yaml)
+
+## Features
+
+- 🛡️ **Safety Feature** - Immediately re-activates if manually turned off during motion
+- 🏃‍♂️ **Motion Detection** - Keeps lights on while motion is detected
+- ⏳ **Configurable Wait Time** - Adjustable delay after motion stops
+- 💡 **Flexible Control** - Works with lights and switches
+- 🔄 **Restart Mode** - Seamlessly handles continuous motion detection
+
+## Requirements
+
+- Home Assistant 2025.12.0+
+- Motion sensor (binary sensor with motion device class)
+- Light or switch entity
+
+## Perfect For
+
+- Stairways and hallways where safety is important
+- Bathrooms where lights should stay on
+- Garages with multiple motion zones
+- Any area where accidental turn-off could be dangerous
+
+## Configuration
+
+| Input | Description | Default |
+|-------|-------------|---------|
+| Motion Sensor | Binary sensor detecting motion | - |
+| Target Light | Light(s) or switch(es) to control | - |
+| Wait Time | Minutes to wait after motion stops | 5 min |
+
+## GitHub
+
+[GitHub Repository](https://github.com/r3mcos3/blueprints/tree/main/persistent_motion_light)
+```
+
+---
+
+## 7. 🔥 Smart Heating Controller
 
 **Title:** `🔥 Smart Heating Controller - Intelligent climate control with presence & door protection`
 
@@ -244,7 +297,7 @@ Automatically control lights based on presence - lights on when someone arrives,
 ```markdown
 # Smart Heating Controller 🔥
 
-Intelligent climate control with presence detection, door/window protection, and energy-saving features!
+**Version 1.3.0** | Intelligent climate control with presence detection, door/window protection, and energy-saving features!
 
 [![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fsmart_heating%2Fsmart_heating.yaml)
 
@@ -254,6 +307,7 @@ Intelligent climate control with presence detection, door/window protection, and
 - 🏠 **Presence Detection** - Lower temp when away
 - 🚪 **Door/Window Protection** - Pause heating when open
 - ⏰ **Scheduling** - Different temps for different times
+- 🌙 **Night Mode** - Comfortable sleeping temperature
 - 💰 **Energy Saving** - Reduce heating costs automatically
 - 🔄 **HA Start & Reload Triggers** - Applies settings on restart
 
@@ -270,7 +324,7 @@ Intelligent climate control with presence detection, door/window protection, and
 
 ---
 
-## 7. 🔈 Volume Control
+## 8. 🔈 Volume Control
 
 **Title:** `🔈 Volume Control - Automated speaker volume management`
 
@@ -281,7 +335,7 @@ Intelligent climate control with presence detection, door/window protection, and
 ```markdown
 # Volume Control 🔈
 
-Automate volume control for all your speakers!
+**Version 1.0** | Automate volume control for all your speakers!
 
 [![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fvolumecontrol%2Fvolumecontrol.yaml)
 
@@ -291,11 +345,13 @@ Automate volume control for all your speakers!
 - 🕐 **Time-Based** - Different volumes at different times
 - 📱 **Multiple Speakers** - Control multiple media players
 - 🔇 **Quiet Hours** - Lower volume at night
+- ⚙️ **Custom Actions** - Additional automation support
 
 ## Requirements
 
 - Home Assistant 2025.12.0+
 - Media player entities
+- Schedule helper
 
 ## GitHub
 
@@ -304,7 +360,7 @@ Automate volume control for all your speakers!
 
 ---
 
-## 8. 🔄 Update Notifications (Android)
+## 9. 🔄 Update Notifications (Android)
 
 **Title:** `🔄 Update Notifications (Android) - Get notified about HA updates via Mobile App`
 
@@ -315,7 +371,7 @@ Automate volume control for all your speakers!
 ```markdown
 # Update Notifications 🔄 (Android)
 
-Get notified about Home Assistant updates via Mobile App with actionable buttons!
+**Version 2.6.0** | Get notified about Home Assistant updates via Mobile App with actionable buttons!
 
 [![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fupdate_notifications%2Fupdate_notifications.yaml)
 
@@ -362,7 +418,7 @@ Full documentation, version history, and troubleshooting: [GitHub Repository](ht
 
 ---
 
-## 9. 🔄 Update Notifications (Telegram)
+## 10. 🔄 Update Notifications (Telegram)
 
 **Title:** `🔄 Update Notifications (Telegram) - Get notified about HA updates via Telegram`
 
@@ -373,7 +429,7 @@ Full documentation, version history, and troubleshooting: [GitHub Repository](ht
 ```markdown
 # Update Notifications 🔄 (Telegram)
 
-Get notified about Home Assistant updates via Telegram with inline keyboard buttons!
+**Version 1.3.0** | Get notified about Home Assistant updates via Telegram with inline keyboard buttons!
 
 [![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Ftelegram_update_notifications%2Ftelegram_update_notifications.yaml)
 
@@ -456,7 +512,7 @@ Full documentation, setup guide, and troubleshooting: [GitHub Repository](https:
 
 ---
 
-## 10. ☀️ Sun-aware Motion Light
+## 11. ☀️ Sun-aware Motion Light
 
 **Title:** `☀️ Sun-aware Motion Light - Motion-activated lights with day/night brightness`
 
@@ -467,7 +523,7 @@ Full documentation, setup guide, and troubleshooting: [GitHub Repository](https:
 ```markdown
 # Sun-aware Motion Light ☀️
 
-Smart motion-activated lighting that adapts to the sun's position!
+**Version 1.0** | Smart motion-activated lighting that adapts to the sun's position!
 
 [![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fsun_aware_motion_light%2Fsun_aware_motion_light.yaml)
 
@@ -512,7 +568,7 @@ Full documentation with examples: [GitHub Repository](https://github.com/r3mcos3
 
 ---
 
-## 11. ☀️ Sun Notifications
+## 12. ☀️ Sun Notifications
 
 **Title:** `☀️ Sun Notifications - Get notified at sunrise and sunset via Telegram`
 
@@ -523,7 +579,7 @@ Full documentation with examples: [GitHub Repository](https://github.com/r3mcos3
 ```markdown
 # Sun Notifications ☀️
 
-Get notified at sunrise and sunset via Telegram with customizable messages and time offsets!
+**Version 1.1.2** | Get notified at sunrise and sunset via Telegram with customizable messages and time offsets!
 
 [![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fsun_notifications%2Fsun_notifications.yaml)
 
@@ -576,7 +632,7 @@ Full documentation with template examples: [GitHub Repository](https://github.co
 
 ---
 
-## 12. 📸 Camera Motion Snapshot
+## 13. 📸 Camera Motion Snapshot
 
 **Title:** `📸 Camera Motion Snapshot - Captures and sends a camera snapshot via Telegram`
 
@@ -587,7 +643,7 @@ Full documentation with template examples: [GitHub Repository](https://github.co
 ```markdown
 # Camera Motion Snapshot 📸
 
-Automatically capture a snapshot from your camera when motion is detected and send it instantly via your Telegram bot!
+**Version 1.7.0** | Automatically capture a snapshot from your camera when motion is detected and send it instantly via your Telegram bot!
 
 [![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fcamera_motion_snapshot%2Fcamera_motion_snapshot.yaml)
 
@@ -622,6 +678,67 @@ Automatically capture a snapshot from your camera when motion is detected and se
 ## GitHub
 
 [GitHub Repository](https://github.com/r3mcos3/blueprints/tree/main/camera_motion_snapshot)
+```
+
+---
+
+## 14. 🔋 Accu Saver
+
+**Title:** `🔋 Accu Saver - Smart battery health management for laptop servers`
+
+**Tags:** `automation`, `battery`, `power`, `energy`
+
+**Post:**
+
+```markdown
+# Accu Saver 🔋
+
+**Version 1.2.0** | Smart battery health management for laptop servers!
+
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Faccu_saver%2Faccu_saver.yaml)
+
+## Features
+
+- 🔋 **Battery Level Monitoring** - Dual threshold monitoring for optimal battery health
+- ⚡ **Automatic Charge Control** - Smart plug integration for charging control
+- 🎯 **Configurable Limits** - Set your own upper/lower battery thresholds
+- 🔄 **Immediate Response** - No delays in charge control
+- ⏰ **Periodic Status Checks** - Regular monitoring every 5 minutes
+- 🛡️ **Protection** - Prevents overcharging and deep discharge
+- 🚀 **Startup Sync** - Correct initial state on startup
+
+## Requirements
+
+- Home Assistant 2025.12.0+
+- Battery percentage sensor (from laptop or other device)
+- Smart plug or switch to control charging
+
+## How It Works
+
+The blueprint monitors your battery level and controls a smart plug:
+- When battery drops **below lower limit** → Turn ON charging
+- When battery reaches **upper limit** → Turn OFF charging
+- Regular checks ensure the battery stays within healthy limits
+
+## Perfect For
+
+- Laptop servers running Home Assistant
+- Always-plugged devices that need battery protection
+- Any device where maintaining battery health is important
+- Extending the lifespan of Li-ion batteries
+
+## Configuration
+
+| Input | Description | Default |
+|-------|-------------|---------|
+| Battery Sensor | Sensor reporting battery percentage | - |
+| Charger Switch | Smart plug controlling the charger | - |
+| Upper Limit | Battery % to stop charging | 80% |
+| Lower Limit | Battery % to start charging | 20% |
+
+## GitHub
+
+Full documentation and examples: [GitHub Repository](https://github.com/r3mcos3/blueprints/tree/main/accu_saver)
 ```
 
 ---
