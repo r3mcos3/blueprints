@@ -49,6 +49,16 @@ blueprint:
       default: "/config/www/snapshot_motion.jpg"
       selector:
         text: {}
+    motion_delay:
+      name: ⏳ Motion Delay
+      description: ⏱️ Delay between motion detection and snapshot capture (in seconds). Allows camera time to adjust before capturing.
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 10
+          unit_of_measurement: seconds
+          mode: box
     timeout:
       name: ⏱️ Timeout (Cooldown)
       description: ⏳ The time to wait after a snapshot before allowing another one (in seconds).
@@ -72,6 +82,7 @@ trigger:
 mode: single
 
 action:
+  - delay: !input motion_delay
   - service: camera.snapshot
     target:
       entity_id: !input camera
