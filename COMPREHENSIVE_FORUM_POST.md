@@ -1,14 +1,15 @@
-# 🏠 Home Assistant Blueprint Collection - 12 Blueprints for AI, Lighting, Notifications & More
+# 🏠 Home Assistant Blueprint Collection - 14 Blueprints for AI, Lighting, Notifications & More
 
-A comprehensive collection of 12 Home Assistant blueprints designed to simplify and enhance your smart home automations. From AI-powered vision analysis to intelligent climate control, this collection covers lighting, notifications, climate management, and media automation. All blueprints feature version control, comprehensive documentation, and one-click import buttons for easy setup.
+A comprehensive collection of 14 Home Assistant blueprints designed to simplify and enhance your smart home automations. From AI-powered vision analysis to intelligent climate control, this collection covers lighting, notifications, climate management, media automation, and battery management. All blueprints feature version control, comprehensive documentation, and one-click import buttons for easy setup.
 
 **Quick Stats:**
-- 🎯 12 ready-to-use blueprints
+- 🎯 14 ready-to-use blueprints
 - 🤖 2 AI-powered automations
-- 💡 3 lighting & motion solutions
+- 💡 4 lighting & motion solutions
 - 🔔 4 notification systems
 - 🌡️ 1 climate controller
 - 🔊 2 media automations
+- 🔋 1 battery management
 - 📦 Minimum HA Version: 2025.12.0+
 - 🔄 Version control on all blueprints
 - 📚 Comprehensive documentation
@@ -21,6 +22,7 @@ A comprehensive collection of 12 Home Assistant blueprints designed to simplify 
 - [💡 Lighting & Motion](#-lighting--motion)
   - [Alarm Light](#-alarm-light)
   - [Presence Lights](#-presence-lights)
+  - [Persistent Motion Light](#-persistent-motion-light)
   - [Sun-aware Motion Light](#-sun-aware-motion-light)
 - [🔔 Notifications & Updates](#-notifications--updates)
   - [Camera Motion Snapshot](#-camera-motion-snapshot)
@@ -29,6 +31,8 @@ A comprehensive collection of 12 Home Assistant blueprints designed to simplify 
   - [Sun Notifications](#-sun-notifications)
 - [🌡️ Climate & Energy](#-climate--energy)
   - [Smart Heating Controller](#-smart-heating-controller)
+- [🔋 Battery & Power](#-battery--power)
+  - [Accu Saver](#-accu-saver)
 - [🔊 Media & Sound](#-media--sound)
   - [Doorbell Chime](#-doorbell-chime)
   - [Volume Control](#-volume-control)
@@ -60,7 +64,7 @@ Leverage AI to enhance your home automation with vision analysis and natural lan
 ---
 
 ### 🤖 AI Weather Report Generator
-Generate beautiful emoji-rich weather summaries using AI!
+**Version 1.0.2** | Generate beautiful emoji-rich weather summaries using AI!
 
 [![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fai_weather_report%2Fai_weather_report.yaml)
 
@@ -118,8 +122,26 @@ Smart lighting solutions that adapt to your presence, schedule, and environment.
 
 ---
 
+### 🛡️ Persistent Motion Light
+**Version 1.1** | Keep your lights ON as long as there's motion - with protection against manual turn-off!
+
+[![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fpersistent_motion_light%2Fpersistent_motion_light.yaml)
+
+**Features:**
+- 🛡️ **Safety Feature** - Immediately re-activates if manually turned off during motion
+- 🏃‍♂️ **Motion Detection** - Keeps lights on while motion is detected
+- ⏳ **Configurable Wait Time** - Adjustable delay after motion stops
+- 💡 **Flexible Control** - Works with lights and switches
+- 🔄 **Restart Mode** - Seamlessly handles continuous motion detection
+
+**Requirements:** Motion sensor, Light or switch entity
+
+[📖 Full Documentation](https://github.com/r3mcos3/blueprints/tree/main/persistent_motion_light)
+
+---
+
 ### ☀️ Sun-aware Motion Light
-Smart motion-activated lighting that adapts to the sun's position!
+**Version 1.0** | Smart motion-activated lighting that adapts to the sun's position!
 
 [![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fsun_aware_motion_light%2Fsun_aware_motion_light.yaml)
 
@@ -202,7 +224,7 @@ Stay informed with intelligent notification systems for updates and events.
 ---
 
 ### ☀️ Sun Notifications
-Get notified at sunrise and sunset via Telegram with customizable messages and time offsets!
+**Version 1.1.2** | Get notified at sunrise and sunset via Telegram with customizable messages and time offsets!
 
 [![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fsun_notifications%2Fsun_notifications.yaml)
 
@@ -225,7 +247,7 @@ Get notified at sunrise and sunset via Telegram with customizable messages and t
 Intelligent climate control that saves energy while keeping you comfortable.
 
 ### 🔥 Smart Heating Controller
-**Version 1.2.4** | Intelligent climate control with presence detection, door/window protection, and energy-saving features!
+**Version 1.3.0** | Intelligent climate control with presence detection, door/window protection, and energy-saving features!
 
 [![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fsmart_heating%2Fsmart_heating.yaml)
 
@@ -244,12 +266,36 @@ Intelligent climate control that saves energy while keeping you comfortable.
 
 ---
 
+## 🔋 Battery & Power
+
+Smart battery management to extend the lifespan of your devices.
+
+### 🔋 Accu Saver
+**Version 1.2.0** | Smart battery health management for laptop servers!
+
+[![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Faccu_saver%2Faccu_saver.yaml)
+
+**Features:**
+- 🔋 **Battery Level Monitoring** - Dual threshold monitoring for optimal battery health
+- ⚡ **Automatic Charge Control** - Smart plug integration for charging control
+- 🎯 **Configurable Limits** - Set your own upper/lower battery thresholds
+- 🔄 **Immediate Response** - No delays in charge control
+- ⏰ **Periodic Status Checks** - Regular monitoring every 5 minutes
+- 🛡️ **Protection** - Prevents overcharging and deep discharge
+- 🚀 **Startup Sync** - Correct initial state on startup
+
+**Requirements:** Battery percentage sensor, Smart plug or switch
+
+[📖 Full Documentation](https://github.com/r3mcos3/blueprints/tree/main/accu_saver)
+
+---
+
 ## 🔊 Media & Sound
 
 Automate your media players and audio system for the perfect ambiance.
 
 ### 🔔 Doorbell Chime
-**Version 1.0.0** | Play a chime sound on your media players when the doorbell rings!
+**Version 1.0.4** | Play a chime sound on your media players when the doorbell rings!
 
 [![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fdoorbell_chime%2Fdoorbell_chime.yaml)
 
@@ -329,7 +375,7 @@ notify:
 
 ---
 
-**Tags:** `automation`, `blueprints`, `collection`, `ai`, `lighting`, `notifications`, `climate`, `media-player`, `telegram`, `mobile-app`
+**Tags:** `automation`, `blueprints`, `collection`, `ai`, `lighting`, `notifications`, `climate`, `media-player`, `telegram`, `mobile-app`, `battery`
 
 ---
 
