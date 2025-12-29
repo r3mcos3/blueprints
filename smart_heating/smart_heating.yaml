@@ -576,6 +576,60 @@ actions:
           - action: input_boolean.turn_off
             target:
               entity_id: "{{ override_entity }}"
+          - variables:
+              # Calculate post-override temperature based on current state
+              post_override_temp: >
+                {% set adj = humidity_adjustment | float(0) %}
+                {% if people_count == 0 %}
+                  {{ temp_away }}
+                {% elif is_preheat_time %}
+                  {{ temp_comfort + adj }}
+                {% elif is_night %}
+                  {{ temp_night + adj }}
+                {% else %}
+                  {{ temp_comfort + adj }}
+                {% endif %}
+          - action: climate.set_temperature
+            target:
+              entity_id: "{{ climate }}"
+            data:
+              temperature: "{{ post_override_temp }}"
+              hvac_mode: heat
+
+      # ----- MANUAL OVERRIDE: USER CANCELLED (turned off helper manually) -----
+      - conditions:
+          - condition: trigger
+            id: override_toggled
+          - condition: template
+            value_template: "{{ override_entity != {} and override_entity != '' }}"
+          - condition: template
+            value_template: "{{ is_state(override_entity, 'off') }}"
+          - condition: template
+            value_template: "{{ trigger.to_state.state == 'off' and trigger.from_state.state == 'on' }}"
+        sequence:
+          - variables:
+              # Calculate appropriate temperature after manual cancellation
+              post_cancel_temp: >
+                {% set adj = humidity_adjustment | float(0) %}
+                {% if current_indoor < temp_frost %}
+                  {{ temp_frost }}
+                {% elif is_outdoor_warm %}
+                  {{ temp_frost }}
+                {% elif people_count == 0 %}
+                  {{ temp_away }}
+                {% elif is_preheat_time %}
+                  {{ temp_comfort + adj }}
+                {% elif is_night %}
+                  {{ temp_night + adj }}
+                {% else %}
+                  {{ temp_comfort + adj }}
+                {% endif %}
+          - action: climate.set_temperature
+            target:
+              entity_id: "{{ climate }}"
+            data:
+              temperature: "{{ post_cancel_temp }}"
+              hvac_mode: heat
 
       # ----- MANUAL OVERRIDE: FROST PROTECTION OVERRIDE -----
       - conditions:
@@ -727,10 +781,39 @@ actions:
         sequence:
           - delay:
               seconds: 30
+          # First, disable any expired override helper (edge case: restart during expired override)
+          - if:
+              - condition: template
+                value_template: "{{ override_has_expired and override_entity != {} and override_entity != '' }}"
+            then:
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: "{{ override_entity }}"
+          # Recalculate post-override temperature since helper state may have just changed
+          - variables:
+              startup_target_temp: >
+                {% set adj = humidity_adjustment | float(0) %}
+                {% set still_overriding = override_entity != {} and override_entity != '' and is_state(override_entity, 'on') and not override_has_expired %}
+                {% if current_indoor < temp_frost %}
+                  {{ temp_frost }}
+                {% elif still_overriding %}
+                  {{ current_target }}
+                {% elif is_outdoor_warm %}
+                  {{ temp_frost }}
+                {% elif people_count == 0 %}
+                  {{ temp_away }}
+                {% elif is_preheat_time %}
+                  {{ temp_comfort + adj }}
+                {% elif is_night %}
+                  {{ temp_night + adj }}
+                {% else %}
+                  {{ temp_comfort + adj }}
+                {% endif %}
+              startup_is_eco: "{{ is_outdoor_warm and not (current_indoor < temp_frost) }}"
           - choose:
               - conditions:
                   - condition: template
-                    value_template: "{{ target_mode == 'eco' }}"
+                    value_template: "{{ startup_is_eco }}"
                 sequence:
                   - action: climate.set_hvac_mode
                     target:
@@ -742,7 +825,7 @@ actions:
                 target:
                   entity_id: "{{ climate }}"
                 data:
-                  temperature: "{{ target_temp }}"
+                  temperature: "{{ startup_target_temp }}"
                   hvac_mode: heat
 
       # ----- PERIODIC CHECK (sync state) -----

@@ -1,0 +1,5 @@
+# Auto Claude data directory
+.auto-claude/
+
+# Init script (user-specific)
+init.sh
