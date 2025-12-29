@@ -1,4 +1,4 @@
-# Version: 1.3.0
+# Version: 1.3.1
 blueprint:
   domain: automation
   name: "🔥 Smart Heating Controller"
@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    📦 [Version 1.3.0] Intelligent climate control with presence detection, door/window protection,
+    📦 [Version 1.3.1] Intelligent climate control with presence detection, door/window protection,
     manual override, and energy-saving features! 🌡️
 
 
