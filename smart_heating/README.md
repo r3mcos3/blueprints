@@ -1,6 +1,6 @@
 # 🔥 Smart Heating Controller
 
-[![version](https://img.shields.io/badge/version-1.2.4-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.3.1-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 Intelligent climate control that adapts to your presence, outdoor conditions, door/window states, and time schedules. Save energy while maintaining comfort with smart temperature management! 🌡️
@@ -279,6 +279,16 @@ automation:
 5. Check if sensor is reporting correct units (°C)
 
 ## 📝 Version History
+
+### Version 1.3.1
+- 🔧 Improved override handling and startup logic
+- ✨ Automatic temperature restoration when override expires
+- ✨ Manual override cancellation handling
+- 🔧 Better startup logic for expired overrides
+
+### Version 1.3.0
+- 🛠️ Manual override feature with configurable timeout
+- ✨ Temporary manual temperature control
 
 ### Version 1.2.4
 - 🗑️ Removed notification settings (simplified configuration)
