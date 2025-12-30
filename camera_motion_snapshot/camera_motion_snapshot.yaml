@@ -1,14 +1,15 @@
 blueprint:
   name: 📸 Camera Snapshot on Motion to Telegram 🤖
   description: >
-    📦 [Version 1.7.0] Automatically capture a snapshot from your camera 📷 when motion is detected 🏃‍♂️ and send it instantly via your Telegram bot 📨.
-    
+    📦 [Version 1.8.0] Automatically capture a snapshot from your camera 📷 when motion is detected 🏃‍♂️ and send it instantly via your Telegram bot 📨.
+
     ✨ Features:
     - 📸 Instant high-quality snapshot.
     - 🏃‍♂️ Triggered by any motion sensor.
     - 🤖 Supports multiple Telegram bots via Config Entry and Chat ID.
     - ✍️ Fully customizable message caption.
     - ⏱️ Adjustable timeout (cooldown) between snapshots.
+    - 🏠 Optional presence-based filtering (only when home/away).
   domain: automation
   author: r3mcos3
   source_url: https://github.com/r3mcos3/blueprints/blob/main/camera_motion_snapshot/camera_motion_snapshot.yaml
@@ -69,9 +70,31 @@ blueprint:
           max: 3600
           unit_of_measurement: seconds
           mode: box
+    presence_mode:
+      name: 🏠 Presence Mode
+      description: 🎯 Choose when to send snapshots based on presence.
+      default: always
+      selector:
+        select:
+          options:
+            - label: "🌍 Always (ignore presence)"
+              value: always
+            - label: "🚶 Only when away from home"
+              value: away
+            - label: "🏠 Only when at home"
+              value: home
+    person_entity:
+      name: 👤 Person Tracker
+      description: 🔍 Select the person entity to track for presence detection. Only used when Presence Mode is not set to 'Always'.
+      default: []
+      selector:
+        entity:
+          domain: person
 
 variables:
   target_chat_id_var: !input target_chat_id
+  presence_mode_var: !input presence_mode
+  person_entity_var: !input person_entity
 
 trigger:
   - platform: state
@@ -80,6 +103,20 @@ trigger:
     to: "on"
 
 mode: single
+
+condition:
+  - condition: template
+    value_template: >
+      {% set mode = presence_mode_var %}
+      {% if mode == 'always' %}
+        true
+      {% elif mode == 'away' %}
+        {{ states(person_entity_var) != 'home' }}
+      {% elif mode == 'home' %}
+        {{ states(person_entity_var) == 'home' }}
+      {% else %}
+        true
+      {% endif %}
 
 action:
   - delay: !input motion_delay
