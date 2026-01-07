@@ -100,37 +100,53 @@ Before using this blueprint, you need:
 
 ## 🎯 How It Works
 
-The blueprint uses a **priority-based mode selection** to determine the optimal heating strategy:
+The **Smart Heating Controller** is built as a **hierarchy of priorities**. This means that certain conditions (like frost protection) always take precedence over comfort settings (like night temperature).
 
-### Mode Priority (Highest to Lowest)
+Here is a step-by-step explanation of how the controller decides what the temperature should be:
 
-1. **❄️ Frost Protection** - When indoor temperature falls below frost protection threshold
-   - Sets heating to minimum safe temperature
-   - Highest priority to prevent damage
+### 1. The Decision Hierarchy (From Highest to Lowest Priority)
+The blueprint checks the situation in this exact order. As soon as a condition is 'true', that action is executed and the decision-making stops for that moment.
 
-2. **🌡️ Eco Mode** - When outdoor temperature exceeds threshold
-   - Turns heating off completely
-   - Saves energy when it's warm outside
+1.  **❄️ Frost Protection (Highest Priority):**
+    *   *If* the indoor temperature is dangerously low (below the set frost threshold, default 7°C), the heating turns **on immediately** at that minimum temperature, regardless of whether windows are open or no one is home. Safety comes first.
 
-3. **🚪 Door/Window Open** - When doors/windows are open too long
-   - Reduces to frost protection temperature
-   - Prevents energy waste
+2.  **🛠️ Manual Override:**
+    *   *If* you have turned on the 'Override Helper' (a switch in Home Assistant), the automation ignores the normal schedule.
+    *   This remains active for the set duration (default 2 hours) or until you turn it off again.
+    *   *Exception:* If you leave the house (`left_home`), the override is automatically cancelled to prevent energy waste.
 
-4. **🏃 Away Mode** - When nobody is home
-   - Sets to energy-saving away temperature
-   - Comfort not needed when house is empty
+3.  **☀️ Eco Mode (Warm Outside):**
+    *   *If* it is warmer outside than the set threshold value (default 18°C), the heating is completely **switched off** (HVAC mode: off). It makes no sense to heat if it is already warm enough outside.
 
-5. **🌙 Night Mode** - During sleeping hours (when enabled)
-   - Reduces to night temperature
-   - Saves energy while maintaining comfort
+4.  **🚪 Windows/Doors Open:**
+    *   *If* a window or door is open longer than the 'delay time' (default 120 sec), the heating drops to the frost protection temperature.
+    *   This prevents heating the outdoors. As soon as everything is closed again, the normal program resumes after a short wait.
 
-6. **⏰ Pre-Heat Mode** - Before wake-up time (when enabled)
-   - Increases to comfort temperature early
-   - Ensures warmth when you wake up
+5.  **🏃 Away:**
+    *   *If* no one is home (detected via the `presence_zone`), the thermostat goes to the 'Away Temperature' (default 17°C).
 
-7. **🏠 Comfort Mode** - Default when home
-   - Maintains comfortable temperature
-   - Applied when no other conditions are met
+6.  **⏰ Pre-heat:**
+    *   *If* the night is almost over (within the set 'Pre-heat Duration', e.g., 30 min before waking up), the heating starts heating up to the comfort temperature. So you wake up in a warm house.
+
+7.  **🌙 Night Mode:**
+    *   *If* it is night (between start and end time, e.g., 23:00 - 07:00), the temperature goes to the 'Night Temperature' (default 18°C) to save energy during sleep.
+
+8.  **🏠 Comfort (Default):**
+    *   *If* none of the above situations apply (you are home, windows closed, it is daytime, and cold outside), the heating is set to the 'Comfort Temperature' (default 21°C).
+
+### 💧 Smart Extra: Humidity Correction
+If you enable this, the system subtly adjusts the target temperature based on humidity:
+*   **High humidity (>70%):** The temperature is **lowered by 0.5°C**. Humid air feels warmer, so you can save energy without losing comfort.
+*   **Low humidity (<30%):** The temperature is **raised by 0.5°C**, because dry air feels colder.
+
+### 🔄 When does the automation react?
+The blueprint springs into action with every relevant change:
+*   Someone comes home or leaves.
+*   A window/door opens or closes.
+*   The temperature (indoor or outdoor) changes.
+*   The clock hits a start/end time (night mode).
+*   Home Assistant restarts.
+*   **Every 15 minutes:** A periodic check to ensure everything is still in the correct state (e.g., if someone manually adjusted the thermostat).
 
 ## 💡 Usage Examples
 
