@@ -39,7 +39,7 @@ blueprint:
         entity:
           filter:
             - domain: sensor
-              device_class: battery
+              
 
     # ===== REQUIRED: SMART PLUG CONTROL =====
     smart_plug:
