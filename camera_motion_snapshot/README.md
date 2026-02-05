@@ -37,6 +37,8 @@ This blueprint 🏗️ automatically takes a snapshot 🖼️ from a specified c
 
 
 ## 🏷️ Version History
+- **1.8.1**: 🐛 Fixed deprecated `target` parameter in Telegram action and modernized service calls to actions.
+- **1.8.0**: 🏠 Added presence-based filtering (only when home/away).
 - **1.7.0**: ⏱️ Added a customizable timeout (cooldown) to prevent multiple snapshots in a short period.
 - **1.6.0**: 🛠️ Added `author` and `source_url` for better integration with Home Assistant.
 - **1.5.0**: ✍️ Made the message caption fully customizable.

@@ -1,7 +1,7 @@
 blueprint:
   name: 📸 Camera Snapshot on Motion to Telegram 🤖
   description: >
-    📦 [Version 1.8.0] Automatically capture a snapshot from your camera 📷 when motion is detected 🏃‍♂️ and send it instantly via your Telegram bot 📨.
+    📦 [Version 1.8.1] Automatically capture a snapshot from your camera 📷 when motion is detected 🏃‍♂️ and send it instantly via your Telegram bot 📨.
 
     ✨ Features:
     - 📸 Instant high-quality snapshot.
@@ -120,15 +120,15 @@ condition:
 
 action:
   - delay: !input motion_delay
-  - service: camera.snapshot
+  - action: camera.snapshot
     target:
       entity_id: !input camera
     data:
       filename: !input snapshot_path
   - delay: "00:00:02"
-  - service: telegram_bot.send_photo
+  - action: telegram_bot.send_photo
     data:
-      target: "{{ target_chat_id_var }}"
+      chat_id: "{{ target_chat_id_var }}"
       file: !input snapshot_path
       caption: !input message_caption
   - delay: !input timeout
