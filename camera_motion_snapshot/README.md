@@ -24,6 +24,8 @@ This blueprint 🏗️ automatically takes a snapshot 🖼️ from a specified c
 | 🆔 Target Chat ID | The ID of the chat/user to send the photo to. | ✅ Yes |
 | ✍️ Message Caption | The exact text to send with the photo. | ✅ Yes |
 | 📂 Snapshot Path | Local storage path for the image. | ✅ Yes |
+| 👤 First Person Tracker | Select the first person entity to track. | ❌ No (Default: []) |
+| 👤 Second Person Tracker | Select a second person entity to track. | ❌ No (Default: []) |
 | ⏱️ Timeout (Cooldown) | The time to wait after a snapshot before allowing another one. | ❌ No (Default: 60s) |
 
 ## 🚀 Installation
@@ -37,6 +39,7 @@ This blueprint 🏗️ automatically takes a snapshot 🖼️ from a specified c
 
 
 ## 🏷️ Version History
+- **1.9.0**: 👥 Added support for a second person tracker for presence-based filtering.
 - **1.8.1**: 🐛 Fixed deprecated `target` parameter in Telegram action and modernized service calls to actions.
 - **1.8.0**: 🏠 Added presence-based filtering (only when home/away).
 - **1.7.0**: ⏱️ Added a customizable timeout (cooldown) to prevent multiple snapshots in a short period.

@@ -1,7 +1,7 @@
 blueprint:
   name: 📸 Camera Snapshot on Motion to Telegram 🤖
   description: >
-    📦 [Version 1.8.1] Automatically capture a snapshot from your camera 📷 when motion is detected 🏃‍♂️ and send it instantly via your Telegram bot 📨.
+    📦 [Version 1.9.0] Automatically capture a snapshot from your camera 📷 when motion is detected 🏃‍♂️ and send it instantly via your Telegram bot 📨.
 
     ✨ Features:
     - 📸 Instant high-quality snapshot.
@@ -84,8 +84,15 @@ blueprint:
             - label: "🏠 Only when at home"
               value: home
     person_entity:
-      name: 👤 Person Tracker
-      description: 🔍 Select the person entity to track for presence detection. Only used when Presence Mode is not set to 'Always'.
+      name: 👤 First Person Tracker
+      description: 🔍 Select the first person entity to track for presence detection. Only used when Presence Mode is not set to 'Always'.
+      default: []
+      selector:
+        entity:
+          domain: person
+    person_entity_2:
+      name: 👤 Second Person Tracker (Optional)
+      description: 🔍 Select a second person entity to track for presence detection. Only used when Presence Mode is not set to 'Always'.
       default: []
       selector:
         entity:
@@ -95,6 +102,7 @@ variables:
   target_chat_id_var: !input target_chat_id
   presence_mode_var: !input presence_mode
   person_entity_var: !input person_entity
+  person_entity_2_var: !input person_entity_2
 
 trigger:
   - platform: state
@@ -108,12 +116,16 @@ condition:
   - condition: template
     value_template: >
       {% set mode = presence_mode_var %}
+      {% set p1 = person_entity_var %}
+      {% set p2 = person_entity_2_var %}
+      {% set p1_home = p1 != [] and states(p1) == 'home' %}
+      {% set p2_home = p2 != [] and states(p2) == 'home' %}
       {% if mode == 'always' %}
         true
       {% elif mode == 'away' %}
-        {{ states(person_entity_var) != 'home' }}
+        {{ not p1_home and not p2_home }}
       {% elif mode == 'home' %}
-        {{ states(person_entity_var) == 'home' }}
+        {{ p1_home or p2_home }}
       {% else %}
         true
       {% endif %}
