@@ -1,4 +1,4 @@
-# Version: 1.4.0
+# Version: 1.5.0
 blueprint:
   domain: automation
   name: "🔥 Smart Heating Controller"
@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    📦 [Version 1.4.0] Intelligent climate control with presence detection, door/window protection,
+    📦 [Version 1.5.0] Intelligent climate control with presence detection, door/window protection,
     manual override, and energy-saving features! 🌡️
 
 
@@ -179,12 +179,13 @@ blueprint:
           name: "⏱️ Door Open Delay"
           description: >
             Time to wait before pausing heating when a door/window opens.
-          default: 120
+            Heating only pauses after the door has been continuously open for this duration.
+          default: 300
           selector:
             number:
               min: 30
-              max: 300
-              step: 10
+              max: 600
+              step: 30
               unit_of_measurement: "seconds"
               mode: slider
 
@@ -465,7 +466,7 @@ actions:
           false
         {% endif %}
 
-      # Check if any door/window is open
+      # Check if any door/window is open (used only for door_opened/door_closed trigger branches)
       any_opening_open: >
         {% set ns = namespace(open=false) %}
         {% for sensor in door_sensors %}
@@ -521,8 +522,6 @@ actions:
           manual_override
         {% elif is_outdoor_warm %}
           eco
-        {% elif any_opening_open %}
-          door_open
         {% elif people_count == 0 %}
           away
         {% elif is_preheat_time %}
@@ -540,8 +539,6 @@ actions:
         {% elif target_mode == 'manual_override' %}
           {{ current_target }}
         {% elif target_mode == 'eco' %}
-          {{ temp_frost }}
-        {% elif target_mode == 'door_open' %}
           {{ temp_frost }}
         {% elif target_mode == 'away' %}
           {{ temp_away }}
@@ -689,8 +686,10 @@ actions:
 
       # ----- DOOR/WINDOW OPEN -----
       - conditions:
+          - condition: trigger
+            id: door_opened
           - condition: template
-            value_template: "{{ target_mode == 'door_open' }}"
+            value_template: "{{ any_opening_open }}"
           - condition: template
             value_template: "{{ current_target != temp_frost }}"
         sequence:
@@ -874,7 +873,7 @@ actions:
           - condition: trigger
             id: periodic_check
           - condition: template
-            value_template: "{{ target_mode not in ['eco', 'door_open', 'preheat', 'manual_override'] }}"
+            value_template: "{{ target_mode not in ['eco', 'preheat', 'manual_override'] }}"
           - condition: template
             value_template: "{{ (current_target - target_temp) | abs > 0.5 }}"
         sequence:
