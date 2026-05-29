@@ -1,4 +1,4 @@
-# Version: 1.6.0
+# Version: 1.7.0
 blueprint:
   domain: automation
   name: "🔥 Smart Heating Controller"
@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    📦 [Version 1.6.0] Intelligent climate control with presence detection, door/window protection,
+    📦 [Version 1.7.0] Intelligent climate control with presence detection, door/window protection,
     manual override, and energy-saving features! 🌡️
 
 
@@ -307,6 +307,64 @@ blueprint:
               filter:
                 - domain: input_boolean
 
+    # ===== VIRTUAL WINDOW DETECTION (COLLAPSED) =====
+    virtual_window_settings:
+      name: "🪟 Virtual Window Detection"
+      icon: mdi:thermometer-alert
+      collapsed: true
+      input:
+        use_virtual_window_detection:
+          name: "🪟 Enable Virtual Window Detection"
+          description: >
+            Detect open windows by monitoring rapid indoor temperature drops, even without
+            physical sensors. Heating pauses when a sudden drop is detected and resumes
+            automatically after the next periodic check (~15 min).
+          default: false
+          selector:
+            boolean:
+
+        virtual_window_temp_drop:
+          name: "🌡️ Temperature Drop Threshold"
+          description: >
+            Minimum temperature drop between two consecutive sensor readings to trigger
+            virtual window detection.
+          default: 1.5
+          selector:
+            number:
+              min: 0.5
+              max: 3.0
+              step: 0.5
+              unit_of_measurement: "°C"
+              mode: slider
+
+    # ===== GRADUAL TRANSITION SETTINGS (COLLAPSED) =====
+    transition_settings:
+      name: "🔄 Gradual Transition Settings"
+      icon: mdi:trending-up
+      collapsed: true
+      input:
+        use_gradual_transitions:
+          name: "🔄 Enable Gradual Transitions"
+          description: >
+            Instead of jumping directly to the target temperature, gradually step up or down
+            by a fixed amount every 15 minutes. Makes temperature changes feel more natural.
+          default: false
+          selector:
+            boolean:
+
+        transition_step:
+          name: "↗️ Temperature Step"
+          description: >
+            Temperature change per step, applied every 15 minutes during gradual transitions.
+          default: 0.5
+          selector:
+            number:
+              min: 0.5
+              max: 2.0
+              step: 0.5
+              unit_of_measurement: "°C"
+              mode: slider
+
 mode: single
 max_exceeded: silent
 
@@ -346,6 +404,14 @@ variables:
   # Manual override settings
   override_duration_hours: !input override_duration
   override_entity: !input override_helper
+
+  # Virtual window detection
+  virtual_window_enabled: !input use_virtual_window_detection
+  virtual_window_temp_drop_threshold: !input virtual_window_temp_drop
+
+  # Gradual transitions
+  gradual_transitions_enabled: !input use_gradual_transitions
+  transition_step_size: !input transition_step
 
 triggers:
   # ===== STARTUP TRIGGERS =====
@@ -418,6 +484,11 @@ triggers:
     entity_id: !input comfort_temp_helper
     id: comfort_temp_changed
 
+  # ===== VIRTUAL WINDOW: RAPID INDOOR TEMPERATURE DROP =====
+  - trigger: state
+    entity_id: !input indoor_temp_sensor
+    id: indoor_rapid_drop
+
 conditions: []
 
 actions:
@@ -427,6 +498,16 @@ actions:
       current_indoor: "{{ states(indoor_sensor) | float(20) }}"
       people_count: "{{ states(zone) | int(0) }}"
       is_outdoor_warm: "{{ current_outdoor >= outdoor_threshold }}"
+
+      # Adaptive pre-heat: scale preheat window by how cold it is outside
+      # (colder outside → longer warm-up needed; capped at 3× base)
+      effective_preheat_mins: >
+        {% if preheat_enabled and night_mode_enabled %}
+          {% set factor = [(outdoor_threshold - current_outdoor) / 10 + 1, 1.0] | max %}
+          {{ (preheat_mins * [factor, 3.0] | min) | round(0) | int }}
+        {% else %}
+          {{ preheat_mins }}
+        {% endif %}
 
       # Calculate if it's night time
       is_night: >
@@ -449,7 +530,7 @@ actions:
           {% set end_parts = night_end_time.split(':') %}
           {% set end_hour = end_parts[0] | int %}
           {% set end_min = end_parts[1] | int %}
-          {% set total_mins = end_hour * 60 + end_min - preheat_mins %}
+          {% set total_mins = end_hour * 60 + end_min - effective_preheat_mins %}
           {% if total_mins < 0 %}
             {% set total_mins = total_mins + 1440 %}
           {% endif %}
@@ -552,6 +633,7 @@ actions:
 
       current_target: "{{ state_attr(climate, 'temperature') | float(0) }}"
       hvac_mode: "{{ states(climate) }}"
+      heat_needed: "{{ current_indoor < target_temp }}"
 
   # ===== MAIN CONTROL LOGIC =====
   - choose:
@@ -615,7 +697,7 @@ actions:
               entity_id: "{{ climate }}"
             data:
               temperature: "{{ post_override_temp }}"
-              hvac_mode: heat
+              hvac_mode: "{{ 'heat' if heat_needed else hvac_mode }}"
 
       # ----- MANUAL OVERRIDE: USER CANCELLED (turned off helper manually) -----
       - conditions:
@@ -650,7 +732,7 @@ actions:
               entity_id: "{{ climate }}"
             data:
               temperature: "{{ post_cancel_temp }}"
-              hvac_mode: heat
+              hvac_mode: "{{ 'heat' if heat_needed else hvac_mode }}"
 
       # ----- MANUAL OVERRIDE: FROST PROTECTION OVERRIDE -----
       - conditions:
@@ -699,6 +781,27 @@ actions:
             data:
               hvac_mode: "off"
 
+      # ----- VIRTUAL WINDOW OPEN (rapid indoor temp drop) -----
+      - conditions:
+          - condition: trigger
+            id: indoor_rapid_drop
+          - condition: template
+            value_template: "{{ virtual_window_enabled }}"
+          - condition: template
+            value_template: >
+              {{ (trigger.from_state.state | float(20) - trigger.to_state.state | float(20))
+                 >= virtual_window_temp_drop_threshold }}
+          - condition: template
+            value_template: "{{ hvac_mode != 'off' }}"
+          - condition: template
+            value_template: "{{ not any_opening_open }}"
+        sequence:
+          - action: climate.set_hvac_mode
+            target:
+              entity_id: "{{ climate }}"
+            data:
+              hvac_mode: "off"
+
       # ----- AWAY MODE -----
       - conditions:
           - condition: trigger
@@ -720,7 +823,7 @@ actions:
               entity_id: "{{ climate }}"
             data:
               temperature: "{{ target_temp }}"
-              hvac_mode: heat
+              hvac_mode: "{{ 'heat' if heat_needed else hvac_mode }}"
 
       # ----- DOOR CLOSED - RESUME -----
       - conditions:
@@ -736,7 +839,7 @@ actions:
               entity_id: "{{ climate }}"
             data:
               temperature: "{{ target_temp }}"
-              hvac_mode: heat
+              hvac_mode: "{{ 'heat' if heat_needed else hvac_mode }}"
 
       # ----- NIGHT START -----
       - conditions:
@@ -765,7 +868,7 @@ actions:
               entity_id: "{{ climate }}"
             data:
               temperature: "{{ temp_comfort + humidity_adjustment | float(0) }}"
-              hvac_mode: heat
+              hvac_mode: "{{ 'heat' if heat_needed else hvac_mode }}"
 
       # ----- OUTDOOR COLD AGAIN -----
       - conditions:
@@ -779,7 +882,7 @@ actions:
               entity_id: "{{ climate }}"
             data:
               temperature: "{{ target_temp }}"
-              hvac_mode: heat
+              hvac_mode: "{{ 'heat' if heat_needed else hvac_mode }}"
 
       # ----- PRE-HEAT MODE -----
       - conditions:
@@ -795,7 +898,7 @@ actions:
               entity_id: "{{ climate }}"
             data:
               temperature: "{{ target_temp }}"
-              hvac_mode: heat
+              hvac_mode: "{{ 'heat' if heat_needed else hvac_mode }}"
 
       # ----- COMFORT TEMPERATURE HELPER CHANGED -----
       - conditions:
@@ -868,7 +971,7 @@ actions:
                   entity_id: "{{ climate }}"
                 data:
                   temperature: "{{ startup_target_temp }}"
-                  hvac_mode: heat
+                  hvac_mode: "{{ 'heat' if heat_needed else hvac_mode }}"
 
       # ----- PERIODIC CHECK (sync state) -----
       - conditions:
@@ -879,10 +982,28 @@ actions:
           - condition: template
             value_template: "{{ not any_opening_open }}"
           - condition: template
-            value_template: "{{ (current_target - target_temp) | abs > 0.5 }}"
+            value_template: >
+              {{ (current_target - target_temp) | abs >
+                 (transition_step_size / 2 if gradual_transitions_enabled else 0.5) }}
         sequence:
+          - variables:
+              sync_target_temp: >
+                {% if gradual_transitions_enabled %}
+                  {% set step = transition_step_size | float(0.5) %}
+                  {% set gap = target_temp - current_target %}
+                  {% if gap > step %}
+                    {{ current_target + step }}
+                  {% elif gap < -step %}
+                    {{ current_target - step }}
+                  {% else %}
+                    {{ target_temp }}
+                  {% endif %}
+                {% else %}
+                  {{ target_temp }}
+                {% endif %}
           - action: climate.set_temperature
             target:
               entity_id: "{{ climate }}"
             data:
-              temperature: "{{ target_temp }}"
+              temperature: "{{ sync_target_temp }}"
+              hvac_mode: "{{ 'heat' if current_indoor < sync_target_temp else hvac_mode }}"
