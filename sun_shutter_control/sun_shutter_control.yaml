@@ -1,0 +1,248 @@
+# Version: 1.0.0
+blueprint:
+  domain: automation
+  name: "☀️ Zon-bewuste Rolluik Bediening"
+  author: r3mcos3
+  source_url: https://github.com/r3mcos3/blueprints/blob/main/sun_shutter_control/sun_shutter_control.yaml
+  homeassistant:
+    min_version: 2025.12.0
+  description: >
+    📦 [Version 1.0.0] Automatische rolluik bediening op basis van de zonpositie 🌞.
+
+
+    Sluit rolluiken automatisch wanneer de zon op de voor- of achterkant van je huis
+    schijnt, en opent ze weer zodra de zon naar een andere richting draait.
+    Gebruikt het azimut van de zon (kompasrichting 0–360°) en vergelijkt dat met de
+    oriëntatie van je huis.
+
+
+    Features:
+
+    - ☀️ Automatisch sluiten wanneer zon op voor- of achtergevel schijnt
+
+    - 🔄 Automatisch openen wanneer zon wegdraait (optioneel)
+
+    - 📐 Configureerbaar zon-venster (hoeveel graden marge per gevel)
+
+    - 🌅 Minimale zonnehoogte instelling (geen actie bij laagstaande zon)
+
+    - 🔽 Configureerbare sluit- en openingspositie
+
+
+    💡 Tip — Kompasrichtingen: Noord = 0°, Oost = 90°, Zuid = 180°, West = 270°.
+    Gebruik een kompasapp op je telefoon bij de voordeur om de richting te bepalen.
+    De achterkant wordt automatisch berekend (voorkant + 180°).
+
+  input:
+    # ===== VERPLICHT: HUISORIËNTATIE =====
+    front_facing_azimuth:
+      name: "🏠 Richting voorkant huis (azimut)"
+      description: >
+        De kompasrichting (azimut) waar de voorkant van je huis op uitkijkt.
+        Noord = 0°, Oost = 90°, Zuid = 180°, West = 270°.
+        Ga bij je voordeur staan en kijk recht naar buiten — die richting is dit getal.
+        De achterkant wordt automatisch berekend als voorkant + 180°.
+      default: 180
+      selector:
+        number:
+          min: 0
+          max: 359
+          step: 1
+          unit_of_measurement: "°"
+          mode: slider
+
+    # ===== VERPLICHT: ROLLUIKEN =====
+    front_covers:
+      name: "🏠 Rolluiken voorkant"
+      description: >
+        Rolluiken aan de voorkant van het huis. Worden gesloten wanneer
+        de zon op de voorkant schijnt.
+      default: []
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - domain: cover
+
+    back_covers:
+      name: "🏡 Rolluiken achterkant"
+      description: >
+        Rolluiken aan de achterkant van het huis. Worden gesloten wanneer
+        de zon op de achterkant schijnt.
+      default: []
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - domain: cover
+
+    # ===== ZON-INSTELLINGEN (COLLAPSED) =====
+    sun_settings:
+      name: "☀️ Zon-instellingen"
+      icon: mdi:weather-sunny
+      collapsed: true
+      input:
+        sun_window:
+          name: "📐 Zon-venster hoek"
+          description: >
+            Hoeveel graden links én rechts van de gevelrichting de zon beschouwd
+            wordt als "schijnend op die gevel". Standaard 90° = zon telt mee van
+            90° links tot 90° rechts van de gevel (halve hemel).
+            Kleiner = strenger, zon moet directer op de gevel staan.
+          default: 90
+          selector:
+            number:
+              min: 10
+              max: 120
+              step: 5
+              unit_of_measurement: "°"
+              mode: slider
+
+        min_elevation:
+          name: "🌅 Minimale zonnehoogte"
+          description: >
+            Minimale hoogte van de zon boven de horizon (graden) voordat de
+            rolluiken worden bediend. Voorkomt actie bij laagstaande ochtend-
+            of avondzon. Zet op 0 om altijd te activeren als de zon op die
+            gevel staat.
+          default: 10
+          selector:
+            number:
+              min: 0
+              max: 45
+              step: 1
+              unit_of_measurement: "°"
+              mode: slider
+
+    # ===== ROLLUIK-INSTELLINGEN (COLLAPSED) =====
+    cover_settings:
+      name: "⚙️ Rolluik-instellingen"
+      icon: mdi:window-shutter
+      collapsed: true
+      input:
+        close_position:
+          name: "🔽 Sluitpositie (%)"
+          description: >
+            Positie van de rolluiken wanneer de zon erop schijnt.
+            0% = volledig gesloten, 50% = half gesloten, 100% = volledig open.
+          default: 0
+          selector:
+            number:
+              min: 0
+              max: 100
+              step: 5
+              unit_of_measurement: "%"
+              mode: slider
+
+        auto_open:
+          name: "🔼 Automatisch openen"
+          description: >
+            Zet aan om de rolluiken automatisch te openen wanneer de zon niet meer
+            op die gevel schijnt. Zet uit om alleen automatisch te sluiten.
+          default: true
+          selector:
+            boolean:
+
+        open_position:
+          name: "🔼 Openingspositie (%)"
+          description: >
+            Positie waarnaar de rolluiken gaan bij automatisch openen (als
+            "Automatisch openen" aan staat). 100% = volledig open.
+          default: 100
+          selector:
+            number:
+              min: 0
+              max: 100
+              step: 5
+              unit_of_measurement: "%"
+              mode: slider
+
+variables:
+  v_front_facing: !input front_facing_azimuth
+  v_sun_window: !input sun_window
+  v_min_elevation: !input min_elevation
+  v_auto_open: !input auto_open
+  v_front_covers: !input front_covers
+  v_back_covers: !input back_covers
+  # Bereken of de zon op de voorkant staat:
+  # - Azimut-verschil wordt genormaliseerd naar -180..+180 via ((diff + 180) % 360) - 180
+  # - Hoekverschil kleiner dan het zon-venster = zon op die gevel
+  # - Zonhoogte moet boven de minimumdrempel zijn
+  v_sun_on_front: >
+    {% set front = v_front_facing | float(180) %}
+    {% set window = v_sun_window | float(90) %}
+    {% set az = state_attr('sun.sun', 'azimuth') | float(0) %}
+    {% set el = state_attr('sun.sun', 'elevation') | float(-90) %}
+    {% set min_el = v_min_elevation | float(10) %}
+    {% set diff = ((az - front + 180) % 360) - 180 %}
+    {{ el >= min_el and diff | abs <= window }}
+  v_sun_on_back: >
+    {% set back = (v_front_facing | float(180) + 180) % 360 %}
+    {% set window = v_sun_window | float(90) %}
+    {% set az = state_attr('sun.sun', 'azimuth') | float(0) %}
+    {% set el = state_attr('sun.sun', 'elevation') | float(-90) %}
+    {% set min_el = v_min_elevation | float(10) %}
+    {% set diff = ((az - back + 180) % 360) - 180 %}
+    {{ el >= min_el and diff | abs <= window }}
+
+trigger:
+  - platform: time_pattern
+    minutes: "/5"
+    id: periodic_check
+  - platform: homeassistant
+    event: start
+    id: ha_start
+
+action:
+  # --- Voorkant rolluiken ---
+  - if:
+      - condition: template
+        value_template: "{{ v_front_covers | list | length > 0 }}"
+    then:
+      - if:
+          - condition: template
+            value_template: "{{ v_sun_on_front | bool }}"
+        then:
+          - service: cover.set_cover_position
+            target:
+              entity_id: !input front_covers
+            data:
+              position: !input close_position
+        else:
+          - if:
+              - condition: template
+                value_template: "{{ v_auto_open | bool }}"
+            then:
+              - service: cover.set_cover_position
+                target:
+                  entity_id: !input front_covers
+                data:
+                  position: !input open_position
+
+  # --- Achterkant rolluiken ---
+  - if:
+      - condition: template
+        value_template: "{{ v_back_covers | list | length > 0 }}"
+    then:
+      - if:
+          - condition: template
+            value_template: "{{ v_sun_on_back | bool }}"
+        then:
+          - service: cover.set_cover_position
+            target:
+              entity_id: !input back_covers
+            data:
+              position: !input close_position
+        else:
+          - if:
+              - condition: template
+                value_template: "{{ v_auto_open | bool }}"
+            then:
+              - service: cover.set_cover_position
+                target:
+                  entity_id: !input back_covers
+                data:
+                  position: !input open_position
+
+mode: single
+max_exceeded: silent
