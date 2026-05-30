@@ -743,6 +743,105 @@ Full documentation and examples: [GitHub Repository](https://github.com/r3mcos3/
 
 ---
 
+## 15. ☀️ Sun-Aware Shutter Control
+
+**Title:** `☀️ Sun-Aware Shutter Control - Automatically close shutters based on sun position`
+
+**Tags:** `automation`, `cover`, `sun`, `shutter`, `blinds`
+
+**Post:**
+
+```markdown
+# Sun-Aware Shutter Control ☀️
+
+**Version 1.2.0** | Automatically close your shutters when the sun shines on your house — and open them again when it moves away!
+
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fsun_shutter_control%2Fsun_shutter_control.yaml)
+
+## The problem this solves
+
+Every day the sun moves from one side of your house to the other. In the morning it shines on the front, in the afternoon on the back. Without automation you have to remember to close and open your shutters multiple times a day — this blueprint handles that for you automatically.
+
+## Features
+
+- ☀️ **Sun position tracking** - Closes shutters when the sun shines on the front or back facade
+- 🔄 **Automatic opening** - Opens shutters once the sun moves away (optional)
+- 🖐️ **Manual override** - Detects when someone manually operates a shutter and leaves it alone until the sun moves away
+- 📐 **Configurable sun window** - Control how many degrees of margin counts as "sun on facade"
+- 🌅 **Minimum elevation** - Ignores low morning/evening sun below your threshold
+- 🔽 **Flexible positions** - Set custom close position (e.g. 50% for partial shade)
+- 🏠 **Front and back separately** - Independent shutter groups per facade side
+
+## How it works
+
+The blueprint uses the `sun.sun` azimuth (compass direction 0–360°) and compares it to your house orientation. Every 5 minutes it calculates whether the sun is within the configured angle window of each facade:
+
+```
+Angle difference = ((sun azimuth − facade direction + 180) % 360) − 180
+Sun on facade    = angle difference < sun window AND elevation > minimum
+```
+
+This formula handles all compass directions correctly, including the North wrap-around (359° → 1°).
+
+### Decision logic per facade side
+
+| Sun on facade | Manual override | Action |
+|---|---|---|
+| ✅ Yes | ❌ No | Close shutters |
+| ✅ Yes | ✅ Yes | Do nothing (respect manual operation) |
+| ❌ No | — | Open shutters + reset override |
+
+## Finding your house azimuth
+
+Go to **[suncalc.org](https://www.suncalc.org/)**, find your house and determine which direction your front door faces. North = 0°, East = 90°, South = 180°, West = 270°. The back facade is calculated automatically (front + 180°).
+
+## Requirements
+
+- Home Assistant 2025.12.0+
+- Cover entities (shutters/blinds as `cover` domain)
+- Sun integration (built-in, no setup needed)
+
+### Optional
+
+- **Input Boolean helpers** — for manual override detection (one per facade side). Create via Settings → Helpers → Create Helper → Toggle.
+
+## Configuration
+
+| Input | Description | Default |
+|-------|-------------|---------|
+| 🏠 Front facade direction | Compass direction your front facade faces (0–359°) | 180° |
+| 🏠 Front shutters | Cover entities on the front | — |
+| 🏡 Back shutters | Cover entities on the back | — |
+| 📐 Sun window angle | Degrees left/right of facade that count | 90° |
+| 🌅 Minimum sun elevation | Minimum sun height above horizon | 10° |
+| 🔽 Close position | Shutter position when sun shines (0% = fully closed) | 0% |
+| 🔼 Automatically open | Open when sun moves away | On |
+| 🔼 Open position | Position when automatically opening | 100% |
+| 🖐️ Override helper front | Input Boolean for front manual override | Optional |
+| 🖐️ Override helper back | Input Boolean for back manual override | Optional |
+
+## Manual override explained
+
+Home Assistant records **who** initiated every state change. When a user manually operates a shutter (via app, dashboard or physical switch), the context contains a `user_id`. The blueprint detects this and activates the override, leaving that shutter alone.
+
+The override **resets automatically** when the sun moves away from that facade — so everything works normally again the next day without any manual intervention.
+
+> **Note:** Voice assistant commands (Alexa/Google) don't carry a `user_id` and won't trigger the override.
+
+## GitHub
+
+Full documentation, examples, and troubleshooting: [GitHub Repository](https://github.com/r3mcos3/blueprints/tree/main/sun_shutter_control)
+
+## Changelog
+
+- **1.2.0** - Translated all labels and descriptions to English
+- **1.1.0** - Manual override detection with input_boolean helpers, auto-reset when sun moves away
+- **1.0.1** - Added suncalc.org tip to description
+- **1.0.0** - Initial release
+```
+
+---
+
 # Tips voor het posten
 
 1. **Eén post per blueprint** - Maak een aparte post voor elke blueprint
