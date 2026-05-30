@@ -1,4 +1,4 @@
-# Version: 1.0.0
+# Version: 1.0.1
 blueprint:
   domain: automation
   name: "☀️ Zon-bewuste Rolluik Bediening"
@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    📦 [Version 1.0.0] Automatische rolluik bediening op basis van de zonpositie 🌞.
+    📦 [Version 1.0.1] Automatische rolluik bediening op basis van de zonpositie 🌞.
 
 
     Sluit rolluiken automatisch wanneer de zon op de voor- of achterkant van je huis
@@ -29,8 +29,10 @@ blueprint:
     - 🔽 Configureerbare sluit- en openingspositie
 
 
-    💡 Tip — Kompasrichtingen: Noord = 0°, Oost = 90°, Zuid = 180°, West = 270°.
-    Gebruik een kompasapp op je telefoon bij de voordeur om de richting te bepalen.
+    🌐 Azimut van je huis bepalen — Ga naar https://www.suncalc.org/, zoek je huis op
+    en kijk in welke richting je voordeur wijst. De oranje lijn toont de zonrichting per
+    tijdstip, maar je hebt de richting van je gevel nodig (vaste kompasrichting).
+    Noord = 0°, Oost = 90°, Zuid = 180°, West = 270°.
     De achterkant wordt automatisch berekend (voorkant + 180°).
 
   input:
