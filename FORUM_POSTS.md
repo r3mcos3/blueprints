@@ -749,12 +749,16 @@ Full documentation and examples: [GitHub Repository](https://github.com/r3mcos3/
 
 **Tags:** `automation`, `cover`, `sun`, `shutter`, `blinds`
 
+**Live URL:** https://community.home-assistant.io/t/sun-aware-shutter-control-automatically-close-shutters-based-on-sun-position/1012173
+
 **Post:**
 
 ```markdown
 # Sun-Aware Shutter Control ☀️
 
 **Version 1.2.0** | Automatically close your shutters when the sun shines on your house — and open them again when it moves away!
+
+> ⚠️ **This blueprint is currently in a testing phase.** It has been tested in a single environment. Feedback and bug reports are very welcome!
 
 [![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fsun_shutter_control%2Fsun_shutter_control.yaml)
 
