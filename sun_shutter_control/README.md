@@ -1,273 +1,276 @@
-# ☀️ Zon-bewuste Rolluik Bediening
+# ☀️ Sun-Aware Shutter Control
 
-[![version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
-Automatische rolluik bediening op basis van de zonpositie. Sluit rolluiken wanneer de zon op de voor- of achterkant van je huis schijnt, en opent ze weer zodra de zon wegdraait. Respecteert handmatige bediening zodat jij altijd de baas blijft! 🌞
+Automatic shutter control based on sun position. Closes shutters when the sun shines on the front or back of your house, and opens them again once the sun moves away. Respects manual operation so you always stay in control! 🌞
 
 ## ✨ Features
 
-- ☀️ **Automatisch sluiten** - Sluit rolluiken wanneer de zon op die gevel schijnt
-- 🔄 **Automatisch openen** - Opent rolluiken zodra de zon naar een andere richting draait (optioneel)
-- 🖐️ **Handmatige override** - Detecteert handmatige bediening en raakt die rolluiken niet meer aan tot de zon wegdraait
-- 📐 **Configureerbaar zon-venster** - Stel in hoeveel graden marge de zon op een gevel mag staan
-- 🌅 **Minimale zonnehoogte** - Geen actie bij laagstaande ochtend- of avondzon
-- 🔽 **Flexibele posities** - Stel sluit- en openingspositie in (bijv. half dicht op 50%)
-- 🏠 **Voor- en achterkant apart** - Afzonderlijke rolluiken per gevelzijde
+- ☀️ **Automatic closing** - Closes shutters when the sun shines on that facade
+- 🔄 **Automatic opening** - Opens shutters once the sun moves to another direction (optional)
+- 🖐️ **Manual override** - Detects manual shutter operation and leaves those shutters alone until the sun moves away
+- 📐 **Configurable sun window** - Set how many degrees of margin the sun may be on a facade
+- 🌅 **Minimum sun elevation** - No action during low morning or evening sun
+- 🔽 **Flexible positions** - Configure close and open position (e.g. half-close at 50%)
+- 🏠 **Front and back separately** - Independent shutter groups per facade side
 
 ## 📋 Requirements
 
-Voor gebruik heb je nodig:
+Before using this blueprint, you need:
 
-1. **Cover entiteiten** - Rolluiken of zonwering als `cover` domein in Home Assistant
-2. **Sun integratie** - Ingebouwde HA sun-integratie (`sun.sun`), standaard beschikbaar
-3. **Kompasrichting voorkant** - De azimut van je voorgevel (zie tip hieronder)
+1. **Cover entities** - Shutters or blinds as `cover` domain in Home Assistant
+2. **Sun integration** - Built-in HA sun integration (`sun.sun`), available by default
+3. **Front facade azimuth** - The compass direction your front facade faces (see tip below)
 
-### Optioneel
+### Optional
 
-- **Input Boolean helpers** - Voor handmatige override detectie (één per gevelzijde)
+- **Input Boolean helpers** - For manual override detection (one per facade side)
 
-## 🌐 Azimut van je huis bepalen
+## 🌐 Finding your house azimuth
 
-Ga naar **[suncalc.org](https://www.suncalc.org/)**, zoek je huis op en bepaal in welke richting je voordeur wijst:
+Go to **[suncalc.org](https://www.suncalc.org/)**, find your house and determine which direction your front door faces:
 
-| Richting | Azimut |
-|----------|--------|
-| Noord | 0° |
-| Oost | 90° |
-| Zuid | 180° |
+| Direction | Azimuth |
+|-----------|---------|
+| North | 0° |
+| East | 90° |
+| South | 180° |
 | West | 270° |
 
-De achterkant van je huis wordt automatisch berekend als voorkant + 180°.
+The back of your house is calculated automatically as front + 180°.
 
-## 🚀 Installatie
+## 🚀 Installation
 
-### Automatische installatie
+### Automatic Installation
 
 [![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fsun_shutter_control%2Fsun_shutter_control.yaml)
 
-### Handmatige installatie
+### Manual Installation
 
-1. Ga in Home Assistant naar **Instellingen** → **Automatiseringen & scènes** → **Blauwdrukken**
-2. Klik op **Blauwdruk importeren**
-3. Voer de blueprint URL in:
+1. In Home Assistant, navigate to **Settings** → **Automations & Scenes** → **Blueprints**
+2. Click the **Import Blueprint** button
+3. Enter the blueprint URL:
    ```
    https://github.com/r3mcos3/blueprints/blob/main/sun_shutter_control/sun_shutter_control.yaml
    ```
-4. Klik op **Voorbeeld** en dan **Importeren**
+4. Click **Preview** and then **Import**
 
-### Override helpers aanmaken (optioneel)
+### Creating override helpers (optional)
 
-Voor de handmatige override functie maak je per gevelzijde een schakelaar-helper aan:
+For the manual override feature, create a toggle helper per facade side:
 
-1. Ga naar **Instellingen** → **Hulpapparaten en -diensten** → **Helper maken**
-2. Kies **Schakelaar (Toggle)**
-3. Geef hem een naam, bijv. `Rolluik voorkant handmatig`
-4. Koppel de helper aan de blueprint in de sectie **Handmatige Override**
+1. Go to **Settings** → **Devices & Services** → **Create Helper**
+2. Choose **Toggle**
+3. Give it a name, e.g. `Shutter front manual`
+4. Link the helper to the blueprint under the **Manual Override** section
 
-## ⚙️ Configuratie
+## ⚙️ Configuration
 
-### Verplichte instellingen
+### Required Settings
 
-| Parameter | Omschrijving |
-|-----------|--------------|
-| 🏠 Richting voorkant huis | Azimut van de voorgevel in graden (0–359°) |
-| 🏠 Rolluiken voorkant | Cover entiteiten aan de voorkant |
-| 🏡 Rolluiken achterkant | Cover entiteiten aan de achterkant |
+| Parameter | Description |
+|-----------|-------------|
+| 🏠 Front facade direction | Azimuth of the front facade in degrees (0–359°) |
+| 🏠 Front shutters | Cover entities on the front of the house |
+| 🏡 Back shutters | Cover entities on the back of the house |
 
-### ☀️ Zon-instellingen (uitklapbaar)
+### ☀️ Sun Settings (collapsed)
 
-| Parameter | Omschrijving | Standaard |
-|-----------|--------------|-----------|
-| 📐 Zon-venster hoek | Graden links/rechts van de gevel die meetellen | 90° |
-| 🌅 Minimale zonnehoogte | Minimale zonhoogte boven de horizon | 10° |
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| 📐 Sun window angle | Degrees left/right of the facade that count as "sun on facade" | 90° |
+| 🌅 Minimum sun elevation | Minimum sun height above the horizon | 10° |
 
-### ⚙️ Rolluik-instellingen (uitklapbaar)
+### ⚙️ Shutter Settings (collapsed)
 
-| Parameter | Omschrijving | Standaard |
-|-----------|--------------|-----------|
-| 🔽 Sluitpositie | Positie bij zon op de gevel (0% = volledig dicht) | 0% |
-| 🔼 Automatisch openen | Openen als zon wegdraait | Aan |
-| 🔼 Openingspositie | Positie bij automatisch openen | 100% |
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| 🔽 Close position | Position when sun is on the facade (0% = fully closed) | 0% |
+| 🔼 Automatically open | Open when sun moves away | On |
+| 🔼 Open position | Position when automatically opening | 100% |
 
-### 🖐️ Handmatige Override (uitklapbaar)
+### 🖐️ Manual Override (collapsed)
 
-| Parameter | Omschrijving | Standaard |
-|-----------|--------------|-----------|
-| 🖐️ Override helper voorkant | Input Boolean helper voor voorkant | Optioneel |
-| 🖐️ Override helper achterkant | Input Boolean helper voor achterkant | Optioneel |
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| 🖐️ Override helper front | Input Boolean helper for the front facade | Optional |
+| 🖐️ Override helper back | Input Boolean helper for the back facade | Optional |
 
-## 🎯 Hoe het werkt
+## 🎯 How It Works
 
-### Zonpositie berekening
+### Sun position calculation
 
-De blueprint gebruikt het **azimut** van `sun.sun` — de kompasrichting van de zon (0–360°). Elke 5 minuten wordt berekend of de zon op de voor- of achtergevel staat:
-
-```
-Hoekverschil = ((zon-azimut − gevelrichting + 180) % 360) − 180
-Zon op gevel = hoekverschil < zon-venster EN zonhoogte > minimum
-```
-
-Deze formule werkt correct voor alle richtingen, inclusief de overgang rond Noord (359° → 1°).
-
-### Beslislogica
-
-Voor elke gevelzijde (voor/achter) geldt:
+The blueprint uses the **azimuth** of `sun.sun` — the compass direction of the sun (0–360°). Every 5 minutes it calculates whether the sun is on the front or back facade:
 
 ```
-Als zon op gevel EN geen handmatige override
-  → Rolluiken naar sluitpositie
-
-Als zon NIET op gevel EN automatisch openen aan
-  → Rolluiken naar openingspositie
-  → Handmatige override resetten
-
-Als zon op gevel EN handmatige override actief
-  → Niets doen (respecteert handmatige bediening)
+Angle difference = ((sun azimuth − facade direction + 180) % 360) − 180
+Sun on facade    = angle difference < sun window AND elevation > minimum
 ```
 
-### Handmatige override
+This formula works correctly for all directions, including the wrap-around near North (359° → 1°).
 
-HA registreert bij elke toestandswijziging **wie** de wijziging initieerde. Als een gebruiker een rolluik handmatig bedient (via de app, dashboard of fysieke schakelaar), bevat de context een `user_id`. De blueprint detecteert dit en zet de override-helper aan.
+### Decision logic
 
-De override wordt **automatisch gereset** zodra de zon van die gevel wegdraait en auto-open actief is — zodat alles de volgende dag weer normaal werkt.
+For each facade side (front/back):
 
-### Trigger momenten
+```
+If sun on facade AND no manual override
+  → Move shutters to close position
 
-| Trigger | Wanneer |
-|---------|---------|
-| ⏱️ Periodieke check | Elke 5 minuten |
-| 🏠 HA herstart | Bij opstarten van Home Assistant |
-| 🖐️ Cover wijziging | Direct bij handmatige rolluikbediening (alleen voor override detectie) |
+If sun NOT on facade AND auto-open is on
+  → Move shutters to open position
+  → Reset manual override
 
-## 💡 Gebruik voorbeelden
+If sun on facade AND manual override active
+  → Do nothing (respects manual operation)
+```
 
-### Voorbeeld 1: Voorkant naar het oosten
+### Manual override
 
-Huis met voordeur op het oosten (ochtendzon op de voorkant):
+HA records **who** initiated every state change. When a user manually operates a shutter (via the app, dashboard or physical switch), the context contains a `user_id`. The blueprint detects this and turns the override helper on.
+
+The override is **automatically reset** once the sun moves away from that facade and auto-open is active — so everything works normally again the next day.
+
+### Trigger moments
+
+| Trigger | When |
+|---------|------|
+| ⏱️ Periodic check | Every 5 minutes |
+| 🏠 HA restart | On Home Assistant startup |
+| 🖐️ Cover state change | Immediately on manual shutter operation (override detection only) |
+
+## 💡 Usage Examples
+
+### Example 1: Front door faces East
+
+House with front door facing East (morning sun on the front):
 
 ```yaml
 automation:
-  - alias: "Rolluiken op zonpositie"
+  - alias: "Shutters based on sun position"
     use_blueprint:
       path: r3mcos3/sun_shutter_control
       input:
         front_facing_azimuth: 90
         front_covers:
-          - cover.rolluik_woonkamer_voor
-          - cover.rolluik_slaapkamer_voor
+          - cover.shutter_living_room_front
+          - cover.shutter_bedroom_front
         back_covers:
-          - cover.rolluik_keuken_achter
+          - cover.shutter_kitchen_back
 ```
 
-**Verwacht gedrag:**
-- Ochtend (zon in het oosten): voorkant gaat dicht
-- Middag/namiddag (zon in het westen): achterkant gaat dicht
-- Avond: alles gaat open
+**Expected behavior:**
+- Morning (sun in the East): front shutters close
+- Afternoon/evening (sun in the West): back shutters close
+- Evening: everything opens
 
-### Voorbeeld 2: Half sluiten met override
+### Example 2: Half-close with manual override
 
-Rolluiken gaan op 50% bij zon, met handmatige override:
+Shutters go to 50% when sun shines, with manual override:
 
 ```yaml
 automation:
-  - alias: "Rolluiken op zonpositie"
+  - alias: "Shutters based on sun position"
     use_blueprint:
       path: r3mcos3/sun_shutter_control
       input:
         front_facing_azimuth: 180
         front_covers:
-          - cover.rolluik_woonkamer
+          - cover.shutter_living_room
         back_covers:
-          - cover.rolluik_slaapkamer
+          - cover.shutter_bedroom
         close_position: 50
         open_position: 100
-        front_override_helper: input_boolean.rolluik_voor_handmatig
-        back_override_helper: input_boolean.rolluik_achter_handmatig
+        front_override_helper: input_boolean.shutter_front_manual
+        back_override_helper: input_boolean.shutter_back_manual
 ```
 
-**Verwacht gedrag:**
-- Zon op gevel: rolluiken gaan naar 50%
-- Iemand opent handmatig: override aan, automatie raakt het niet aan
-- Zon draait weg: rolluiken gaan naar 100% open, override reset
+**Expected behavior:**
+- Sun on facade: shutters move to 50%
+- Someone manually opens: override on, automation leaves it alone
+- Sun moves away: shutters go to 100% open, override resets
 
-### Voorbeeld 3: Alleen sluiten, nooit automatisch openen
+### Example 3: Close only, never auto-open
 
-Alleen automatisch dichtgaan, handmatig openen:
+Only close automatically, open manually:
 
 ```yaml
 automation:
-  - alias: "Rolluiken dicht bij zon"
+  - alias: "Shutters close at sun"
     use_blueprint:
       path: r3mcos3/sun_shutter_control
       input:
         front_facing_azimuth: 270
         front_covers:
-          - cover.rolluik_voor
+          - cover.shutter_front
         back_covers:
-          - cover.rolluik_achter
+          - cover.shutter_back
         auto_open: false
         close_position: 0
 ```
 
-**Verwacht gedrag:**
-- Zon op gevel: rolluiken gaan volledig dicht
-- Zon weg: niets, rolluiken blijven waar ze zijn
+**Expected behavior:**
+- Sun on facade: shutters close fully
+- Sun moves away: nothing, shutters stay where they are
 
-## 🔧 Problemen oplossen
+## 🔧 Troubleshooting
 
-### Rolluiken bewegen niet
+### Shutters not moving
 
-1. Controleer of de cover-entiteiten bestaan en reageren via **Ontwikkelaarstools → Staten**
-2. Controleer of de automatie ingeschakeld is
-3. Controleer de azimut van de zon via `sun.sun` → attribuut `azimuth`
-4. Bekijk traces: **Instellingen → Automatiseringen → [naam] → Traces**
-5. Controleer of de zonhoogte (`elevation`) boven het minimum staat
+1. Check cover entities exist and respond via **Developer Tools → States**
+2. Verify the automation is enabled
+3. Check the sun azimuth via `sun.sun` → attribute `azimuth`
+4. View traces: **Settings → Automations → [name] → Traces**
+5. Verify sun elevation (`elevation`) is above the minimum threshold
 
-### Verkeerde richting berekend
+### Wrong direction calculated
 
-1. Controleer de ingestelde azimut via [suncalc.org](https://www.suncalc.org/)
-2. Vergroot het zon-venster (standaard 90°) als de zon net buiten de marge valt
-3. Controleer via de traces welke waarden de variabelen `v_sun_on_front` en `v_sun_on_back` bevatten
+1. Verify the configured azimuth using [suncalc.org](https://www.suncalc.org/)
+2. Increase the sun window (default 90°) if the sun is just outside the margin
+3. Check the automation traces to see what values `v_sun_on_front` and `v_sun_on_back` contain
 
-### Handmatige override werkt niet
+### Manual override not working
 
-1. Controleer of de input_boolean helper bestaat en correct gekoppeld is
-2. Bekijk in **Staten** of de helper aan/uitschakelt na handmatige bediening
-3. Zorg dat de rolluiken als `cover`-entiteit zijn geconfigureerd (niet als `switch`)
-4. Controleer of de bediening via een HA gebruikersaccount gedaan wordt (Alexa/Google-acties hebben geen `user_id` en worden niet als handmatig gezien)
+1. Verify the input_boolean helper exists and is correctly linked
+2. Check in **States** whether the helper toggles on/off after manual operation
+3. Make sure the shutters are configured as `cover` entities (not `switch`)
+4. Note: Alexa/Google voice actions don't carry a `user_id` and are not seen as manual
 
-### Override reset niet automatisch
+### Override not resetting automatically
 
-1. Controleer of **Automatisch openen** aanstaat in de rolluik-instellingen
-2. De override reset alleen als de zon VAN die gevel wegdraait (niet bij nacht/lage zon)
-3. Je kunt de helper altijd handmatig uitzetten via het HA dashboard
+1. Check that **Automatically open** is enabled in the shutter settings
+2. The override only resets when the sun moves AWAY from that facade (not at night or low sun)
+3. You can always manually turn off the helper from your HA dashboard
 
-## 📝 Versiegeschiedenis
+## 📝 Version History
 
-### Versie 1.1.0
-- 🖐️ Handmatige override detectie via context `user_id`
-- 🔄 Automatisch resetten van override bij wegdraaiende zon
-- ✨ Optionele input_boolean helpers per gevelzijde
+### Version 1.2.0
+- 🌐 Translated all descriptions and labels to English
 
-### Versie 1.0.1
-- 📝 Tip voor [suncalc.org](https://www.suncalc.org/) toegevoegd aan beschrijving
+### Version 1.1.0
+- 🖐️ Manual override detection via context `user_id`
+- 🔄 Automatic override reset when sun moves away
+- ✨ Optional input_boolean helpers per facade side
 
-### Versie 1.0.0
-- 🎉 Eerste release
-- ☀️ Azimut-gebaseerde rolluik bediening
-- 📐 Configureerbaar zon-venster met wrap-around correctie
-- 🌅 Minimale zonnehoogte instelling
-- 🔽 Configureerbare sluit- en openingspositie
+### Version 1.0.1
+- 📝 Added [suncalc.org](https://www.suncalc.org/) tip to description
 
-## 🤝 Bijdragen
+### Version 1.0.0
+- 🎉 Initial release
+- ☀️ Azimuth-based shutter control
+- 📐 Configurable sun window with wrap-around correction
+- 🌅 Minimum sun elevation setting
+- 🔽 Configurable close and open positions
 
-Bug gevonden of een suggestie? Maak een [issue aan op GitHub](https://github.com/r3mcos3/blueprints/issues)!
+## 🤝 Contributing
 
-## 📄 Licentie
+Found a bug or have a suggestion? Please [open an issue](https://github.com/r3mcos3/blueprints/issues) on GitHub!
 
-Deze blueprint wordt aangeboden onder de MIT Licentie.
+## 📄 License
+
+This blueprint is provided as-is under the MIT License.
 
 ## 🙏 Credits
 
-Gemaakt door [r3mcos3](https://github.com/r3mcos3)
+Created by [r3mcos3](https://github.com/r3mcos3)

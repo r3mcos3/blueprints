@@ -1,58 +1,57 @@
-# Version: 1.1.0
+# Version: 1.2.0
 blueprint:
   domain: automation
-  name: "☀️ Zon-bewuste Rolluik Bediening"
+  name: "☀️ Sun-Aware Shutter Control"
   author: r3mcos3
   source_url: https://github.com/r3mcos3/blueprints/blob/main/sun_shutter_control/sun_shutter_control.yaml
   homeassistant:
     min_version: 2025.12.0
   description: >
-    📦 [Version 1.1.0] Automatische rolluik bediening op basis van de zonpositie 🌞.
+    📦 [Version 1.2.0] Automatic shutter control based on sun position 🌞.
 
 
-    Sluit rolluiken automatisch wanneer de zon op de voor- of achterkant van je huis
-    schijnt, en opent ze weer zodra de zon naar een andere richting draait.
-    Gebruikt het azimut van de zon (kompasrichting 0–360°) en vergelijkt dat met de
-    oriëntatie van je huis.
+    Automatically closes shutters when the sun shines on the front or back of your house,
+    and opens them again once the sun moves away. Uses the sun's azimuth (compass direction
+    0–360°) and compares it to your house orientation.
 
 
     Features:
 
-    - ☀️ Automatisch sluiten wanneer zon op voor- of achtergevel schijnt
+    - ☀️ Automatically close shutters when the sun shines on the front or back facade
 
-    - 🔄 Automatisch openen wanneer zon wegdraait (optioneel)
+    - 🔄 Automatically open shutters when the sun moves away (optional)
 
-    - 📐 Configureerbaar zon-venster (hoeveel graden marge per gevel)
+    - 📐 Configurable sun window (degrees of margin per facade)
 
-    - 🌅 Minimale zonnehoogte instelling (geen actie bij laagstaande zon)
+    - 🌅 Minimum sun elevation setting (no action for low morning or evening sun)
 
-    - 🔽 Configureerbare sluit- en openingspositie
+    - 🔽 Configurable close and open position
 
-    - 🖐️ Handmatige override — automatie slaat rolluiken over die handmatig bediend zijn,
-      en reset automatisch zodra de zon wegdraait
-
-
-    🌐 Azimut van je huis bepalen — Ga naar https://www.suncalc.org/, zoek je huis op
-    en kijk in welke richting je voordeur wijst. De oranje lijn toont de zonrichting per
-    tijdstip, maar je hebt de richting van je gevel nodig (vaste kompasrichting).
-    Noord = 0°, Oost = 90°, Zuid = 180°, West = 270°.
-    De achterkant wordt automatisch berekend (voorkant + 180°).
+    - 🖐️ Manual override — skips shutters that were manually operated, and resets
+      automatically once the sun moves away from that facade
 
 
-    🖐️ Handmatige override instellen — Maak per zijde een Toggle-helper aan via
-    Instellingen → Hulpapparaten en -diensten → Helper maken → Schakelaar (input_boolean),
-    bijv. "Rolluik voorkant handmatig". Koppel deze hieronder. De automatie zet de
-    schakelaar automatisch aan bij handmatige bediening en reset hem als de zon wegdraait.
+    🌐 Finding your house azimuth — Go to https://www.suncalc.org/, find your house and
+    determine which direction your front door faces. The orange line shows the sun direction
+    per time of day, but you need your facade direction (fixed compass bearing).
+    North = 0°, East = 90°, South = 180°, West = 270°.
+    The back of the house is calculated automatically (front + 180°).
+
+
+    🖐️ Setting up manual override — Create a Toggle helper per facade side via
+    Settings → Devices & Services → Create Helper → Toggle (input_boolean),
+    e.g. "Shutter front manual". Link it below. The automation turns it on when a shutter
+    on that side is manually operated, and turns it off again when the sun moves away.
 
   input:
-    # ===== VERPLICHT: HUISORIËNTATIE =====
+    # ===== REQUIRED: HOUSE ORIENTATION =====
     front_facing_azimuth:
-      name: "🏠 Richting voorkant huis (azimut)"
+      name: "🏠 Front facade direction (azimuth)"
       description: >
-        De kompasrichting (azimut) waar de voorkant van je huis op uitkijkt.
-        Noord = 0°, Oost = 90°, Zuid = 180°, West = 270°.
-        Ga bij je voordeur staan en kijk recht naar buiten — die richting is dit getal.
-        De achterkant wordt automatisch berekend als voorkant + 180°.
+        The compass direction (azimuth) your front facade faces.
+        North = 0°, East = 90°, South = 180°, West = 270°.
+        Stand at your front door and look straight outside — that direction is this value.
+        The back facade is calculated automatically as front + 180°.
       default: 180
       selector:
         number:
@@ -62,12 +61,11 @@ blueprint:
           unit_of_measurement: "°"
           mode: slider
 
-    # ===== VERPLICHT: ROLLUIKEN =====
+    # ===== REQUIRED: COVERS =====
     front_covers:
-      name: "🏠 Rolluiken voorkant"
+      name: "🏠 Front shutters"
       description: >
-        Rolluiken aan de voorkant van het huis. Worden gesloten wanneer
-        de zon op de voorkant schijnt.
+        Shutters on the front of the house. Closed when the sun shines on the front facade.
       default: []
       selector:
         entity:
@@ -76,10 +74,9 @@ blueprint:
             - domain: cover
 
     back_covers:
-      name: "🏡 Rolluiken achterkant"
+      name: "🏡 Back shutters"
       description: >
-        Rolluiken aan de achterkant van het huis. Worden gesloten wanneer
-        de zon op de achterkant schijnt.
+        Shutters on the back of the house. Closed when the sun shines on the back facade.
       default: []
       selector:
         entity:
@@ -87,19 +84,19 @@ blueprint:
           filter:
             - domain: cover
 
-    # ===== ZON-INSTELLINGEN (COLLAPSED) =====
+    # ===== SUN SETTINGS (COLLAPSED) =====
     sun_settings:
-      name: "☀️ Zon-instellingen"
+      name: "☀️ Sun Settings"
       icon: mdi:weather-sunny
       collapsed: true
       input:
         sun_window:
-          name: "📐 Zon-venster hoek"
+          name: "📐 Sun window angle"
           description: >
-            Hoeveel graden links én rechts van de gevelrichting de zon beschouwd
-            wordt als "schijnend op die gevel". Standaard 90° = zon telt mee van
-            90° links tot 90° rechts van de gevel (halve hemel).
-            Kleiner = strenger, zon moet directer op de gevel staan.
+            How many degrees to the left and right of the facade direction the sun is
+            considered to be "shining on that facade". Default 90° means the sun counts
+            from 90° left to 90° right of the facade direction (half the sky).
+            Smaller = stricter, sun must shine more directly on the facade.
           default: 90
           selector:
             number:
@@ -110,12 +107,11 @@ blueprint:
               mode: slider
 
         min_elevation:
-          name: "🌅 Minimale zonnehoogte"
+          name: "🌅 Minimum sun elevation"
           description: >
-            Minimale hoogte van de zon boven de horizon (graden) voordat de
-            rolluiken worden bediend. Voorkomt actie bij laagstaande ochtend-
-            of avondzon. Zet op 0 om altijd te activeren als de zon op die
-            gevel staat.
+            Minimum height of the sun above the horizon (degrees) before the shutters
+            are operated. Prevents action during low morning or evening sun.
+            Set to 0 to always activate when the sun is on that facade.
           default: 10
           selector:
             number:
@@ -125,17 +121,17 @@ blueprint:
               unit_of_measurement: "°"
               mode: slider
 
-    # ===== ROLLUIK-INSTELLINGEN (COLLAPSED) =====
+    # ===== SHUTTER SETTINGS (COLLAPSED) =====
     cover_settings:
-      name: "⚙️ Rolluik-instellingen"
+      name: "⚙️ Shutter Settings"
       icon: mdi:window-shutter
       collapsed: true
       input:
         close_position:
-          name: "🔽 Sluitpositie (%)"
+          name: "🔽 Close position (%)"
           description: >
-            Positie van de rolluiken wanneer de zon erop schijnt.
-            0% = volledig gesloten, 50% = half gesloten, 100% = volledig open.
+            Position of the shutters when the sun shines on that facade.
+            0% = fully closed, 50% = half closed, 100% = fully open.
           default: 0
           selector:
             number:
@@ -146,19 +142,19 @@ blueprint:
               mode: slider
 
         auto_open:
-          name: "🔼 Automatisch openen"
+          name: "🔼 Automatically open"
           description: >
-            Zet aan om de rolluiken automatisch te openen wanneer de zon niet meer
-            op die gevel schijnt. Zet uit om alleen automatisch te sluiten.
+            Turn on to automatically open the shutters when the sun is no longer
+            shining on that facade. Turn off to only close automatically.
           default: true
           selector:
             boolean:
 
         open_position:
-          name: "🔼 Openingspositie (%)"
+          name: "🔼 Open position (%)"
           description: >
-            Positie waarnaar de rolluiken gaan bij automatisch openen (als
-            "Automatisch openen" aan staat). 100% = volledig open.
+            Position the shutters move to when automatically opened (when
+            "Automatically open" is on). 100% = fully open.
           default: 100
           selector:
             number:
@@ -168,20 +164,20 @@ blueprint:
               unit_of_measurement: "%"
               mode: slider
 
-    # ===== HANDMATIGE OVERRIDE (COLLAPSED) =====
+    # ===== MANUAL OVERRIDE (COLLAPSED) =====
     override_settings:
-      name: "🖐️ Handmatige Override"
+      name: "🖐️ Manual Override"
       icon: mdi:hand-back-right
       collapsed: true
       input:
         front_override_helper:
-          name: "🖐️ Override helper voorkant (optioneel)"
+          name: "🖐️ Override helper front (optional)"
           description: >
-            Koppel hier een input_boolean (schakelaar) helper voor de voorkant.
-            De automatie zet deze automatisch aan als een rolluik aan de voorkant
-            handmatig bediend wordt, en zet hem weer uit als de zon van de voorkant
-            wegdraait. Zolang hij aan staat, raakt de automatie die rolluiken niet aan.
-            Maak aan via: Instellingen → Hulpapparaten → Helper maken → Schakelaar.
+            Link an input_boolean (toggle) helper for the front facade here.
+            The automation turns it on when a front shutter is manually operated,
+            and turns it off when the sun moves away from the front facade.
+            While on, the automation will not touch those shutters.
+            Create via: Settings → Helpers → Create Helper → Toggle.
           default: {}
           selector:
             entity:
@@ -189,10 +185,10 @@ blueprint:
                 - domain: input_boolean
 
         back_override_helper:
-          name: "🖐️ Override helper achterkant (optioneel)"
+          name: "🖐️ Override helper back (optional)"
           description: >
-            Koppel hier een input_boolean (schakelaar) helper voor de achterkant.
-            Werkt hetzelfde als de override voor de voorkant.
+            Link an input_boolean (toggle) helper for the back facade here.
+            Works the same as the front override helper.
           default: {}
           selector:
             entity:
@@ -212,9 +208,9 @@ variables:
     {{ v_front_override != {} and is_state(v_front_override, 'on') }}
   v_back_override_active: >
     {{ v_back_override != {} and is_state(v_back_override, 'on') }}
-  # Bereken of de zon op de voorkant staat:
-  # Azimut-verschil wordt genormaliseerd naar -180..+180 via ((diff + 180) % 360) - 180
-  # Hoekverschil kleiner dan het zon-venster = zon op die gevel
+  # Calculate whether the sun is on the front facade:
+  # Azimuth difference is normalized to -180..+180 via ((diff + 180) % 360) - 180
+  # Angle difference smaller than the sun window = sun is on that facade
   v_sun_on_front: >
     {% set front = v_front_facing | float(180) %}
     {% set window = v_sun_window | float(90) %}
@@ -239,17 +235,17 @@ trigger:
   - platform: homeassistant
     event: start
     id: ha_start
-  # Detecteer handmatige bediening voorkant (context.user_id is gevuld bij gebruikersacties)
+  # Detect manual operation on front covers (context.user_id is set for user-initiated actions)
   - platform: state
     entity_id: !input front_covers
     id: front_cover_changed
-  # Detecteer handmatige bediening achterkant
+  # Detect manual operation on back covers
   - platform: state
     entity_id: !input back_covers
     id: back_cover_changed
 
 action:
-  # --- Handmatige override detectie voorkant ---
+  # --- Manual override detection front ---
   - if:
       - condition: trigger
         id: front_cover_changed
@@ -262,7 +258,7 @@ action:
         target:
           entity_id: !input front_override_helper
 
-  # --- Handmatige override detectie achterkant ---
+  # --- Manual override detection back ---
   - if:
       - condition: trigger
         id: back_cover_changed
@@ -275,20 +271,20 @@ action:
         target:
           entity_id: !input back_override_helper
 
-  # --- Zon-logica (alleen bij periodieke check of HA start) ---
+  # --- Sun logic (only on periodic check or HA start) ---
   - if:
       - condition: trigger
         id:
           - periodic_check
           - ha_start
     then:
-      # Voorkant rolluiken
+      # Front shutters
       - if:
           - condition: template
             value_template: "{{ v_front_covers | list | length > 0 }}"
         then:
           - choose:
-              # Zon op voorkant én geen handmatige override → sluiten
+              # Sun on front AND no manual override → close
               - conditions:
                   - condition: template
                     value_template: "{{ v_sun_on_front | bool and not v_front_override_active | bool }}"
@@ -298,7 +294,7 @@ action:
                       entity_id: !input front_covers
                     data:
                       position: !input close_position
-              # Zon niet op voorkant én auto-open aan → openen en override resetten
+              # Sun NOT on front AND auto-open enabled → open and reset override
               - conditions:
                   - condition: template
                     value_template: "{{ not v_sun_on_front | bool and v_auto_open | bool }}"
@@ -316,13 +312,13 @@ action:
                         target:
                           entity_id: !input front_override_helper
 
-      # Achterkant rolluiken
+      # Back shutters
       - if:
           - condition: template
             value_template: "{{ v_back_covers | list | length > 0 }}"
         then:
           - choose:
-              # Zon op achterkant én geen handmatige override → sluiten
+              # Sun on back AND no manual override → close
               - conditions:
                   - condition: template
                     value_template: "{{ v_sun_on_back | bool and not v_back_override_active | bool }}"
@@ -332,7 +328,7 @@ action:
                       entity_id: !input back_covers
                     data:
                       position: !input close_position
-              # Zon niet op achterkant én auto-open aan → openen en override resetten
+              # Sun NOT on back AND auto-open enabled → open and reset override
               - conditions:
                   - condition: template
                     value_template: "{{ not v_sun_on_back | bool and v_auto_open | bool }}"
