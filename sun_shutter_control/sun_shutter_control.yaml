@@ -1,4 +1,4 @@
-# Version: 1.0.1
+# Version: 1.1.0
 blueprint:
   domain: automation
   name: "☀️ Zon-bewuste Rolluik Bediening"
@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    📦 [Version 1.0.1] Automatische rolluik bediening op basis van de zonpositie 🌞.
+    📦 [Version 1.1.0] Automatische rolluik bediening op basis van de zonpositie 🌞.
 
 
     Sluit rolluiken automatisch wanneer de zon op de voor- of achterkant van je huis
@@ -28,12 +28,21 @@ blueprint:
 
     - 🔽 Configureerbare sluit- en openingspositie
 
+    - 🖐️ Handmatige override — automatie slaat rolluiken over die handmatig bediend zijn,
+      en reset automatisch zodra de zon wegdraait
+
 
     🌐 Azimut van je huis bepalen — Ga naar https://www.suncalc.org/, zoek je huis op
     en kijk in welke richting je voordeur wijst. De oranje lijn toont de zonrichting per
     tijdstip, maar je hebt de richting van je gevel nodig (vaste kompasrichting).
     Noord = 0°, Oost = 90°, Zuid = 180°, West = 270°.
     De achterkant wordt automatisch berekend (voorkant + 180°).
+
+
+    🖐️ Handmatige override instellen — Maak per zijde een Toggle-helper aan via
+    Instellingen → Hulpapparaten en -diensten → Helper maken → Schakelaar (input_boolean),
+    bijv. "Rolluik voorkant handmatig". Koppel deze hieronder. De automatie zet de
+    schakelaar automatisch aan bij handmatige bediening en reset hem als de zon wegdraait.
 
   input:
     # ===== VERPLICHT: HUISORIËNTATIE =====
@@ -159,6 +168,37 @@ blueprint:
               unit_of_measurement: "%"
               mode: slider
 
+    # ===== HANDMATIGE OVERRIDE (COLLAPSED) =====
+    override_settings:
+      name: "🖐️ Handmatige Override"
+      icon: mdi:hand-back-right
+      collapsed: true
+      input:
+        front_override_helper:
+          name: "🖐️ Override helper voorkant (optioneel)"
+          description: >
+            Koppel hier een input_boolean (schakelaar) helper voor de voorkant.
+            De automatie zet deze automatisch aan als een rolluik aan de voorkant
+            handmatig bediend wordt, en zet hem weer uit als de zon van de voorkant
+            wegdraait. Zolang hij aan staat, raakt de automatie die rolluiken niet aan.
+            Maak aan via: Instellingen → Hulpapparaten → Helper maken → Schakelaar.
+          default: {}
+          selector:
+            entity:
+              filter:
+                - domain: input_boolean
+
+        back_override_helper:
+          name: "🖐️ Override helper achterkant (optioneel)"
+          description: >
+            Koppel hier een input_boolean (schakelaar) helper voor de achterkant.
+            Werkt hetzelfde als de override voor de voorkant.
+          default: {}
+          selector:
+            entity:
+              filter:
+                - domain: input_boolean
+
 variables:
   v_front_facing: !input front_facing_azimuth
   v_sun_window: !input sun_window
@@ -166,10 +206,15 @@ variables:
   v_auto_open: !input auto_open
   v_front_covers: !input front_covers
   v_back_covers: !input back_covers
+  v_front_override: !input front_override_helper
+  v_back_override: !input back_override_helper
+  v_front_override_active: >
+    {{ v_front_override != {} and is_state(v_front_override, 'on') }}
+  v_back_override_active: >
+    {{ v_back_override != {} and is_state(v_back_override, 'on') }}
   # Bereken of de zon op de voorkant staat:
-  # - Azimut-verschil wordt genormaliseerd naar -180..+180 via ((diff + 180) % 360) - 180
-  # - Hoekverschil kleiner dan het zon-venster = zon op die gevel
-  # - Zonhoogte moet boven de minimumdrempel zijn
+  # Azimut-verschil wordt genormaliseerd naar -180..+180 via ((diff + 180) % 360) - 180
+  # Hoekverschil kleiner dan het zon-venster = zon op die gevel
   v_sun_on_front: >
     {% set front = v_front_facing | float(180) %}
     {% set window = v_sun_window | float(90) %}
@@ -194,57 +239,116 @@ trigger:
   - platform: homeassistant
     event: start
     id: ha_start
+  # Detecteer handmatige bediening voorkant (context.user_id is gevuld bij gebruikersacties)
+  - platform: state
+    entity_id: !input front_covers
+    id: front_cover_changed
+  # Detecteer handmatige bediening achterkant
+  - platform: state
+    entity_id: !input back_covers
+    id: back_cover_changed
 
 action:
-  # --- Voorkant rolluiken ---
+  # --- Handmatige override detectie voorkant ---
   - if:
+      - condition: trigger
+        id: front_cover_changed
       - condition: template
-        value_template: "{{ v_front_covers | list | length > 0 }}"
+        value_template: "{{ trigger.to_state.context.user_id is not none }}"
+      - condition: template
+        value_template: "{{ v_front_override != {} }}"
     then:
-      - if:
-          - condition: template
-            value_template: "{{ v_sun_on_front | bool }}"
-        then:
-          - service: cover.set_cover_position
-            target:
-              entity_id: !input front_covers
-            data:
-              position: !input close_position
-        else:
-          - if:
-              - condition: template
-                value_template: "{{ v_auto_open | bool }}"
-            then:
-              - service: cover.set_cover_position
-                target:
-                  entity_id: !input front_covers
-                data:
-                  position: !input open_position
+      - service: input_boolean.turn_on
+        target:
+          entity_id: !input front_override_helper
 
-  # --- Achterkant rolluiken ---
+  # --- Handmatige override detectie achterkant ---
   - if:
+      - condition: trigger
+        id: back_cover_changed
       - condition: template
-        value_template: "{{ v_back_covers | list | length > 0 }}"
+        value_template: "{{ trigger.to_state.context.user_id is not none }}"
+      - condition: template
+        value_template: "{{ v_back_override != {} }}"
     then:
+      - service: input_boolean.turn_on
+        target:
+          entity_id: !input back_override_helper
+
+  # --- Zon-logica (alleen bij periodieke check of HA start) ---
+  - if:
+      - condition: trigger
+        id:
+          - periodic_check
+          - ha_start
+    then:
+      # Voorkant rolluiken
       - if:
           - condition: template
-            value_template: "{{ v_sun_on_back | bool }}"
+            value_template: "{{ v_front_covers | list | length > 0 }}"
         then:
-          - service: cover.set_cover_position
-            target:
-              entity_id: !input back_covers
-            data:
-              position: !input close_position
-        else:
-          - if:
-              - condition: template
-                value_template: "{{ v_auto_open | bool }}"
-            then:
-              - service: cover.set_cover_position
-                target:
-                  entity_id: !input back_covers
-                data:
-                  position: !input open_position
+          - choose:
+              # Zon op voorkant én geen handmatige override → sluiten
+              - conditions:
+                  - condition: template
+                    value_template: "{{ v_sun_on_front | bool and not v_front_override_active | bool }}"
+                sequence:
+                  - service: cover.set_cover_position
+                    target:
+                      entity_id: !input front_covers
+                    data:
+                      position: !input close_position
+              # Zon niet op voorkant én auto-open aan → openen en override resetten
+              - conditions:
+                  - condition: template
+                    value_template: "{{ not v_sun_on_front | bool and v_auto_open | bool }}"
+                sequence:
+                  - service: cover.set_cover_position
+                    target:
+                      entity_id: !input front_covers
+                    data:
+                      position: !input open_position
+                  - if:
+                      - condition: template
+                        value_template: "{{ v_front_override != {} }}"
+                    then:
+                      - service: input_boolean.turn_off
+                        target:
+                          entity_id: !input front_override_helper
+
+      # Achterkant rolluiken
+      - if:
+          - condition: template
+            value_template: "{{ v_back_covers | list | length > 0 }}"
+        then:
+          - choose:
+              # Zon op achterkant én geen handmatige override → sluiten
+              - conditions:
+                  - condition: template
+                    value_template: "{{ v_sun_on_back | bool and not v_back_override_active | bool }}"
+                sequence:
+                  - service: cover.set_cover_position
+                    target:
+                      entity_id: !input back_covers
+                    data:
+                      position: !input close_position
+              # Zon niet op achterkant én auto-open aan → openen en override resetten
+              - conditions:
+                  - condition: template
+                    value_template: "{{ not v_sun_on_back | bool and v_auto_open | bool }}"
+                sequence:
+                  - service: cover.set_cover_position
+                    target:
+                      entity_id: !input back_covers
+                    data:
+                      position: !input open_position
+                  - if:
+                      - condition: template
+                        value_template: "{{ v_back_override != {} }}"
+                    then:
+                      - service: input_boolean.turn_off
+                        target:
+                          entity_id: !input back_override_helper
 
 mode: single
 max_exceeded: silent
