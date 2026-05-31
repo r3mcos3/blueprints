@@ -756,7 +756,7 @@ Full documentation and examples: [GitHub Repository](https://github.com/r3mcos3/
 ```markdown
 # Sun-Aware Shutter Control ☀️
 
-**Version 1.2.0** | Automatically close your shutters when the sun shines on your house — and open them again when it moves away!
+**Version 1.4.0** | Automatically close your shutters when the sun shines on your house — and open them again when it moves away!
 
 > ⚠️ **This blueprint is currently in a testing phase.** It has been tested in a single environment. Feedback and bug reports are very welcome!
 
@@ -778,7 +778,7 @@ Every day the sun moves from one side of your house to the other. In the morning
 
 ## How it works
 
-The blueprint uses the `sun.sun` azimuth (compass direction 0–360°) and compares it to your house orientation. Every 5 minutes it calculates whether the sun is within the configured angle window of each facade:
+The blueprint uses the `sun.sun` azimuth (compass direction 0–360°) and compares it to your house orientation. It fires automatically whenever Home Assistant updates the sun's azimuth — event-driven, no polling needed. Each time it calculates whether the sun is within the configured angle window of each facade:
 
 ```
 Angle difference = ((sun azimuth − facade direction + 180) % 360) − 180
@@ -793,7 +793,8 @@ This formula handles all compass directions correctly, including the North wrap-
 |---|---|---|
 | ✅ Yes | ❌ No | Close shutters |
 | ✅ Yes | ✅ Yes | Do nothing (respect manual operation) |
-| ❌ No | — | Open shutters + reset override |
+| ❌ No | ❌ No | Open shutters + reset override |
+| ❌ No | ✅ Yes | Do NOT open (respect manual close, e.g. bedtime) + reset override |
 
 ## Finding your house azimuth
 
@@ -838,6 +839,8 @@ Full documentation, examples, and troubleshooting: [GitHub Repository](https://g
 
 ## Changelog
 
+- **1.4.0** - Replaced 5-minute polling with event-driven sun azimuth trigger
+- **1.3.0** - Fixed: manually closing shutters at bedtime no longer causes them to be re-opened
 - **1.2.0** - Translated all labels and descriptions to English
 - **1.1.0** - Manual override detection with input_boolean helpers, auto-reset when sun moves away
 - **1.0.1** - Added suncalc.org tip to description
