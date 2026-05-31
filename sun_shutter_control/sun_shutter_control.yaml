@@ -1,4 +1,4 @@
-# Version: 1.6.0
+# Version: 1.7.0
 blueprint:
   domain: automation
   name: "☀️ Sun-Aware Shutter Control"
@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    📦 [Version 1.6.0] Automatic shutter control based on sun position 🌞.
+    📦 [Version 1.7.0] Automatic shutter control based on sun position 🌞.
 
 
     Automatically closes shutters when the sun shines on the front or back of your house,
@@ -32,6 +32,11 @@ blueprint:
 
     - 🌤️ Cloud detection — optional weather integration: when it's overcast the shutters
       stay open (or open automatically if they were closed)
+
+    - ⏱️ Anti-oscillation cooldown — minimum wait time between moves to prevent
+      rapid up/down on partly cloudy days
+
+    - 📍 Position awareness — skips the command if shutters are already at the target position
 
 
     🌐 Finding your house azimuth — Go to https://www.suncalc.org/, find your house and
@@ -167,6 +172,21 @@ blueprint:
               unit_of_measurement: "%"
               mode: slider
 
+        cooldown_minutes:
+          name: "⏱️ Cooldown between moves (minutes)"
+          description: >
+            Minimum time to wait before moving shutters again after a previous movement.
+            Prevents rapid up-and-down movement on partly cloudy days.
+            Set to 0 to disable.
+          default: 20
+          selector:
+            number:
+              min: 0
+              max: 120
+              step: 5
+              unit_of_measurement: "min"
+              mode: slider
+
     # ===== WEATHER SETTINGS (COLLAPSED) =====
     weather_settings:
       name: "🌤️ Weather Settings"
@@ -245,6 +265,9 @@ variables:
   v_back_override: !input back_override_helper
   v_weather_entity: !input weather_entity
   v_cloud_mode: !input close_on_cloudy
+  v_cooldown: !input cooldown_minutes
+  v_close_pos: !input close_position
+  v_open_pos: !input open_position
   v_front_override_active: >
     {{ v_front_override != {} and is_state(v_front_override, 'on') }}
   v_back_override_active: >
@@ -287,6 +310,76 @@ variables:
   # Auto-open only fires when this is true — so shutters stay closed at night
   v_sun_active: >
     {{ state_attr('sun.sun', 'elevation') | float(-90) >= v_min_elevation | float(10) }}
+  # Cooldown: true if any cover in the group was moved within the cooldown period
+  v_front_on_cooldown: >
+    {% if v_cooldown | int(0) == 0 %}
+      false
+    {% else %}
+      {% set covers = [v_front_covers] if v_front_covers is string else v_front_covers | list %}
+      {% set secs = v_cooldown | int(20) * 60 %}
+      {% set ns = namespace(recent=false) %}
+      {% for c in covers %}
+        {% if (now() | as_timestamp) - (states[c].last_changed | as_timestamp) < secs %}
+          {% set ns.recent = true %}
+        {% endif %}
+      {% endfor %}
+      {{ ns.recent }}
+    {% endif %}
+  v_back_on_cooldown: >
+    {% if v_cooldown | int(0) == 0 %}
+      false
+    {% else %}
+      {% set covers = [v_back_covers] if v_back_covers is string else v_back_covers | list %}
+      {% set secs = v_cooldown | int(20) * 60 %}
+      {% set ns = namespace(recent=false) %}
+      {% for c in covers %}
+        {% if (now() | as_timestamp) - (states[c].last_changed | as_timestamp) < secs %}
+          {% set ns.recent = true %}
+        {% endif %}
+      {% endfor %}
+      {{ ns.recent }}
+    {% endif %}
+  # Position check: true if at least one cover is NOT already at the target position
+  v_front_needs_close: >
+    {% set covers = [v_front_covers] if v_front_covers is string else v_front_covers | list %}
+    {% set target = v_close_pos | int(0) %}
+    {% set ns = namespace(needs=false) %}
+    {% for c in covers %}
+      {% if state_attr(c, 'current_position') | int(-1) != target %}
+        {% set ns.needs = true %}
+      {% endif %}
+    {% endfor %}
+    {{ ns.needs }}
+  v_front_needs_open: >
+    {% set covers = [v_front_covers] if v_front_covers is string else v_front_covers | list %}
+    {% set target = v_open_pos | int(100) %}
+    {% set ns = namespace(needs=false) %}
+    {% for c in covers %}
+      {% if state_attr(c, 'current_position') | int(-1) != target %}
+        {% set ns.needs = true %}
+      {% endif %}
+    {% endfor %}
+    {{ ns.needs }}
+  v_back_needs_close: >
+    {% set covers = [v_back_covers] if v_back_covers is string else v_back_covers | list %}
+    {% set target = v_close_pos | int(0) %}
+    {% set ns = namespace(needs=false) %}
+    {% for c in covers %}
+      {% if state_attr(c, 'current_position') | int(-1) != target %}
+        {% set ns.needs = true %}
+      {% endif %}
+    {% endfor %}
+    {{ ns.needs }}
+  v_back_needs_open: >
+    {% set covers = [v_back_covers] if v_back_covers is string else v_back_covers | list %}
+    {% set target = v_open_pos | int(100) %}
+    {% set ns = namespace(needs=false) %}
+    {% for c in covers %}
+      {% if state_attr(c, 'current_position') | int(-1) != target %}
+        {% set ns.needs = true %}
+      {% endif %}
+    {% endfor %}
+    {{ ns.needs }}
 
 trigger:
   # Fire whenever the sun moves (azimuth attribute update, typically every few minutes)
@@ -346,25 +439,32 @@ action:
             value_template: "{{ v_front_covers | list | length > 0 }}"
         then:
           - choose:
-              # Sun on front AND weather allows AND no manual override → close
+              # Sun on front AND weather allows AND no override AND not on cooldown AND not already closed → close
               - conditions:
                   - condition: template
-                    value_template: "{{ v_should_close_front | bool and not v_front_override_active | bool }}"
+                    value_template: >
+                      {{ v_should_close_front | bool
+                         and not v_front_override_active | bool
+                         and not v_front_on_cooldown | bool
+                         and v_front_needs_close | bool }}
                 sequence:
                   - service: cover.set_cover_position
                     target:
                       entity_id: !input front_covers
                     data:
                       position: !input close_position
-              # Sun NOT on front (or cloudy) AND sun above horizon AND auto-open enabled → open (only if no manual override) and reset override
+              # Sun NOT on front (or cloudy) AND sun above horizon AND auto-open enabled → open and reset override
               - conditions:
                   - condition: template
                     value_template: "{{ not v_should_close_front | bool and v_auto_open | bool and v_sun_active | bool }}"
                 sequence:
-                  # Only move shutters if the user did not manually operate them
+                  # Only move shutters if no manual override, not on cooldown, and not already open
                   - if:
                       - condition: template
-                        value_template: "{{ not v_front_override_active | bool }}"
+                        value_template: >
+                          {{ not v_front_override_active | bool
+                             and not v_front_on_cooldown | bool
+                             and v_front_needs_open | bool }}
                     then:
                       - service: cover.set_cover_position
                         target:
@@ -386,25 +486,32 @@ action:
             value_template: "{{ v_back_covers | list | length > 0 }}"
         then:
           - choose:
-              # Sun on back AND weather allows AND no manual override → close
+              # Sun on back AND weather allows AND no override AND not on cooldown AND not already closed → close
               - conditions:
                   - condition: template
-                    value_template: "{{ v_should_close_back | bool and not v_back_override_active | bool }}"
+                    value_template: >
+                      {{ v_should_close_back | bool
+                         and not v_back_override_active | bool
+                         and not v_back_on_cooldown | bool
+                         and v_back_needs_close | bool }}
                 sequence:
                   - service: cover.set_cover_position
                     target:
                       entity_id: !input back_covers
                     data:
                       position: !input close_position
-              # Sun NOT on back (or cloudy) AND sun above horizon AND auto-open enabled → open (only if no manual override) and reset override
+              # Sun NOT on back (or cloudy) AND sun above horizon AND auto-open enabled → open and reset override
               - conditions:
                   - condition: template
                     value_template: "{{ not v_should_close_back | bool and v_auto_open | bool and v_sun_active | bool }}"
                 sequence:
-                  # Only move shutters if the user did not manually operate them
+                  # Only move shutters if no manual override, not on cooldown, and not already open
                   - if:
                       - condition: template
-                        value_template: "{{ not v_back_override_active | bool }}"
+                        value_template: >
+                          {{ not v_back_override_active | bool
+                             and not v_back_on_cooldown | bool
+                             and v_back_needs_open | bool }}
                     then:
                       - service: cover.set_cover_position
                         target:

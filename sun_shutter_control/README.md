@@ -1,6 +1,6 @@
 # ☀️ Sun-Aware Shutter Control
 
-[![version](https://img.shields.io/badge/version-1.6.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.7.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 Automatic shutter control based on sun position. Closes shutters when the sun shines on the front or back of your house, and opens them again once the sun moves away. Respects manual operation so you always stay in control! 🌞
@@ -11,6 +11,8 @@ Automatic shutter control based on sun position. Closes shutters when the sun sh
 - 🔄 **Automatic opening** - Opens shutters once the sun moves to another direction (optional)
 - 🖐️ **Manual override** - Detects manual shutter operation and leaves those shutters alone until the sun moves away
 - 🌤️ **Cloud detection** - Optional weather integration: open shutters when it's overcast, close again when it clears up
+- ⏱️ **Anti-oscillation cooldown** - Minimum wait between moves, prevents rapid up/down on partly cloudy days
+- 📍 **Position awareness** - Skips the command if shutters are already at the target position
 - 📐 **Configurable sun window** - Set how many degrees of margin the sun may be on a facade
 - 🌅 **Minimum sun elevation** - No action during low morning or evening sun
 - 🔽 **Flexible positions** - Configure close and open position (e.g. half-close at 50%)
@@ -97,6 +99,7 @@ For the manual override feature, create a toggle helper per facade side:
 | 🔽 Close position | Position when sun is on the facade (0% = fully closed) | 0% |
 | 🔼 Automatically open | Open when sun moves away | On |
 | 🔼 Open position | Position when automatically opening | 100% |
+| ⏱️ Cooldown between moves | Minimum minutes between two movements (0 = disabled) | 20 min |
 
 ### 🖐️ Manual Override (collapsed)
 
@@ -260,6 +263,10 @@ automation:
 3. You can always manually turn off the helper from your HA dashboard
 
 ## 📝 Version History
+
+### Version 1.7.0
+- ⏱️ Added cooldown between moves to prevent rapid oscillation on partly cloudy days
+- 📍 Added position check: skips cover commands when already at the target position
 
 ### Version 1.6.0
 - 🌙 Auto-open no longer fires when the sun is below the minimum elevation — shutters closed at night stay closed
