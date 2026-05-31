@@ -756,7 +756,7 @@ Full documentation and examples: [GitHub Repository](https://github.com/r3mcos3/
 ```markdown
 # Sun-Aware Shutter Control ☀️
 
-**Version 1.4.0** | Automatically close your shutters when the sun shines on your house — and open them again when it moves away!
+**Version 1.5.0** | Automatically close your shutters when the sun shines on your house — and open them again when it moves away!
 
 > ⚠️ **This blueprint is currently in a testing phase.** It has been tested in a single environment. Feedback and bug reports are very welcome!
 
@@ -771,6 +771,7 @@ Every day the sun moves from one side of your house to the other. In the morning
 - ☀️ **Sun position tracking** - Closes shutters when the sun shines on the front or back facade
 - 🔄 **Automatic opening** - Opens shutters once the sun moves away (optional)
 - 🖐️ **Manual override** - Detects when someone manually operates a shutter and leaves it alone until the sun moves away
+- 🌤️ **Cloud detection** - Optional weather integration: shutters stay open when overcast, close again when it clears up
 - 📐 **Configurable sun window** - Control how many degrees of margin counts as "sun on facade"
 - 🌅 **Minimum elevation** - Ignores low morning/evening sun below your threshold
 - 🔽 **Flexible positions** - Set custom close position (e.g. 50% for partial shade)
@@ -789,12 +790,13 @@ This formula handles all compass directions correctly, including the North wrap-
 
 ### Decision logic per facade side
 
-| Sun on facade | Manual override | Action |
-|---|---|---|
-| ✅ Yes | ❌ No | Close shutters |
-| ✅ Yes | ✅ Yes | Do nothing (respect manual operation) |
-| ❌ No | ❌ No | Open shutters + reset override |
-| ❌ No | ✅ Yes | Do NOT open (respect manual close, e.g. bedtime) + reset override |
+| Sun on facade | Weather allows | Manual override | Action |
+|---|---|---|---|
+| ✅ Yes | ✅ Yes | ❌ No | Close shutters |
+| ✅ Yes | ✅ Yes | ✅ Yes | Do nothing (respect manual operation) |
+| ✅ Yes | ❌ No (cloudy) | — | Open shutters (treat as no sun) |
+| ❌ No | — | ❌ No | Open shutters + reset override |
+| ❌ No | — | ✅ Yes | Do NOT open (respect manual close, e.g. bedtime) + reset override |
 
 ## Finding your house azimuth
 
@@ -824,6 +826,8 @@ Go to **[suncalc.org](https://www.suncalc.org/)**, find your house and determine
 | 🔼 Open position | Position when automatically opening | 100% |
 | 🖐️ Override helper front | Input Boolean for front manual override | Optional |
 | 🖐️ Override helper back | Input Boolean for back manual override | Optional |
+| 🌤️ Weather entity | Weather integration for cloud detection | Optional |
+| ☁️ When to close | Always / Sunny+partly cloudy / Sunny only | Sunny or partly cloudy |
 
 ## Manual override explained
 
@@ -839,6 +843,7 @@ Full documentation, examples, and troubleshooting: [GitHub Repository](https://g
 
 ## Changelog
 
+- **1.5.0** - Added optional weather/cloud detection: shutters stay open when overcast
 - **1.4.0** - Replaced 5-minute polling with event-driven sun azimuth trigger
 - **1.3.0** - Fixed: manually closing shutters at bedtime no longer causes them to be re-opened
 - **1.2.0** - Translated all labels and descriptions to English
