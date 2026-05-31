@@ -297,29 +297,97 @@ iOS doesn't natively expose alarm data. Use iOS Shortcuts to sync your alarm to 
 ```markdown
 # Smart Heating Controller 🔥
 
-**Version 1.3.0** | Intelligent climate control with presence detection, door/window protection, and energy-saving features!
+**Version 1.8.0** | Intelligent climate control with presence detection, door/window protection, manual override, and energy-saving features!
 
 [![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fsmart_heating%2Fsmart_heating.yaml)
 
 ## Features
 
-- 🌡️ **Smart Temperature Control** - Automatic heating management
-- 🏠 **Presence Detection** - Lower temp when away
-- 🚪 **Door/Window Protection** - Pause heating when open
-- ⏰ **Scheduling** - Different temps for different times
-- 🌙 **Night Mode** - Comfortable sleeping temperature
-- 💰 **Energy Saving** - Reduce heating costs automatically
-- 🔄 **HA Start & Reload Triggers** - Applies settings on restart
+- 🏠 **Presence-based control** - Automatically adjusts temperature when you arrive or leave
+- 🌡️ **Outdoor temperature factor** - Disables heating when it's warm outside (eco mode)
+- 🚪 **Door/window protection** - Pauses heating when doors or windows are open too long
+- 🌙 **Night mode** - Reduces temperature during sleeping hours
+- ⏰ **Smart pre-heating** - Starts heating before you wake up, scaled to outdoor coldness
+- ❄️ **Frost protection** - Maintains minimum temperature to prevent pipe freezing
+- 💧 **Humidity compensation** - Adjusts target temperature based on indoor humidity (optional)
+- 🛠️ **Manual override** - Temporarily hold any temperature for a configurable duration
+- 🪟 **Virtual window detection** - Detects open windows via rapid indoor temperature drops (no sensor needed)
+- 🔄 **Gradual transitions** - Stepwise temperature changes instead of immediate jumps (optional)
+- 🎛️ **Dynamic comfort temperature** - Optional `input_number` helper to adjust comfort temp from the UI
+- 🔍 **Debug mode** - Persistent notification showing active mode and all state values after every run
+
+## How the priority system works
+
+The blueprint decides the target temperature based on a strict priority hierarchy:
+
+| Priority | Mode | Condition |
+|----------|------|-----------|
+| 1 | ❄️ Frost protection | Indoor temp below frost threshold |
+| 2 | 🛠️ Manual override | Override helper is active & not expired |
+| 3 | ☀️ Eco | Outdoor temp above threshold |
+| 4 | 🏃 Away | Nobody home |
+| 5 | ⏰ Pre-heat | Within pre-heat window before wake-up |
+| 6 | 🌙 Night | Between configured night start/end times |
+| 7 | 🏠 Comfort | Default — home, daytime, cold outside |
 
 ## Requirements
 
 - Home Assistant 2025.12.0+
-- Climate entity (thermostat)
-- Optional: Door/window sensors, presence sensors
+- Climate entity (thermostat, e.g. `climate.tado`)
+- Indoor + outdoor temperature sensors
+- Presence zone (typically `zone.home`)
+- Door/window binary sensors
+
+### Optional
+
+- **Input Boolean helper** — for manual override activation
+- **Input Number helper** — for dynamic comfort temperature via UI slider
+- **Humidity sensor** — for humidity-based temperature adjustments
+
+## Configuration
+
+| Input | Description | Default |
+|-------|-------------|---------|
+| 🌡️ Comfort temperature | Target when people are home | 21°C |
+| 🏃 Away temperature | Target when nobody is home | 17°C |
+| ❄️ Frost protection temp | Absolute minimum temperature | 7°C |
+| 🌙 Night temperature | Target during sleeping hours | 18°C |
+| 🌡️ Outdoor threshold | Disable heating above this outdoor temp | 18°C |
+| 🚪 Door open delay | Seconds before pausing heating | 300 s |
+| 🌙 Night start/end | Scheduled night mode times | 23:00 / 07:00 |
+| ⏰ Pre-heat duration | Minutes before wake-up to start heating | 30 min |
+| 🛠️ Override duration | How long manual override lasts | 2 hours |
+| 🔍 Debug mode | Enable persistent state notification | Off |
+
+## Debug mode
+
+Enable **Debug Mode** in the Debug Settings section to get a persistent notification after every run showing:
+
+```
+Mode: comfort
+Target temp: 21.0°C
+Indoor: 19.5°C | Outdoor: 8.2°C
+People home: 2
+Night: false | Pre-heat: false
+Override active: false
+Any door/window open: false
+Last run: 2026-05-31 14:23:05
+```
+
+The notification updates in place — no spam.
 
 ## GitHub
 
-[GitHub Repository](https://github.com/r3mcos3/blueprints/tree/main/smart_heating)
+Full documentation, examples, and troubleshooting: [GitHub Repository](https://github.com/r3mcos3/blueprints/tree/main/smart_heating)
+
+## Changelog
+
+- **1.8.0** - Fixed: manual override mode now correctly holds temperature (variable order bug); night start skips when override is active; added optional debug mode
+- **1.7.0** - Adaptive pre-heating scaled to outdoor coldness; virtual window detection; gradual transitions
+- **1.6.0** - Dynamic comfort temperature via input_number helper
+- **1.3.1** - Improved override handling; automatic restoration when override expires
+- **1.3.0** - Manual override feature with configurable timeout
+- **1.2.3** - Initial full-featured release
 ```
 
 ---
