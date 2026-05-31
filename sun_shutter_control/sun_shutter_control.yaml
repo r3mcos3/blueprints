@@ -1,4 +1,4 @@
-# Version: 1.5.0
+# Version: 1.6.0
 blueprint:
   domain: automation
   name: "☀️ Sun-Aware Shutter Control"
@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    📦 [Version 1.5.0] Automatic shutter control based on sun position 🌞.
+    📦 [Version 1.6.0] Automatic shutter control based on sun position 🌞.
 
 
     Automatically closes shutters when the sun shines on the front or back of your house,
@@ -283,6 +283,10 @@ variables:
     {{ v_sun_on_front | bool and v_weather_allows_close | bool }}
   v_should_close_back: >
     {{ v_sun_on_back | bool and v_weather_allows_close | bool }}
+  # True when the sun is above the minimum elevation (daytime)
+  # Auto-open only fires when this is true — so shutters stay closed at night
+  v_sun_active: >
+    {{ state_attr('sun.sun', 'elevation') | float(-90) >= v_min_elevation | float(10) }}
 
 trigger:
   # Fire whenever the sun moves (azimuth attribute update, typically every few minutes)
@@ -352,10 +356,10 @@ action:
                       entity_id: !input front_covers
                     data:
                       position: !input close_position
-              # Sun NOT on front (or cloudy) AND auto-open enabled → open (only if no manual override) and reset override
+              # Sun NOT on front (or cloudy) AND sun above horizon AND auto-open enabled → open (only if no manual override) and reset override
               - conditions:
                   - condition: template
-                    value_template: "{{ not v_should_close_front | bool and v_auto_open | bool }}"
+                    value_template: "{{ not v_should_close_front | bool and v_auto_open | bool and v_sun_active | bool }}"
                 sequence:
                   # Only move shutters if the user did not manually operate them
                   - if:
@@ -392,10 +396,10 @@ action:
                       entity_id: !input back_covers
                     data:
                       position: !input close_position
-              # Sun NOT on back (or cloudy) AND auto-open enabled → open (only if no manual override) and reset override
+              # Sun NOT on back (or cloudy) AND sun above horizon AND auto-open enabled → open (only if no manual override) and reset override
               - conditions:
                   - condition: template
-                    value_template: "{{ not v_should_close_back | bool and v_auto_open | bool }}"
+                    value_template: "{{ not v_should_close_back | bool and v_auto_open | bool and v_sun_active | bool }}"
                 sequence:
                   # Only move shutters if the user did not manually operate them
                   - if:

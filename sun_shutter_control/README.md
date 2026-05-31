@@ -1,6 +1,6 @@
 # ☀️ Sun-Aware Shutter Control
 
-[![version](https://img.shields.io/badge/version-1.5.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.6.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 Automatic shutter control based on sun position. Closes shutters when the sun shines on the front or back of your house, and opens them again once the sun moves away. Respects manual operation so you always stay in control! 🌞
@@ -126,16 +126,16 @@ For each facade side (front/back):
 If sun on facade AND weather allows AND no manual override
   → Move shutters to close position
 
-If (sun NOT on facade OR cloudy) AND auto-open is on AND no manual override
+If (sun NOT on facade OR cloudy) AND sun above min elevation AND auto-open is on AND no manual override
   → Move shutters to open position
   → Reset manual override
 
-If (sun NOT on facade OR cloudy) AND auto-open is on AND manual override active
-  → Do NOT move shutters (respects manual close, e.g. at bedtime)
+If (sun NOT on facade OR cloudy) AND sun above min elevation AND auto-open is on AND manual override active
+  → Do NOT move shutters (respects manual close)
   → Reset manual override (so next day works normally)
 
-If sun on facade AND (weather blocks OR manual override active)
-  → Do nothing
+If sun below min elevation (evening/night)
+  → Do nothing — shutters stay wherever they are
 ```
 
 ### Manual override
@@ -260,6 +260,9 @@ automation:
 3. You can always manually turn off the helper from your HA dashboard
 
 ## 📝 Version History
+
+### Version 1.6.0
+- 🌙 Auto-open no longer fires when the sun is below the minimum elevation — shutters closed at night stay closed
 
 ### Version 1.5.0
 - 🌤️ Added optional weather/cloud detection: shutters stay open when overcast
