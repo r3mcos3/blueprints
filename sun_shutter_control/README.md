@@ -1,6 +1,6 @@
 # ☀️ Sun-Aware Shutter Control
 
-[![version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 Automatic shutter control based on sun position. Closes shutters when the sun shines on the front or back of your house, and opens them again once the sun moves away. Respects manual operation so you always stay in control! 🌞
@@ -118,9 +118,13 @@ For each facade side (front/back):
 If sun on facade AND no manual override
   → Move shutters to close position
 
-If sun NOT on facade AND auto-open is on
+If sun NOT on facade AND auto-open is on AND no manual override
   → Move shutters to open position
   → Reset manual override
+
+If sun NOT on facade AND auto-open is on AND manual override active
+  → Do NOT move shutters (respects manual close, e.g. at bedtime)
+  → Reset manual override (so next day works normally)
 
 If sun on facade AND manual override active
   → Do nothing (respects manual operation)
@@ -130,7 +134,11 @@ If sun on facade AND manual override active
 
 HA records **who** initiated every state change. When a user manually operates a shutter (via the app, dashboard or physical switch), the context contains a `user_id`. The blueprint detects this and turns the override helper on.
 
-The override is **automatically reset** once the sun moves away from that facade and auto-open is active — so everything works normally again the next day.
+The override works in **both directions**:
+- **Manually opened** while sun is shining → automation won't close them
+- **Manually closed** in the evening → automation won't open them again at the next check
+
+The override is **automatically reset** once the sun moves away from that facade (regardless of whether auto-open moves the shutters) — so everything works normally again the next day.
 
 ### Trigger moments
 
@@ -244,6 +252,9 @@ automation:
 3. You can always manually turn off the helper from your HA dashboard
 
 ## 📝 Version History
+
+### Version 1.3.0
+- 🐛 Fixed: manually closing shutters in the evening no longer causes them to be re-opened by the automation
 
 ### Version 1.2.0
 - 🌐 Translated all descriptions and labels to English
