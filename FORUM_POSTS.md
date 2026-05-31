@@ -756,7 +756,7 @@ Full documentation and examples: [GitHub Repository](https://github.com/r3mcos3/
 ```markdown
 # Sun-Aware Shutter Control ☀️
 
-**Version 1.6.0** | Automatically close your shutters when the sun shines on your house — and open them again when it moves away!
+**Version 1.7.0** | Automatically close your shutters when the sun shines on your house — and open them again when it moves away!
 
 > ⚠️ **This blueprint is currently in a testing phase.** It has been tested in a single environment. Feedback and bug reports are very welcome!
 
@@ -772,6 +772,8 @@ Every day the sun moves from one side of your house to the other. In the morning
 - 🔄 **Automatic opening** - Opens shutters once the sun moves away (optional)
 - 🖐️ **Manual override** - Detects when someone manually operates a shutter and leaves it alone until the sun moves away
 - 🌤️ **Cloud detection** - Optional weather integration: shutters stay open when overcast, close again when it clears up
+- ⏱️ **Anti-oscillation cooldown** - Minimum wait between moves, prevents rapid up/down on partly cloudy days
+- 📍 **Position awareness** - Skips the command if shutters are already at the target position
 - 📐 **Configurable sun window** - Control how many degrees of margin counts as "sun on facade"
 - 🌅 **Minimum elevation** - Ignores low morning/evening sun below your threshold
 - 🔽 **Flexible positions** - Set custom close position (e.g. 50% for partial shade)
@@ -828,6 +830,7 @@ Go to **[suncalc.org](https://www.suncalc.org/)**, find your house and determine
 | 🖐️ Override helper back | Input Boolean for back manual override | Optional |
 | 🌤️ Weather entity | Weather integration for cloud detection | Optional |
 | ☁️ When to close | Always / Sunny+partly cloudy / Sunny only | Sunny or partly cloudy |
+| ⏱️ Cooldown between moves | Minimum minutes between two movements (0 = disabled) | 20 min |
 
 ## Manual override explained
 
@@ -843,6 +846,7 @@ Full documentation, examples, and troubleshooting: [GitHub Repository](https://g
 
 ## Changelog
 
+- **1.7.0** - Added anti-oscillation cooldown and position check to prevent unnecessary motor activations
 - **1.6.0** - Auto-open no longer fires at night — shutters closed in the evening stay closed
 - **1.5.0** - Added optional weather/cloud detection: shutters stay open when overcast
 - **1.4.0** - Replaced 5-minute polling with event-driven sun azimuth trigger
