@@ -1,4 +1,4 @@
-# Version: 1.7.0
+# Version: 1.8.0
 blueprint:
   domain: automation
   name: "🔥 Smart Heating Controller"
@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    📦 [Version 1.7.0] Intelligent climate control with presence detection, door/window protection,
+    📦 [Version 1.8.0] Intelligent climate control with presence detection, door/window protection,
     manual override, and energy-saving features! 🌡️
 
 
@@ -28,6 +28,8 @@ blueprint:
     - ❄️ Frost protection (minimum temperature)
 
     - 🛠️ Manual override with configurable timeout
+
+    - 🔍 Debug mode with persistent notification for troubleshooting
 
   input:
     # ===== REQUIRED: CLIMATE ENTITY =====
@@ -365,6 +367,22 @@ blueprint:
               unit_of_measurement: "°C"
               mode: slider
 
+    # ===== DEBUG SETTINGS (COLLAPSED) =====
+    debug_settings:
+      name: "🔍 Debug Settings"
+      icon: mdi:bug
+      collapsed: true
+      input:
+        enable_debug_mode:
+          name: "🔍 Enable Debug Mode"
+          description: >
+            Creates or updates a persistent notification after every automation run,
+            showing the current heating mode, target temperature, and all relevant state
+            values. Useful for troubleshooting unexpected behavior — disable when not needed.
+          default: false
+          selector:
+            boolean:
+
 mode: single
 max_exceeded: silent
 
@@ -412,6 +430,9 @@ variables:
   # Gradual transitions
   gradual_transitions_enabled: !input use_gradual_transitions
   transition_step_size: !input transition_step
+
+  # Debug
+  debug_mode_enabled: !input enable_debug_mode
 
 triggers:
   # ===== STARTUP TRIGGERS =====
@@ -596,6 +617,9 @@ actions:
 
   # ===== DETERMINE TARGET MODE AND TEMPERATURE =====
   - variables:
+      current_target: "{{ state_attr(climate, 'temperature') | float(0) }}"
+      hvac_mode: "{{ states(climate) }}"
+
       target_mode: >
         {% if current_indoor < temp_frost %}
           frost_protection
@@ -631,8 +655,6 @@ actions:
           {{ temp_comfort + adj }}
         {% endif %}
 
-      current_target: "{{ state_attr(climate, 'temperature') | float(0) }}"
-      hvac_mode: "{{ states(climate) }}"
       heat_needed: "{{ current_indoor < target_temp }}"
 
   # ===== MAIN CONTROL LOGIC =====
@@ -849,6 +871,8 @@ actions:
             value_template: "{{ night_mode_enabled }}"
           - condition: template
             value_template: "{{ people_count > 0 }}"
+          - condition: template
+            value_template: "{{ not override_is_active }}"
         sequence:
           - action: climate.set_temperature
             target:
@@ -1007,3 +1031,22 @@ actions:
             data:
               temperature: "{{ sync_target_temp }}"
               hvac_mode: "{{ 'heat' if current_indoor < sync_target_temp else hvac_mode }}"
+
+  # ===== DEBUG NOTIFICATION =====
+  - if:
+      - condition: template
+        value_template: "{{ debug_mode_enabled | bool(false) }}"
+    then:
+      - action: persistent_notification.create
+        data:
+          title: "🔥 Smart Heating Debug"
+          notification_id: "smart_heating_debug"
+          message: >
+            **Mode:** {{ target_mode }}
+            **Target temp:** {{ target_temp }}°C
+            **Indoor:** {{ current_indoor }}°C | **Outdoor:** {{ current_outdoor }}°C
+            **People home:** {{ people_count }}
+            **Night:** {{ is_night }} | **Pre-heat:** {{ is_preheat_time }}
+            **Override active:** {{ override_is_active }}
+            **Any door/window open:** {{ any_opening_open }}
+            **Last run:** {{ now().strftime('%Y-%m-%d %H:%M:%S') }}

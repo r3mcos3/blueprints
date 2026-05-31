@@ -1,6 +1,6 @@
 # 🔥 Smart Heating Controller
 
-[![version](https://img.shields.io/badge/version-1.3.1-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.8.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 Intelligent climate control that adapts to your presence, outdoor conditions, door/window states, and time schedules. Save energy while maintaining comfort with smart temperature management! 🌡️
@@ -11,9 +11,13 @@ Intelligent climate control that adapts to your presence, outdoor conditions, do
 - 🌡️ **Outdoor Temperature Factor** - Disables heating when it's warm outside to save energy
 - 🚪 **Door/Window Protection** - Pauses heating when doors/windows are open too long
 - 🌙 **Night Mode** - Reduces temperature during sleeping hours for comfort and efficiency
-- ⏰ **Smart Pre-Heating** - Starts heating before you wake up to reach comfort temperature on time
+- ⏰ **Smart Pre-Heating** - Starts heating before you wake up, scaled to outdoor coldness
 - 🧊 **Frost Protection** - Maintains minimum temperature to prevent pipe freezing
 - 💧 **Humidity Compensation** - Adjusts target temperature based on indoor humidity levels (optional)
+- 🛠️ **Manual Override** - Temporarily hold any temperature for a configurable duration
+- 🪟 **Virtual Window Detection** - Detects open windows via rapid indoor temperature drops (no sensor needed)
+- 🔄 **Gradual Transitions** - Stepwise temperature changes instead of immediate jumps (optional)
+- 🔍 **Debug Mode** - Persistent notification showing active mode and all state values after every run
 - 🔄 **Automatic Synchronization** - Checks and updates heating state every 15 minutes
 
 ## 📋 Requirements
@@ -30,6 +34,8 @@ Before using this blueprint, you need:
 ### Optional Components
 
 - **Humidity Sensor** - For humidity-based temperature adjustments
+- **Input Boolean helpers** - For manual override state tracking (one per automation)
+- **Input Number helper** - For dynamic comfort temperature via UI
 
 ## 🚀 Installation
 
@@ -98,6 +104,33 @@ Before using this blueprint, you need:
 - Low humidity (<30%): +0.5°C (feels colder)
 - Normal humidity (30-70%): No adjustment
 
+### 🛠️ Manual Override Settings (Collapsed)
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| ⏱️ Override Duration | How long override lasts before automation resumes | 2 hours |
+| 🔘 Override Helper | Input Boolean for activating/deactivating override | Optional |
+
+### 🪟 Virtual Window Detection (Collapsed)
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| 🪟 Enable Virtual Window Detection | Detect open windows via rapid indoor temp drops | false |
+| 🌡️ Temperature Drop Threshold | Minimum drop between two readings to trigger detection | 1.5°C |
+
+### 🔄 Gradual Transition Settings (Collapsed)
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| 🔄 Enable Gradual Transitions | Step toward target temp instead of jumping directly | false |
+| ↗️ Temperature Step | Change per step, applied every 15 minutes | 0.5°C |
+
+### 🔍 Debug Settings (Collapsed)
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| 🔍 Enable Debug Mode | Persistent notification after every run with full state info | false |
+
 ## 🎯 How It Works
 
 The **Smart Heating Controller** is built as a **hierarchy of priorities**. This means that certain conditions (like frost protection) always take precedence over comfort settings (like night temperature).
@@ -140,13 +173,18 @@ If you enable this, the system subtly adjusts the target temperature based on hu
 *   **Low humidity (<30%):** The temperature is **raised by 0.5°C**, because dry air feels colder.
 
 ### 🔄 When does the automation react?
-The blueprint springs into action with every relevant change:
-*   Someone comes home or leaves.
-*   A window/door opens or closes.
-*   The temperature (indoor or outdoor) changes.
-*   The clock hits a start/end time (night mode).
-*   Home Assistant restarts.
-*   **Every 15 minutes:** A periodic check to ensure everything is still in the correct state (e.g., if someone manually adjusted the thermostat).
+
+| Trigger | When |
+|---------|------|
+| 🏠 Presence change | Someone arrives home or leaves |
+| 🚪 Door/window sensor | A door or window opens (after delay) or closes |
+| 🌡️ Outdoor temperature | Crosses the configured warm/cold threshold |
+| 🌙 Night start/end | At the exact configured times |
+| 🪟 Indoor temp drop | Rapid drop detected (virtual window, if enabled) |
+| 🎛️ Comfort temp helper | Immediately when the UI slider changes |
+| 🔘 Override helper | Immediately when manually toggled |
+| 🏠 HA restart | On Home Assistant startup (30-second delay) |
+| 🔄 Every 15 minutes | Periodic sync to correct any drift |
 
 ## 💡 Usage Examples
 
@@ -286,6 +324,14 @@ automation:
 4. Check humidity sensor (if enabled) is returning valid values
 5. Review Home Assistant logs for climate entity errors
 
+### Unexpected Behavior / Hard to Debug
+
+1. Enable **Debug Mode** in the Debug Settings section
+2. After the next automation run, check **Notifications** in the HA sidebar
+3. The notification shows: active mode, target temp, indoor/outdoor temp, people count, override state, door/window state, and timestamp
+4. It updates in place (same notification) so it won't spam your notification list
+5. Disable debug mode once the issue is understood
+
 ### Eco Mode Always Active
 
 1. Check outdoor temperature sensor reading
@@ -295,6 +341,26 @@ automation:
 5. Check if sensor is reporting correct units (°C)
 
 ## 📝 Version History
+
+### Version 1.8.0
+- 🐛 Fixed: `current_target` was used before being defined — manual override mode now correctly holds the existing temperature
+- 🐛 Fixed: Night start no longer overrides an active manual override
+- 🔍 Added optional debug mode: persistent notification after every run with full state info
+
+### Version 1.7.0
+- ⏰ Adaptive pre-heating: preheat window scales automatically with outdoor coldness (up to 3× base)
+- 🪟 Virtual window detection: heating pauses on rapid indoor temperature drops (no physical sensor needed)
+- 🔄 Gradual transitions: optional stepwise temperature changes every 15 minutes
+
+### Version 1.6.0
+- 🎛️ Dynamic comfort temperature via optional `input_number` helper (adjustable from UI)
+- 🔄 Trigger on comfort temperature helper change for immediate response
+
+### Version 1.5.0
+- 🛠️ Optional gradual transition settings section added (foundation)
+
+### Version 1.4.0
+- 🪟 Virtual window detection settings section added (foundation)
 
 ### Version 1.3.1
 - 🔧 Improved override handling and startup logic
