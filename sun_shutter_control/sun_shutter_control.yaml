@@ -1,4 +1,4 @@
-# Version: 1.4.0
+# Version: 1.5.0
 blueprint:
   domain: automation
   name: "☀️ Sun-Aware Shutter Control"
@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    📦 [Version 1.4.0] Automatic shutter control based on sun position 🌞.
+    📦 [Version 1.5.0] Automatic shutter control based on sun position 🌞.
 
 
     Automatically closes shutters when the sun shines on the front or back of your house,
@@ -29,6 +29,9 @@ blueprint:
 
     - 🖐️ Manual override — skips shutters that were manually operated, and resets
       automatically once the sun moves away from that facade
+
+    - 🌤️ Cloud detection — optional weather integration: when it's overcast the shutters
+      stay open (or open automatically if they were closed)
 
 
     🌐 Finding your house azimuth — Go to https://www.suncalc.org/, find your house and
@@ -164,6 +167,42 @@ blueprint:
               unit_of_measurement: "%"
               mode: slider
 
+    # ===== WEATHER SETTINGS (COLLAPSED) =====
+    weather_settings:
+      name: "🌤️ Weather Settings"
+      icon: mdi:weather-cloudy
+      collapsed: true
+      input:
+        weather_entity:
+          name: "🌤️ Weather entity (optional)"
+          description: >
+            Link your weather integration here to enable cloud detection.
+            When the weather condition is overcast or rainy, the shutters will
+            be treated as if the sun is not shining — they stay open or open
+            automatically (if "Automatically open" is enabled).
+            Leave empty to ignore weather and only use sun position.
+          default: {}
+          selector:
+            entity:
+              filter:
+                - domain: weather
+
+        close_on_cloudy:
+          name: "☁️ When to close based on weather"
+          description: >
+            Controls which weather conditions allow shutters to close.
+            Only applies when a weather entity is configured above.
+          default: "sunny_and_partly"
+          selector:
+            select:
+              options:
+                - label: "Always close (ignore weather)"
+                  value: "always"
+                - label: "Only when sunny or partly cloudy"
+                  value: "sunny_and_partly"
+                - label: "Only when sunny"
+                  value: "sunny_only"
+
     # ===== MANUAL OVERRIDE (COLLAPSED) =====
     override_settings:
       name: "🖐️ Manual Override"
@@ -204,10 +243,22 @@ variables:
   v_back_covers: !input back_covers
   v_front_override: !input front_override_helper
   v_back_override: !input back_override_helper
+  v_weather_entity: !input weather_entity
+  v_cloud_mode: !input close_on_cloudy
   v_front_override_active: >
     {{ v_front_override != {} and is_state(v_front_override, 'on') }}
   v_back_override_active: >
     {{ v_back_override != {} and is_state(v_back_override, 'on') }}
+  # True when the configured weather allows closing (or no weather entity set)
+  v_weather_allows_close: >
+    {% if v_weather_entity == {} %}
+      true
+    {% else %}
+      {% set w = states(v_weather_entity) %}
+      {{ v_cloud_mode == 'always' or
+         (v_cloud_mode == 'sunny_and_partly' and w in ['sunny', 'partlycloudy']) or
+         (v_cloud_mode == 'sunny_only' and w == 'sunny') }}
+    {% endif %}
   # Calculate whether the sun is on the front facade:
   # Azimuth difference is normalized to -180..+180 via ((diff + 180) % 360) - 180
   # Angle difference smaller than the sun window = sun is on that facade
@@ -227,6 +278,11 @@ variables:
     {% set min_el = v_min_elevation | float(10) %}
     {% set diff = ((az - back + 180) % 360) - 180 %}
     {{ el >= min_el and diff | abs <= window }}
+  # Combines sun position and weather: true only when sun is on facade AND weather allows
+  v_should_close_front: >
+    {{ v_sun_on_front | bool and v_weather_allows_close | bool }}
+  v_should_close_back: >
+    {{ v_sun_on_back | bool and v_weather_allows_close | bool }}
 
 trigger:
   # Fire whenever the sun moves (azimuth attribute update, typically every few minutes)
@@ -286,20 +342,20 @@ action:
             value_template: "{{ v_front_covers | list | length > 0 }}"
         then:
           - choose:
-              # Sun on front AND no manual override → close
+              # Sun on front AND weather allows AND no manual override → close
               - conditions:
                   - condition: template
-                    value_template: "{{ v_sun_on_front | bool and not v_front_override_active | bool }}"
+                    value_template: "{{ v_should_close_front | bool and not v_front_override_active | bool }}"
                 sequence:
                   - service: cover.set_cover_position
                     target:
                       entity_id: !input front_covers
                     data:
                       position: !input close_position
-              # Sun NOT on front AND auto-open enabled → open (only if no manual override) and reset override
+              # Sun NOT on front (or cloudy) AND auto-open enabled → open (only if no manual override) and reset override
               - conditions:
                   - condition: template
-                    value_template: "{{ not v_sun_on_front | bool and v_auto_open | bool }}"
+                    value_template: "{{ not v_should_close_front | bool and v_auto_open | bool }}"
                 sequence:
                   # Only move shutters if the user did not manually operate them
                   - if:
@@ -326,20 +382,20 @@ action:
             value_template: "{{ v_back_covers | list | length > 0 }}"
         then:
           - choose:
-              # Sun on back AND no manual override → close
+              # Sun on back AND weather allows AND no manual override → close
               - conditions:
                   - condition: template
-                    value_template: "{{ v_sun_on_back | bool and not v_back_override_active | bool }}"
+                    value_template: "{{ v_should_close_back | bool and not v_back_override_active | bool }}"
                 sequence:
                   - service: cover.set_cover_position
                     target:
                       entity_id: !input back_covers
                     data:
                       position: !input close_position
-              # Sun NOT on back AND auto-open enabled → open (only if no manual override) and reset override
+              # Sun NOT on back (or cloudy) AND auto-open enabled → open (only if no manual override) and reset override
               - conditions:
                   - condition: template
-                    value_template: "{{ not v_sun_on_back | bool and v_auto_open | bool }}"
+                    value_template: "{{ not v_should_close_back | bool and v_auto_open | bool }}"
                 sequence:
                   # Only move shutters if the user did not manually operate them
                   - if:

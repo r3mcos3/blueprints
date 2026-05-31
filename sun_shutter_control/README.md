@@ -1,6 +1,6 @@
 # ☀️ Sun-Aware Shutter Control
 
-[![version](https://img.shields.io/badge/version-1.4.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.5.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 Automatic shutter control based on sun position. Closes shutters when the sun shines on the front or back of your house, and opens them again once the sun moves away. Respects manual operation so you always stay in control! 🌞
@@ -10,6 +10,7 @@ Automatic shutter control based on sun position. Closes shutters when the sun sh
 - ☀️ **Automatic closing** - Closes shutters when the sun shines on that facade
 - 🔄 **Automatic opening** - Opens shutters once the sun moves to another direction (optional)
 - 🖐️ **Manual override** - Detects manual shutter operation and leaves those shutters alone until the sun moves away
+- 🌤️ **Cloud detection** - Optional weather integration: open shutters when it's overcast, close again when it clears up
 - 📐 **Configurable sun window** - Set how many degrees of margin the sun may be on a facade
 - 🌅 **Minimum sun elevation** - No action during low morning or evening sun
 - 🔽 **Flexible positions** - Configure close and open position (e.g. half-close at 50%)
@@ -75,6 +76,13 @@ For the manual override feature, create a toggle helper per facade side:
 | 🏠 Front shutters | Cover entities on the front of the house |
 | 🏡 Back shutters | Cover entities on the back of the house |
 
+### 🌤️ Weather Settings (collapsed)
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| 🌤️ Weather entity | Your weather integration entity (optional) | — |
+| ☁️ When to close | Which conditions allow closing: always / sunny+partly cloudy / sunny only | Sunny or partly cloudy |
+
 ### ☀️ Sun Settings (collapsed)
 
 | Parameter | Description | Default |
@@ -115,19 +123,19 @@ This formula works correctly for all directions, including the wrap-around near 
 For each facade side (front/back):
 
 ```
-If sun on facade AND no manual override
+If sun on facade AND weather allows AND no manual override
   → Move shutters to close position
 
-If sun NOT on facade AND auto-open is on AND no manual override
+If (sun NOT on facade OR cloudy) AND auto-open is on AND no manual override
   → Move shutters to open position
   → Reset manual override
 
-If sun NOT on facade AND auto-open is on AND manual override active
+If (sun NOT on facade OR cloudy) AND auto-open is on AND manual override active
   → Do NOT move shutters (respects manual close, e.g. at bedtime)
   → Reset manual override (so next day works normally)
 
-If sun on facade AND manual override active
-  → Do nothing (respects manual operation)
+If sun on facade AND (weather blocks OR manual override active)
+  → Do nothing
 ```
 
 ### Manual override
@@ -252,6 +260,9 @@ automation:
 3. You can always manually turn off the helper from your HA dashboard
 
 ## 📝 Version History
+
+### Version 1.5.0
+- 🌤️ Added optional weather/cloud detection: shutters stay open when overcast
 
 ### Version 1.4.0
 - ✨ Replaced 5-minute polling trigger with event-driven sun azimuth trigger
