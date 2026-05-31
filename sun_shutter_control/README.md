@@ -1,6 +1,6 @@
 # ☀️ Sun-Aware Shutter Control
 
-[![version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.4.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 Automatic shutter control based on sun position. Closes shutters when the sun shines on the front or back of your house, and opens them again once the sun moves away. Respects manual operation so you always stay in control! 🌞
@@ -144,7 +144,7 @@ The override is **automatically reset** once the sun moves away from that facade
 
 | Trigger | When |
 |---------|------|
-| ⏱️ Periodic check | Every 5 minutes |
+| ☀️ Sun position change | Every time the sun's azimuth updates (event-driven, typically every few minutes while the sun moves) |
 | 🏠 HA restart | On Home Assistant startup |
 | 🖐️ Cover state change | Immediately on manual shutter operation (override detection only) |
 
@@ -252,6 +252,9 @@ automation:
 3. You can always manually turn off the helper from your HA dashboard
 
 ## 📝 Version History
+
+### Version 1.4.0
+- ✨ Replaced 5-minute polling trigger with event-driven sun azimuth trigger
 
 ### Version 1.3.0
 - 🐛 Fixed: manually closing shutters in the evening no longer causes them to be re-opened by the automation
