@@ -756,7 +756,7 @@ Full documentation and examples: [GitHub Repository](https://github.com/r3mcos3/
 ```markdown
 # Sun-Aware Shutter Control ☀️
 
-**Version 1.5.0** | Automatically close your shutters when the sun shines on your house — and open them again when it moves away!
+**Version 1.6.0** | Automatically close your shutters when the sun shines on your house — and open them again when it moves away!
 
 > ⚠️ **This blueprint is currently in a testing phase.** It has been tested in a single environment. Feedback and bug reports are very welcome!
 
@@ -843,6 +843,7 @@ Full documentation, examples, and troubleshooting: [GitHub Repository](https://g
 
 ## Changelog
 
+- **1.6.0** - Auto-open no longer fires at night — shutters closed in the evening stay closed
 - **1.5.0** - Added optional weather/cloud detection: shutters stay open when overcast
 - **1.4.0** - Replaced 5-minute polling with event-driven sun azimuth trigger
 - **1.3.0** - Fixed: manually closing shutters at bedtime no longer causes them to be re-opened
