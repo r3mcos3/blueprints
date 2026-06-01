@@ -1,4 +1,4 @@
-# Version: 1.10.0
+# Version: 1.11.0
 blueprint:
   domain: automation
   name: "☀️ Sun-Aware Shutter Control"
@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    📦 [Version 1.10.0] Automatic shutter control based on sun position 🌞.
+    📦 [Version 1.11.0] Automatic shutter control based on sun position 🌞.
 
 
     Automatically closes shutters when the sun shines on the front or back of your house,
@@ -31,7 +31,8 @@ blueprint:
       or when manually **opened while someone is home** (presence-aware). When nobody
       is home the automation always takes full control: manual opens are ignored and
       the shutter closes when the sun shines on the facade.
-      Override resets automatically once the sun moves away from that facade
+      Override resets automatically once the shutter returns to the open position
+      (e.g. after the user opens it manually again)
 
     - 🌤️ Cloud detection — optional weather integration: when it's overcast the shutters
       stay open (or open automatically if they were closed)
@@ -53,7 +54,8 @@ blueprint:
     Settings → Devices & Services → Create Helper → Toggle (input_boolean),
     e.g. "Shutter front manual". Link it below. The automation turns it on when a shutter
     on that side is manually **closed** (always), or manually **opened while someone is
-    home** (when a presence entity is configured). It turns off when the sun moves away.
+    home** (when a presence entity is configured). It turns off once the shutter returns
+    to the open position.
     When nobody is home the automation ignores any override and closes on sun position.
 
   input:
@@ -525,10 +527,12 @@ action:
                           entity_id: !input front_covers
                         data:
                           position: !input open_position
-                  # Always reset the override so the next day works normally
+                  # Reset override only when the shutter is already at the open position.
+                  # If the user manually closed the shutter (override ON, shutter still down),
+                  # we keep the override so the automation does NOT re-open it.
                   - if:
                       - condition: template
-                        value_template: "{{ v_front_override != {} }}"
+                        value_template: "{{ v_front_override != {} and not v_front_needs_open | bool }}"
                     then:
                       - service: input_boolean.turn_off
                         target:
@@ -573,10 +577,12 @@ action:
                           entity_id: !input back_covers
                         data:
                           position: !input open_position
-                  # Always reset the override so the next day works normally
+                  # Reset override only when the shutter is already at the open position.
+                  # If the user manually closed the shutter (override ON, shutter still down),
+                  # we keep the override so the automation does NOT re-open it.
                   - if:
                       - condition: template
-                        value_template: "{{ v_back_override != {} }}"
+                        value_template: "{{ v_back_override != {} and not v_back_needs_open | bool }}"
                     then:
                       - service: input_boolean.turn_off
                         target:
