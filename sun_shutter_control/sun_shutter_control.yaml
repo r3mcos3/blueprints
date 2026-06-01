@@ -1,4 +1,4 @@
-# Version: 1.7.0
+# Version: 1.8.0
 blueprint:
   domain: automation
   name: "☀️ Sun-Aware Shutter Control"
@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    📦 [Version 1.7.0] Automatic shutter control based on sun position 🌞.
+    📦 [Version 1.8.0] Automatic shutter control based on sun position 🌞.
 
 
     Automatically closes shutters when the sun shines on the front or back of your house,
@@ -27,8 +27,10 @@ blueprint:
 
     - 🔽 Configurable close and open position
 
-    - 🖐️ Manual override — skips shutters that were manually operated, and resets
-      automatically once the sun moves away from that facade
+    - 🖐️ Manual override — only triggers when a shutter is manually **closed**
+      (e.g. to block the view); a manual open never blocks the sun-close logic,
+      so the shutter still closes automatically when the sun shines on the facade.
+      Override resets automatically once the sun moves away from that facade
 
     - 🌤️ Cloud detection — optional weather integration: when it's overcast the shutters
       stay open (or open automatically if they were closed)
@@ -49,7 +51,9 @@ blueprint:
     🖐️ Setting up manual override — Create a Toggle helper per facade side via
     Settings → Devices & Services → Create Helper → Toggle (input_boolean),
     e.g. "Shutter front manual". Link it below. The automation turns it on when a shutter
-    on that side is manually operated, and turns it off again when the sun moves away.
+    on that side is manually **closed**, and turns it off again when the sun moves away.
+    A manual open does NOT trigger the override — the automation can still close the
+    shutter when the sun starts shining later.
 
   input:
     # ===== REQUIRED: HOUSE ORIENTATION =====
@@ -233,9 +237,10 @@ blueprint:
           name: "🖐️ Override helper front (optional)"
           description: >
             Link an input_boolean (toggle) helper for the front facade here.
-            The automation turns it on when a front shutter is manually operated,
+            The automation turns it on when a front shutter is manually **closed**,
             and turns it off when the sun moves away from the front facade.
-            While on, the automation will not touch those shutters.
+            While on, the automation will not open those shutters automatically.
+            A manual open does NOT set this override — the sun-close logic still runs.
             Create via: Settings → Helpers → Create Helper → Toggle.
           default: {}
           selector:
@@ -401,6 +406,9 @@ trigger:
 
 action:
   # --- Manual override detection front ---
+  # Only set override when the user CLOSES the cover (position decreases).
+  # A manual open does not set the override so the automation can still close
+  # the shutter when the sun starts shining on the facade later.
   - if:
       - condition: trigger
         id: front_cover_changed
@@ -408,6 +416,15 @@ action:
         value_template: "{{ trigger.to_state.context.user_id is not none }}"
       - condition: template
         value_template: "{{ v_front_override != {} }}"
+      - condition: template
+        value_template: >
+          {% set pos_to = trigger.to_state.attributes.current_position | int(-1) %}
+          {% set pos_from = trigger.from_state.attributes.current_position | int(-1) %}
+          {% if pos_to >= 0 and pos_from >= 0 %}
+            {{ pos_to < pos_from }}
+          {% else %}
+            {{ trigger.to_state.state == 'closed' and trigger.from_state.state != 'closed' }}
+          {% endif %}
     then:
       - service: input_boolean.turn_on
         target:
@@ -421,6 +438,15 @@ action:
         value_template: "{{ trigger.to_state.context.user_id is not none }}"
       - condition: template
         value_template: "{{ v_back_override != {} }}"
+      - condition: template
+        value_template: >
+          {% set pos_to = trigger.to_state.attributes.current_position | int(-1) %}
+          {% set pos_from = trigger.from_state.attributes.current_position | int(-1) %}
+          {% if pos_to >= 0 and pos_from >= 0 %}
+            {{ pos_to < pos_from }}
+          {% else %}
+            {{ trigger.to_state.state == 'closed' and trigger.from_state.state != 'closed' }}
+          {% endif %}
     then:
       - service: input_boolean.turn_on
         target:
