@@ -1,4 +1,4 @@
-# Version: 1.8.0
+# Version: 1.9.0
 blueprint:
   domain: automation
   name: "☀️ Sun-Aware Shutter Control"
@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    📦 [Version 1.8.0] Automatic shutter control based on sun position 🌞.
+    📦 [Version 1.9.0] Automatic shutter control based on sun position 🌞.
 
 
     Automatically closes shutters when the sun shines on the front or back of your house,
@@ -27,9 +27,10 @@ blueprint:
 
     - 🔽 Configurable close and open position
 
-    - 🖐️ Manual override — only triggers when a shutter is manually **closed**
-      (e.g. to block the view); a manual open never blocks the sun-close logic,
-      so the shutter still closes automatically when the sun shines on the facade.
+    - 🖐️ Manual override — triggers when a shutter is manually **closed** (always),
+      or when manually **opened while someone is home** (presence-aware). When nobody
+      is home the automation always takes full control: manual opens are ignored and
+      the shutter closes when the sun shines on the facade.
       Override resets automatically once the sun moves away from that facade
 
     - 🌤️ Cloud detection — optional weather integration: when it's overcast the shutters
@@ -51,9 +52,9 @@ blueprint:
     🖐️ Setting up manual override — Create a Toggle helper per facade side via
     Settings → Devices & Services → Create Helper → Toggle (input_boolean),
     e.g. "Shutter front manual". Link it below. The automation turns it on when a shutter
-    on that side is manually **closed**, and turns it off again when the sun moves away.
-    A manual open does NOT trigger the override — the automation can still close the
-    shutter when the sun starts shining later.
+    on that side is manually **closed** (always), or manually **opened while someone is
+    home** (when a presence entity is configured). It turns off when the sun moves away.
+    When nobody is home the automation ignores any override and closes on sun position.
 
   input:
     # ===== REQUIRED: HOUSE ORIENTATION =====
@@ -237,10 +238,10 @@ blueprint:
           name: "🖐️ Override helper front (optional)"
           description: >
             Link an input_boolean (toggle) helper for the front facade here.
-            The automation turns it on when a front shutter is manually **closed**,
-            and turns it off when the sun moves away from the front facade.
-            While on, the automation will not open those shutters automatically.
-            A manual open does NOT set this override — the sun-close logic still runs.
+            The automation turns it on when a front shutter is manually **closed**, or
+            when manually **opened while someone is home** (requires presence entity below).
+            It turns off when the sun moves away from the front facade.
+            When nobody is home the automation ignores this override and closes on sun.
             Create via: Settings → Helpers → Create Helper → Toggle.
           default: {}
           selector:
@@ -259,6 +260,25 @@ blueprint:
               filter:
                 - domain: input_boolean
 
+        presence_entity:
+          name: "👥 Presence entity (optional)"
+          description: >
+            Link a person, group, or input_boolean to enable presence-aware behavior.
+            When someone is home: manual opens are respected — the automation will not
+            close the shutter while the person is there.
+            When nobody is home: the automation takes full control — it closes the
+            shutter when the sun shines, regardless of a previous manual open.
+            Manual closes always set the override, regardless of presence.
+            Leave empty to always respect manual opens (traditional behavior).
+          default: {}
+          selector:
+            entity:
+              filter:
+                - domain: person
+                - domain: group
+                - domain: input_boolean
+                - domain: device_tracker
+
 variables:
   v_front_facing: !input front_facing_azimuth
   v_sun_window: !input sun_window
@@ -268,6 +288,7 @@ variables:
   v_back_covers: !input back_covers
   v_front_override: !input front_override_helper
   v_back_override: !input back_override_helper
+  v_presence_entity: !input presence_entity
   v_weather_entity: !input weather_entity
   v_cloud_mode: !input close_on_cloudy
   v_cooldown: !input cooldown_minutes
@@ -277,6 +298,13 @@ variables:
     {{ v_front_override != {} and is_state(v_front_override, 'on') }}
   v_back_override_active: >
     {{ v_back_override != {} and is_state(v_back_override, 'on') }}
+  # True when at least one person is home (or no presence entity configured → false)
+  v_someone_home: >
+    {% if v_presence_entity == {} %}
+      false
+    {% else %}
+      {{ is_state(v_presence_entity, 'home') or is_state(v_presence_entity, 'on') }}
+    {% endif %}
   # True when the configured weather allows closing (or no weather entity set)
   v_weather_allows_close: >
     {% if v_weather_entity == {} %}
@@ -420,11 +448,8 @@ action:
         value_template: >
           {% set pos_to = trigger.to_state.attributes.current_position | int(-1) %}
           {% set pos_from = trigger.from_state.attributes.current_position | int(-1) %}
-          {% if pos_to >= 0 and pos_from >= 0 %}
-            {{ pos_to < pos_from }}
-          {% else %}
-            {{ trigger.to_state.state == 'closed' and trigger.from_state.state != 'closed' }}
-          {% endif %}
+          {% set is_closing = (pos_to < pos_from) if (pos_to >= 0 and pos_from >= 0) else (trigger.to_state.state == 'closed' and trigger.from_state.state != 'closed') %}
+          {{ is_closing or (v_presence_entity != {} and v_someone_home | bool) }}
     then:
       - service: input_boolean.turn_on
         target:
@@ -442,11 +467,8 @@ action:
         value_template: >
           {% set pos_to = trigger.to_state.attributes.current_position | int(-1) %}
           {% set pos_from = trigger.from_state.attributes.current_position | int(-1) %}
-          {% if pos_to >= 0 and pos_from >= 0 %}
-            {{ pos_to < pos_from }}
-          {% else %}
-            {{ trigger.to_state.state == 'closed' and trigger.from_state.state != 'closed' }}
-          {% endif %}
+          {% set is_closing = (pos_to < pos_from) if (pos_to >= 0 and pos_from >= 0) else (trigger.to_state.state == 'closed' and trigger.from_state.state != 'closed') %}
+          {{ is_closing or (v_presence_entity != {} and v_someone_home | bool) }}
     then:
       - service: input_boolean.turn_on
         target:
@@ -465,12 +487,13 @@ action:
             value_template: "{{ v_front_covers | list | length > 0 }}"
         then:
           - choose:
-              # Sun on front AND weather allows AND no override AND not on cooldown AND not already closed → close
+              # Sun on front AND weather allows AND no override (or nobody home) AND not on cooldown AND not already closed → close
               - conditions:
                   - condition: template
                     value_template: >
                       {{ v_should_close_front | bool
-                         and not v_front_override_active | bool
+                         and (not v_front_override_active | bool
+                              or (v_presence_entity != {} and not v_someone_home | bool))
                          and not v_front_on_cooldown | bool
                          and v_front_needs_close | bool }}
                 sequence:
@@ -512,12 +535,13 @@ action:
             value_template: "{{ v_back_covers | list | length > 0 }}"
         then:
           - choose:
-              # Sun on back AND weather allows AND no override AND not on cooldown AND not already closed → close
+              # Sun on back AND weather allows AND no override (or nobody home) AND not on cooldown AND not already closed → close
               - conditions:
                   - condition: template
                     value_template: >
                       {{ v_should_close_back | bool
-                         and not v_back_override_active | bool
+                         and (not v_back_override_active | bool
+                              or (v_presence_entity != {} and not v_someone_home | bool))
                          and not v_back_on_cooldown | bool
                          and v_back_needs_close | bool }}
                 sequence:
