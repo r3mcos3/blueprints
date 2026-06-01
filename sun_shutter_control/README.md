@@ -1,6 +1,6 @@
 # ☀️ Sun-Aware Shutter Control
 
-[![version](https://img.shields.io/badge/version-1.7.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.13.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 Automatic shutter control based on sun position. Closes shutters when the sun shines on the front or back of your house, and opens them again once the sun moves away. Respects manual operation so you always stay in control! 🌞
@@ -9,7 +9,8 @@ Automatic shutter control based on sun position. Closes shutters when the sun sh
 
 - ☀️ **Automatic closing** - Closes shutters when the sun shines on that facade
 - 🔄 **Automatic opening** - Opens shutters once the sun moves to another direction (optional)
-- 🖐️ **Manual override** - Detects manual shutter operation and leaves those shutters alone until the sun moves away
+- 🖐️ **Manual override** - Detects manual shutter operation and leaves those shutters alone; resets automatically at sunset
+- 👤 **Presence-aware** - When nobody is home the automation takes full control, ignoring any override
 - 🌤️ **Cloud detection** - Optional weather integration: open shutters when it's overcast, close again when it clears up
 - ⏱️ **Anti-oscillation cooldown** - Minimum wait between moves, prevents rapid up/down on partly cloudy days
 - 📍 **Position awareness** - Skips the command if shutters are already at the target position
@@ -29,6 +30,7 @@ Before using this blueprint, you need:
 ### Optional
 
 - **Input Boolean helpers** - For manual override detection (one per facade side)
+- **Person / device_tracker entities** - For presence-aware override behaviour
 
 ## 🌐 Finding your house azimuth
 
@@ -107,12 +109,14 @@ For the manual override feature, create a toggle helper per facade side:
 |-----------|-------------|---------|
 | 🖐️ Override helper front | Input Boolean helper for the front facade | Optional |
 | 🖐️ Override helper back | Input Boolean helper for the back facade | Optional |
+| 👤 Person 1 | First household member for presence detection | Optional |
+| 👤 Person 2 | Second household member for presence detection | Optional |
 
 ## 🎯 How It Works
 
 ### Sun position calculation
 
-The blueprint uses the **azimuth** of `sun.sun` — the compass direction of the sun (0–360°). Every 5 minutes it calculates whether the sun is on the front or back facade:
+The blueprint uses the **azimuth** of `sun.sun` — the compass direction of the sun (0–360°). Every few minutes it calculates whether the sun is on the front or back facade:
 
 ```
 Angle difference = ((sun azimuth − facade direction + 180) % 360) − 180
@@ -126,36 +130,55 @@ This formula works correctly for all directions, including the wrap-around near 
 For each facade side (front/back):
 
 ```
-If sun on facade AND weather allows AND no manual override
+If sun on facade AND weather allows AND (no override OR nobody home)
   → Move shutters to close position
 
-If (sun NOT on facade OR cloudy) AND sun above min elevation AND auto-open is on AND no manual override
+If (sun NOT on facade OR cloudy) AND sun above min elevation AND auto-open is on
+  AND (no override OR nobody home)
   → Move shutters to open position
-  → Reset manual override
 
-If (sun NOT on facade OR cloudy) AND sun above min elevation AND auto-open is on AND manual override active
-  → Do NOT move shutters (respects manual close)
-  → Reset manual override (so next day works normally)
+If (sun NOT on facade OR cloudy) AND sun above min elevation AND auto-open is on
+  AND override active AND someone home
+  → Do NOT move shutters (respects manual operation)
 
 If sun below min elevation (evening/night)
   → Do nothing — shutters stay wherever they are
+
+At sunset (sun goes below horizon)
+  → Reset all overrides so the next day starts fresh
 ```
 
 ### Manual override
 
 HA records **who** initiated every state change. When a user manually operates a shutter (via the app, dashboard or physical switch), the context contains a `user_id`. The blueprint detects this and turns the override helper on.
 
-The override works in **both directions**:
-- **Manually opened** while sun is shining → automation won't close them
-- **Manually closed** in the evening → automation won't open them again at the next check
+The override set/reset rules:
 
-The override is **automatically reset** once the sun moves away from that facade (regardless of whether auto-open moves the shutters) — so everything works normally again the next day.
+| Action | Override |
+|--------|----------|
+| User manually **closes** shutter | → ON (always) |
+| User manually **opens** shutter while someone is home | → ON |
+| Shutter returns to the open position | → OFF |
+| **Sun sets** (`sun.sun` → `below_horizon`) | → OFF (daily reset) |
+
+### Presence awareness
+
+When **Person 1** or **Person 2** is configured, the automation becomes presence-aware:
+
+| Situation | Close? | Open? |
+|-----------|--------|-------|
+| Override OFF | ✓ | ✓ |
+| Override ON + someone home | ✗ | ✗ (manual operation respected) |
+| Override ON + nobody home | ✓ | ✓ (automation takes full control) |
+
+When no presence entities are configured, the override always applies.
 
 ### Trigger moments
 
 | Trigger | When |
 |---------|------|
-| ☀️ Sun position change | Every time the sun's azimuth updates (event-driven, typically every few minutes while the sun moves) |
+| ☀️ Sun position change | Every time the sun's azimuth updates (event-driven, typically every few minutes) |
+| 🌇 Sun sets | When `sun.sun` transitions to `below_horizon` — resets overrides |
 | 🏠 HA restart | On Home Assistant startup |
 | 🖐️ Cover state change | Immediately on manual shutter operation (override detection only) |
 
@@ -184,9 +207,9 @@ automation:
 - Afternoon/evening (sun in the West): back shutters close
 - Evening: everything opens
 
-### Example 2: Half-close with manual override
+### Example 2: Half-close with presence-aware override
 
-Shutters go to 50% when sun shines, with manual override:
+Shutters go to 50% when sun shines, manual override is respected only when someone is home:
 
 ```yaml
 automation:
@@ -203,12 +226,15 @@ automation:
         open_position: 100
         front_override_helper: input_boolean.shutter_front_manual
         back_override_helper: input_boolean.shutter_back_manual
+        presence_person_1: person.john
+        presence_person_2: person.jane
 ```
 
 **Expected behavior:**
 - Sun on facade: shutters move to 50%
-- Someone manually opens: override on, automation leaves it alone
-- Sun moves away: shutters go to 100% open, override resets
+- Someone manually closes: override ON, automation leaves it alone until sunset
+- Nobody home: automation ignores the override and controls shutters normally
+- Sunset: override resets, next morning automation works normally
 
 ### Example 3: Close only, never auto-open
 
@@ -258,11 +284,34 @@ automation:
 
 ### Override not resetting automatically
 
-1. Check that **Automatically open** is enabled in the shutter settings
-2. The override only resets when the sun moves AWAY from that facade (not at night or low sun)
+1. The override resets at **sunset** every day — check that `sun.sun` changes to `below_horizon`
+2. The override also resets when the shutter returns to the open position
 3. You can always manually turn off the helper from your HA dashboard
 
+### Shutter reopens after manual close
+
+Make sure you have an **override helper** configured for that facade side. Without a helper the automation has no memory of manual operations and will reopen the shutter on the next auto-open cycle.
+
 ## 📝 Version History
+
+### Version 1.13.0
+- 👤 Override is now also bypassed on **auto-open** when nobody is home (mirrors close behaviour)
+
+### Version 1.12.0
+- 🌇 Added sunset trigger: all overrides reset automatically when the sun goes below the horizon, so the next day starts fresh
+
+### Version 1.11.0
+- 🐛 Fixed: override helper was reset too early when the shutter was still closed (caused the automation to reopen a manually closed shutter on the next sun-position update)
+
+### Version 1.10.0
+- 👤 Replaced single presence entity with two separate **Person 1** and **Person 2** inputs
+
+### Version 1.9.0
+- 👤 Added optional presence entity for presence-aware manual override
+- 🏠 When nobody is home the automation takes full control, regardless of any override
+
+### Version 1.8.0
+- 🖐️ Override is now only set when the user **closes** a shutter (not on every manual action)
 
 ### Version 1.7.0
 - ⏱️ Added cooldown between moves to prevent rapid oscillation on partly cloudy days
