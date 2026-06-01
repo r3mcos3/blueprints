@@ -1,4 +1,4 @@
-# Version: 1.12.0
+# Version: 1.13.0
 blueprint:
   domain: automation
   name: "☀️ Sun-Aware Shutter Control"
@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    📦 [Version 1.12.0] Automatic shutter control based on sun position 🌞.
+    📦 [Version 1.13.0] Automatic shutter control based on sun position 🌞.
 
 
     Automatically closes shutters when the sun shines on the front or back of your house,
@@ -539,11 +539,13 @@ action:
                   - condition: template
                     value_template: "{{ not v_should_close_front | bool and v_auto_open | bool and v_sun_active | bool }}"
                 sequence:
-                  # Only move shutters if no manual override, not on cooldown, and not already open
+                  # Open when: no override OR nobody home (mirrors close-condition logic),
+                  # not on cooldown, and not already at open position
                   - if:
                       - condition: template
                         value_template: >
-                          {{ not v_front_override_active | bool
+                          {{ (not v_front_override_active | bool
+                              or ((v_presence_person_1 != {} or v_presence_person_2 != {}) and not v_someone_home | bool))
                              and not v_front_on_cooldown | bool
                              and v_front_needs_open | bool }}
                     then:
@@ -589,11 +591,13 @@ action:
                   - condition: template
                     value_template: "{{ not v_should_close_back | bool and v_auto_open | bool and v_sun_active | bool }}"
                 sequence:
-                  # Only move shutters if no manual override, not on cooldown, and not already open
+                  # Open when: no override OR nobody home (mirrors close-condition logic),
+                  # not on cooldown, and not already at open position
                   - if:
                       - condition: template
                         value_template: >
-                          {{ not v_back_override_active | bool
+                          {{ (not v_back_override_active | bool
+                              or ((v_presence_person_1 != {} or v_presence_person_2 != {}) and not v_someone_home | bool))
                              and not v_back_on_cooldown | bool
                              and v_back_needs_open | bool }}
                     then:
