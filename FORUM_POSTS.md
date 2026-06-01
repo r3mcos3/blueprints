@@ -824,7 +824,7 @@ Full documentation and examples: [GitHub Repository](https://github.com/r3mcos3/
 ```markdown
 # Sun-Aware Shutter Control ☀️
 
-**Version 1.7.0** | Automatically close your shutters when the sun shines on your house — and open them again when it moves away!
+**Version 1.10.0** | Automatically close your shutters when the sun shines on your house — and open them again when it moves away!
 
 > ⚠️ **This blueprint is currently in a testing phase.** It has been tested in a single environment. Feedback and bug reports are very welcome!
 
@@ -838,7 +838,8 @@ Every day the sun moves from one side of your house to the other. In the morning
 
 - ☀️ **Sun position tracking** - Closes shutters when the sun shines on the front or back facade
 - 🔄 **Automatic opening** - Opens shutters once the sun moves away (optional)
-- 🖐️ **Manual override** - Detects when someone manually operates a shutter and leaves it alone until the sun moves away
+- 🖐️ **Smart manual override** - Only triggers when a shutter is manually **closed**; a manual open never blocks the sun-close logic so the automation stays in control
+- 👥 **Presence-aware override** - Configure up to 2 person entities: when someone is home, manual opens are respected; when nobody is home, the automation takes full control regardless
 - 🌤️ **Cloud detection** - Optional weather integration: shutters stay open when overcast, close again when it clears up
 - ⏱️ **Anti-oscillation cooldown** - Minimum wait between moves, prevents rapid up/down on partly cloudy days
 - 📍 **Position awareness** - Skips the command if shutters are already at the target position
@@ -860,13 +861,14 @@ This formula handles all compass directions correctly, including the North wrap-
 
 ### Decision logic per facade side
 
-| Sun on facade | Weather allows | Manual override | Action |
-|---|---|---|---|
-| ✅ Yes | ✅ Yes | ❌ No | Close shutters |
-| ✅ Yes | ✅ Yes | ✅ Yes | Do nothing (respect manual operation) |
-| ✅ Yes | ❌ No (cloudy) | — | Open shutters (treat as no sun) |
-| ❌ No | — | ❌ No | Open shutters + reset override |
-| ❌ No | — | ✅ Yes | Do NOT open (respect manual close, e.g. bedtime) + reset override |
+| Sun on facade | Weather allows | Override active | Someone home | Action |
+|---|---|---|---|---|
+| ✅ Yes | ✅ Yes | ❌ No | — | Close shutters |
+| ✅ Yes | ✅ Yes | ✅ Yes | ✅ Yes | Do nothing (respect manual open) |
+| ✅ Yes | ✅ Yes | ✅ Yes | ❌ No | Close shutters (presence overrules) |
+| ✅ Yes | ❌ No (cloudy) | — | — | Open shutters (treat as no sun) |
+| ❌ No | — | ❌ No | — | Open shutters + reset override |
+| ❌ No | — | ✅ Yes | — | Do NOT open (respect manual close, e.g. bedtime) + reset override |
 
 ## Finding your house azimuth
 
@@ -881,6 +883,7 @@ Go to **[suncalc.org](https://www.suncalc.org/)**, find your house and determine
 ### Optional
 
 - **Input Boolean helpers** — for manual override detection (one per facade side). Create via Settings → Helpers → Create Helper → Toggle.
+- **Person entities** — for presence-aware override behavior.
 
 ## Configuration
 
@@ -896,15 +899,26 @@ Go to **[suncalc.org](https://www.suncalc.org/)**, find your house and determine
 | 🔼 Open position | Position when automatically opening | 100% |
 | 🖐️ Override helper front | Input Boolean for front manual override | Optional |
 | 🖐️ Override helper back | Input Boolean for back manual override | Optional |
+| 👤 Person 1 | First household member for presence detection | Optional |
+| 👤 Person 2 | Second household member for presence detection | Optional |
 | 🌤️ Weather entity | Weather integration for cloud detection | Optional |
 | ☁️ When to close | Always / Sunny+partly cloudy / Sunny only | Sunny or partly cloudy |
 | ⏱️ Cooldown between moves | Minimum minutes between two movements (0 = disabled) | 20 min |
 
 ## Manual override explained
 
-Home Assistant records **who** initiated every state change. When a user manually operates a shutter (via app, dashboard or physical switch), the context contains a `user_id`. The blueprint detects this and activates the override, leaving that shutter alone.
+Home Assistant records **who** initiated every state change. When a user manually **closes** a shutter (via app, dashboard or physical switch), the context contains a `user_id` — the blueprint detects this and activates the override, preventing the automation from re-opening it until the sun moves away.
 
-The override **resets automatically** when the sun moves away from that facade — so everything works normally again the next day without any manual intervention.
+A manual **open** does **not** set the override. This means: if someone opens a shutter in the morning when it's cloudy and later the sun comes out, the blueprint will still close the shutter automatically.
+
+### Presence-aware behavior
+
+Configure **Person 1** and/or **Person 2** (optional) to make the override presence-aware:
+
+- **Someone is home** → manual opens are respected (the automation will not fight the user)
+- **Nobody is home** → the override is ignored on the close action; the automation always takes full control
+
+This is useful in households where someone opens the shutters in the morning but you still want the automation to close them once they leave and the sun comes out.
 
 > **Note:** Voice assistant commands (Alexa/Google) don't carry a `user_id` and won't trigger the override.
 
@@ -914,6 +928,9 @@ Full documentation, examples, and troubleshooting: [GitHub Repository](https://g
 
 ## Changelog
 
+- **1.10.0** - Two separate person inputs (Person 1 + Person 2) replace the single presence entity
+- **1.9.0** - Presence-aware override: when nobody is home the automation ignores the override and closes on sun
+- **1.8.0** - Manual override only triggers on manual close (not open), so automation can still close after a manual open
 - **1.7.0** - Added anti-oscillation cooldown and position check to prevent unnecessary motor activations
 - **1.6.0** - Auto-open no longer fires at night — shutters closed in the evening stay closed
 - **1.5.0** - Added optional weather/cloud detection: shutters stay open when overcast
