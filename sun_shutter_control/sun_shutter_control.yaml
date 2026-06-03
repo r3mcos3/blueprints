@@ -1,4 +1,4 @@
-# Version: 1.13.0
+# Version: 1.14.0
 blueprint:
   domain: automation
   name: "☀️ Sun-Aware Shutter Control"
@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    📦 [Version 1.13.0] Automatic shutter control based on sun position 🌞.
+    📦 [Version 1.14.0] Automatic shutter control based on sun position 🌞.
 
 
     Automatically closes shutters when the sun shines on the front or back of your house,
@@ -34,8 +34,10 @@ blueprint:
       Override resets automatically at sunset so the next day starts fresh,
       or earlier when the shutter returns to the open position
 
-    - 🌤️ Cloud detection — optional weather integration: when it's overcast the shutters
-      stay open (or open automatically if they were closed)
+    - 🌤️ Cloud detection — optional weather integration (supports two entities as
+      cross-check): when it's overcast the shutters stay open (or open automatically
+      if they were closed). When two entities are configured, both must agree before
+      shutters close — prevents false closes caused by a single unreliable source
 
     - ⏱️ Anti-oscillation cooldown — minimum wait time between moves to prevent
       rapid up/down on partly cloudy days
@@ -214,6 +216,21 @@ blueprint:
               filter:
                 - domain: weather
 
+        weather_entity_2:
+          name: "🌥️ Second weather entity (optional)"
+          description: >
+            Optional second weather source as a cross-check.
+            When both weather entities are configured, shutters only close
+            when BOTH agree that the conditions allow it (AND-logic).
+            This prevents false closes when one integration occasionally
+            reports an incorrect weather state.
+            Leave empty to use only the first weather entity.
+          default: {}
+          selector:
+            entity:
+              filter:
+                - domain: weather
+
         close_on_cloudy:
           name: "☁️ When to close based on weather"
           description: >
@@ -300,6 +317,7 @@ variables:
   v_presence_person_1: !input presence_person_1
   v_presence_person_2: !input presence_person_2
   v_weather_entity: !input weather_entity
+  v_weather_entity_2: !input weather_entity_2
   v_cloud_mode: !input close_on_cloudy
   v_cooldown: !input cooldown_minutes
   v_close_pos: !input close_position
@@ -312,16 +330,18 @@ variables:
   v_someone_home: >
     {{ (v_presence_person_1 != {} and is_state(v_presence_person_1, 'home')) or
        (v_presence_person_2 != {} and is_state(v_presence_person_2, 'home')) }}
-  # True when the configured weather allows closing (or no weather entity set)
+  # True when the configured weather allows closing (or no weather entity set).
+  # When two entities are set, BOTH must allow closing (AND-logic).
   v_weather_allows_close: >
-    {% if v_weather_entity == {} %}
-      true
-    {% else %}
-      {% set w = states(v_weather_entity) %}
+    {% macro allows(entity) %}
+      {% set w = states(entity) %}
       {{ v_cloud_mode == 'always' or
          (v_cloud_mode == 'sunny_and_partly' and w in ['sunny', 'partlycloudy']) or
          (v_cloud_mode == 'sunny_only' and w == 'sunny') }}
-    {% endif %}
+    {% endmacro %}
+    {% set c1 = allows(v_weather_entity) | trim | bool if v_weather_entity != {} else true %}
+    {% set c2 = allows(v_weather_entity_2) | trim | bool if v_weather_entity_2 != {} else true %}
+    {{ c1 and c2 }}
   # Calculate whether the sun is on the front facade:
   # Azimuth difference is normalized to -180..+180 via ((diff + 180) % 360) - 180
   # Angle difference smaller than the sun window = sun is on that facade

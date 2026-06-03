@@ -1,6 +1,6 @@
 # ☀️ Sun-Aware Shutter Control
 
-[![version](https://img.shields.io/badge/version-1.13.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.14.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 Automatic shutter control based on sun position. Closes shutters when the sun shines on the front or back of your house, and opens them again once the sun moves away. Respects manual operation so you always stay in control! 🌞
@@ -11,7 +11,7 @@ Automatic shutter control based on sun position. Closes shutters when the sun sh
 - 🔄 **Automatic opening** - Opens shutters once the sun moves to another direction (optional)
 - 🖐️ **Manual override** - Detects manual shutter operation and leaves those shutters alone; resets automatically at sunset
 - 👤 **Presence-aware** - When nobody is home the automation takes full control, ignoring any override
-- 🌤️ **Cloud detection** - Optional weather integration: open shutters when it's overcast, close again when it clears up
+- 🌤️ **Cloud detection** - Optional weather integration (supports two entities as cross-check): open shutters when it's overcast, close again when it clears up
 - ⏱️ **Anti-oscillation cooldown** - Minimum wait between moves, prevents rapid up/down on partly cloudy days
 - 📍 **Position awareness** - Skips the command if shutters are already at the target position
 - 📐 **Configurable sun window** - Set how many degrees of margin the sun may be on a facade
@@ -85,6 +85,7 @@ For the manual override feature, create a toggle helper per facade side:
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | 🌤️ Weather entity | Your weather integration entity (optional) | — |
+| 🌥️ Second weather entity | Optional second weather source as cross-check; both must agree before closing | — |
 | ☁️ When to close | Which conditions allow closing: always / sunny+partly cloudy / sunny only | Sunny or partly cloudy |
 
 ### ☀️ Sun Settings (collapsed)
@@ -293,6 +294,9 @@ automation:
 Make sure you have an **override helper** configured for that facade side. Without a helper the automation has no memory of manual operations and will reopen the shutter on the next auto-open cycle.
 
 ## 📝 Version History
+
+### Version 1.14.0
+- 🌥️ Added optional **second weather entity** as a cross-check: when both are configured, shutters only close when BOTH agree the conditions allow it (AND-logic) — prevents false closes caused by a single unreliable weather source
 
 ### Version 1.13.0
 - 👤 Override is now also bypassed on **auto-open** when nobody is home (mirrors close behaviour)
