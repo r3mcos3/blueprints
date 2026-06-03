@@ -824,7 +824,7 @@ Full documentation and examples: [GitHub Repository](https://github.com/r3mcos3/
 ```markdown
 # Sun-Aware Shutter Control ☀️
 
-**Version 1.13.0** | Automatically close your shutters when the sun shines on your house — and open them again when it moves away!
+**Version 1.14.0** | Automatically close your shutters when the sun shines on your house — and open them again when it moves away!
 
 > ⚠️ **This blueprint is currently in a testing phase.** It has been tested in a single environment. Feedback and bug reports are very welcome!
 
@@ -841,7 +841,7 @@ Every day the sun moves from one side of your house to the other. In the morning
 - 🖐️ **Smart manual override** - Only triggers when a shutter is manually **closed**; a manual open never blocks the sun-close logic so the automation stays in control
 - 👥 **Presence-aware override** - Configure up to 2 person entities: when someone is home, manual operations are respected; when nobody is home, the automation takes full control regardless
 - 🌇 **Sunset reset** - All overrides are automatically cleared at sunset so the next day starts fresh
-- 🌤️ **Cloud detection** - Optional weather integration: shutters stay open when overcast, close again when it clears up
+- 🌤️ **Cloud detection** - Optional weather integration (supports two entities as cross-check): shutters stay open when overcast, close again when it clears up. When two weather entities are configured, both must agree before shutters close — prevents false closes caused by a single unreliable source
 - ⏱️ **Anti-oscillation cooldown** - Minimum wait between moves, prevents rapid up/down on partly cloudy days
 - 📍 **Position awareness** - Skips the command if shutters are already at the target position
 - 📐 **Configurable sun window** - Control how many degrees of margin counts as "sun on facade"
@@ -905,6 +905,7 @@ Go to **[suncalc.org](https://www.suncalc.org/)**, find your house and determine
 | 👤 Person 1 | First household member for presence detection | Optional |
 | 👤 Person 2 | Second household member for presence detection | Optional |
 | 🌤️ Weather entity | Weather integration for cloud detection | Optional |
+| 🌥️ Second weather entity | Second weather source as cross-check; both must agree before closing | Optional |
 | ☁️ When to close | Always / Sunny+partly cloudy / Sunny only | Sunny or partly cloudy |
 | ⏱️ Cooldown between moves | Minimum minutes between two movements (0 = disabled) | 20 min |
 
@@ -941,6 +942,7 @@ Full documentation, examples, and troubleshooting: [GitHub Repository](https://g
 
 ## Changelog
 
+- **1.14.0** - Added optional second weather entity as cross-check: when both are configured, shutters only close when BOTH agree (AND-logic) — prevents false closes from a single unreliable weather source
 - **1.13.0** - Override is now also bypassed on auto-open when nobody is home (mirrors close behaviour)
 - **1.12.0** - Added sunset trigger: all overrides reset at the end of each day so the next morning starts fresh
 - **1.11.0** - Fixed: override was reset too early when shutter was still closed, causing the automation to reopen a manually closed shutter
