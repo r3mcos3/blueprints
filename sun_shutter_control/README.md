@@ -1,6 +1,6 @@
 # ☀️ Sun-Aware Shutter Control
 
-[![version](https://img.shields.io/badge/version-1.14.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.15.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 Automatic shutter control based on sun position. Closes shutters when the sun shines on the front or back of your house, and opens them again once the sun moves away. Respects manual operation so you always stay in control! 🌞
@@ -9,6 +9,7 @@ Automatic shutter control based on sun position. Closes shutters when the sun sh
 
 - ☀️ **Automatic closing** - Closes shutters when the sun shines on that facade
 - 🔄 **Automatic opening** - Opens shutters once the sun moves to another direction (optional)
+- 🏠 **Only when nobody is home** - Optional toggle to disable all shutter operations when someone is home; the automation only acts when the house is empty
 - 🖐️ **Manual override** - Detects manual shutter operation and leaves those shutters alone; resets automatically at sunset
 - 👤 **Presence-aware** - When nobody is home the automation takes full control, ignoring any override
 - 🌤️ **Cloud detection** - Optional weather integration (supports two entities as cross-check): open shutters when it's overcast, close again when it clears up
@@ -112,6 +113,7 @@ For the manual override feature, create a toggle helper per facade side:
 | 🖐️ Override helper back | Input Boolean helper for the back facade | Optional |
 | 👤 Person 1 | First household member for presence detection | Optional |
 | 👤 Person 2 | Second household member for presence detection | Optional |
+| 🏠 Only when nobody is home | When on, the automation only acts when the house is empty | Off |
 
 ## 🎯 How It Works
 
@@ -294,6 +296,9 @@ automation:
 Make sure you have an **override helper** configured for that facade side. Without a helper the automation has no memory of manual operations and will reopen the shutter on the next auto-open cycle.
 
 ## 📝 Version History
+
+### Version 1.15.0
+- 🏠 Added **Only when nobody is home** toggle: when enabled the automation skips all shutter operations whenever someone is home — occupants stay in full control; automation only acts when the house is empty
 
 ### Version 1.14.0
 - 🌥️ Added optional **second weather entity** as a cross-check: when both are configured, shutters only close when BOTH agree the conditions allow it (AND-logic) — prevents false closes caused by a single unreliable weather source

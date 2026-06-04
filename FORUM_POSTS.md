@@ -824,7 +824,7 @@ Full documentation and examples: [GitHub Repository](https://github.com/r3mcos3/
 ```markdown
 # Sun-Aware Shutter Control ☀️
 
-**Version 1.14.0** | Automatically close your shutters when the sun shines on your house — and open them again when it moves away!
+**Version 1.15.0** | Automatically close your shutters when the sun shines on your house — and open them again when it moves away!
 
 > ⚠️ **This blueprint is currently in a testing phase.** It has been tested in a single environment. Feedback and bug reports are very welcome!
 
@@ -838,6 +838,7 @@ Every day the sun moves from one side of your house to the other. In the morning
 
 - ☀️ **Sun position tracking** - Closes shutters when the sun shines on the front or back facade
 - 🔄 **Automatic opening** - Opens shutters once the sun moves away (optional)
+- 🏠 **Only when nobody is home** - Optional toggle to disable all shutter operations when someone is home; the automation only acts when the house is empty
 - 🖐️ **Smart manual override** - Only triggers when a shutter is manually **closed**; a manual open never blocks the sun-close logic so the automation stays in control
 - 👥 **Presence-aware override** - Configure up to 2 person entities: when someone is home, manual operations are respected; when nobody is home, the automation takes full control regardless
 - 🌇 **Sunset reset** - All overrides are automatically cleared at sunset so the next day starts fresh
@@ -904,6 +905,7 @@ Go to **[suncalc.org](https://www.suncalc.org/)**, find your house and determine
 | 🖐️ Override helper back | Input Boolean for back manual override | Optional |
 | 👤 Person 1 | First household member for presence detection | Optional |
 | 👤 Person 2 | Second household member for presence detection | Optional |
+| 🏠 Only when nobody is home | When on, the automation only acts when the house is empty | Off |
 | 🌤️ Weather entity | Weather integration for cloud detection | Optional |
 | 🌥️ Second weather entity | Second weather source as cross-check; both must agree before closing | Optional |
 | ☁️ When to close | Always / Sunny+partly cloudy / Sunny only | Sunny or partly cloudy |
@@ -942,6 +944,7 @@ Full documentation, examples, and troubleshooting: [GitHub Repository](https://g
 
 ## Changelog
 
+- **1.15.0** - Added "Only when nobody is home" toggle: when enabled the automation skips all shutter operations whenever someone is home — occupants stay in full control
 - **1.14.0** - Added optional second weather entity as cross-check: when both are configured, shutters only close when BOTH agree (AND-logic) — prevents false closes from a single unreliable weather source
 - **1.13.0** - Override is now also bypassed on auto-open when nobody is home (mirrors close behaviour)
 - **1.12.0** - Added sunset trigger: all overrides reset at the end of each day so the next morning starts fresh
