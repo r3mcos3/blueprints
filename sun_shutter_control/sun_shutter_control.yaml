@@ -1,4 +1,4 @@
-# Version: 1.14.0
+# Version: 1.15.0
 blueprint:
   domain: automation
   name: "☀️ Sun-Aware Shutter Control"
@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    📦 [Version 1.14.0] Automatic shutter control based on sun position 🌞.
+    📦 [Version 1.15.0] Automatic shutter control based on sun position 🌞.
 
 
     Automatically closes shutters when the sun shines on the front or back of your house,
@@ -33,6 +33,9 @@ blueprint:
       the shutter closes when the sun shines on the facade.
       Override resets automatically at sunset so the next day starts fresh,
       or earlier when the shutter returns to the open position
+
+    - 🏠 Only when nobody is home — optional toggle to disable all shutter operations
+      when someone is home; the automation only acts when the house is empty
 
     - 🌤️ Cloud detection — optional weather integration (supports two entities as
       cross-check): when it's overcast the shutters stay open (or open automatically
@@ -305,6 +308,17 @@ blueprint:
                 - domain: person
                 - domain: device_tracker
 
+        only_when_nobody_home:
+          name: "🏠 Only operate when nobody is home"
+          description: >
+            When enabled, the automation will only close and open shutters when
+            nobody is home. When someone is home the automation does nothing —
+            the occupants stay in control. Requires at least one person entity
+            configured above.
+          default: false
+          selector:
+            boolean:
+
 variables:
   v_front_facing: !input front_facing_azimuth
   v_sun_window: !input sun_window
@@ -330,6 +344,10 @@ variables:
   v_someone_home: >
     {{ (v_presence_person_1 != {} and is_state(v_presence_person_1, 'home')) or
        (v_presence_person_2 != {} and is_state(v_presence_person_2, 'home')) }}
+  v_only_nobody_home: !input only_when_nobody_home
+  # True when "only when nobody home" is on AND someone is currently home → block automation
+  v_home_blocks_automation: >
+    {{ v_only_nobody_home | bool and v_someone_home | bool }}
   # True when the configured weather allows closing (or no weather entity set).
   # When two entities are set, BOTH must allow closing (AND-logic).
   v_weather_allows_close: >
@@ -532,6 +550,8 @@ action:
         id:
           - sun_position_changed
           - ha_start
+      - condition: template
+        value_template: "{{ not v_home_blocks_automation | bool }}"
     then:
       # Front shutters
       - if:
