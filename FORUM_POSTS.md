@@ -824,7 +824,7 @@ Full documentation and examples: [GitHub Repository](https://github.com/r3mcos3/
 ```markdown
 # Sun-Aware Shutter Control ☀️
 
-**Version 1.15.0** | Automatically close your shutters when the sun shines on your house — and open them again when it moves away!
+**Version 1.16.0** | Automatically close your shutters when the sun shines on your house — and open them again when it moves away!
 
 > ⚠️ **This blueprint is currently in a testing phase.** It has been tested in a single environment. Feedback and bug reports are very welcome!
 
@@ -839,6 +839,7 @@ Every day the sun moves from one side of your house to the other. In the morning
 - ☀️ **Sun position tracking** - Closes shutters when the sun shines on the front or back facade
 - 🔄 **Automatic opening** - Opens shutters once the sun moves away (optional)
 - 🏠 **Only when nobody is home** - Optional toggle to disable all shutter operations when someone is home; the automation only acts when the house is empty
+- 👥 **Presence-aware re-evaluation** - Immediately re-evaluates shutter positions when the house becomes empty, without waiting for the next sun position update
 - 🖐️ **Smart manual override** - Only triggers when a shutter is manually **closed**; a manual open never blocks the sun-close logic so the automation stays in control
 - 👥 **Presence-aware override** - Configure up to 2 person entities: when someone is home, manual operations are respected; when nobody is home, the automation takes full control regardless
 - 🌇 **Sunset reset** - All overrides are automatically cleared at sunset so the next day starts fresh
@@ -944,6 +945,7 @@ Full documentation, examples, and troubleshooting: [GitHub Repository](https://g
 
 ## Changelog
 
+- **1.16.0** - Added presence-aware re-evaluation: when a configured person entity changes state, the automation immediately re-evaluates — no waiting for the next sun update when the house becomes empty
 - **1.15.0** - Added "Only when nobody is home" toggle: when enabled the automation skips all shutter operations whenever someone is home — occupants stay in full control
 - **1.14.0** - Added optional second weather entity as cross-check: when both are configured, shutters only close when BOTH agree (AND-logic) — prevents false closes from a single unreliable weather source
 - **1.13.0** - Override is now also bypassed on auto-open when nobody is home (mirrors close behaviour)
