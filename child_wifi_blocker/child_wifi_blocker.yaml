@@ -1,0 +1,247 @@
+# Version: 1.0.0
+blueprint:
+  domain: automation
+  name: "📵 Child WiFi Blocker"
+  author: r3mcos3
+  source_url: https://github.com/r3mcos3/blueprints/blob/main/child_wifi_blocker/child_wifi_blocker.yaml
+  homeassistant:
+    min_version: 2024.6.0
+  description: >
+    📦 [Version 1.0.0] Block your child's WiFi on a time schedule via the UniFi
+    Network integration 🔒.
+
+
+    Create one automation per child. Each child can have multiple devices (phone,
+    tablet, laptop) — all are blocked and unblocked together at the same time.
+
+
+    Features:
+
+    - 📵 Automatically block WiFi at bedtime
+
+    - ✅ Automatically unblock WiFi in the morning
+
+    - 📅 Choose active days (weekdays, weekend, or any combination)
+
+    - 🏠 Optional: block immediately when nobody is home, unblock when someone returns
+      (only during the allowed time window)
+
+    - ⏸️ Quick enable/disable toggle without removing the automation
+
+
+    ⚙️ Setup — In Home Assistant, go to Settings → Devices & Services → UniFi Network.
+    Each client device tracked by UniFi gets a switch entity. When the switch is turned
+    ON, the device is blocked from the network. Select those switch entities below.
+
+
+    💡 Tip — Name each automation after the child, e.g. "📵 WiFi — Emma" so you can
+    easily tell them apart in the automations list.
+
+  input:
+    child_section:
+      name: "👶 Child"
+      icon: mdi:account-child
+      input:
+        child_name:
+          name: "👤 Child's name"
+          description: >
+            Label only — does not affect any automation logic. Useful as a reminder
+            of which child this automation belongs to.
+          default: "Child"
+          selector:
+            text:
+
+        child_devices:
+          name: "📱 Devices to block"
+          description: >
+            Select the UniFi switch entity for each device this child uses (phone,
+            tablet, laptop, etc.). You can select multiple devices — they are all
+            blocked and unblocked at the same time.
+            Switch ON = device blocked. Switch OFF = device allowed.
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - domain: switch
+
+    schedule_section:
+      name: "📅 Schedule"
+      icon: mdi:clock-time-eight-outline
+      input:
+        block_time:
+          name: "🌙 Block time (WiFi off)"
+          description: >
+            Time at which this child's devices are blocked. Example: 21:00:00 for bedtime.
+          default: "21:00:00"
+          selector:
+            time:
+
+        unblock_time:
+          name: "☀️ Unblock time (WiFi on)"
+          description: >
+            Time at which this child's devices are unblocked again. Example: 07:00:00
+            in the morning. Must be earlier in the day than the block time.
+          default: "07:00:00"
+          selector:
+            time:
+
+        active_days:
+          name: "📆 Active days"
+          description: >
+            Days on which the time schedule is applied. Deselected days are skipped
+            entirely — the WiFi is not blocked or unblocked on those days by this schedule.
+          default:
+            - mon
+            - tue
+            - wed
+            - thu
+            - fri
+            - sat
+            - sun
+          selector:
+            select:
+              multiple: true
+              options:
+                - label: "Monday"
+                  value: "mon"
+                - label: "Tuesday"
+                  value: "tue"
+                - label: "Wednesday"
+                  value: "wed"
+                - label: "Thursday"
+                  value: "thu"
+                - label: "Friday"
+                  value: "fri"
+                - label: "Saturday"
+                  value: "sat"
+                - label: "Sunday"
+                  value: "sun"
+
+    options_section:
+      name: "⚙️ Options"
+      icon: mdi:cog-outline
+      collapsed: true
+      input:
+        block_when_away:
+          name: "🏠 Also block when nobody is home"
+          description: >
+            When enabled, this child's devices are also blocked the moment the
+            selected presence entity goes to 'not_home'. When someone returns home
+            (presence back to 'home'), the devices are unblocked — but only if the
+            current time is still within the allowed window (between unblock time and
+            block time). Outside that window the schedule takes precedence.
+          default: false
+          selector:
+            boolean:
+
+        presence_entity:
+          name: "👥 Presence entity"
+          description: >
+            Only used when 'Also block when nobody is home' is enabled.
+            Select a person, device_tracker, group, or binary_sensor that represents
+            whether someone is home. Leave empty to disable the away feature.
+          selector:
+            entity:
+              filter:
+                - domain: person
+                - domain: device_tracker
+                - domain: group
+                - domain: binary_sensor
+
+        blueprint_enabled:
+          name: "✅ Enable this automation"
+          description: >
+            Toggle off to temporarily pause all WiFi blocking for this child without
+            removing or disabling the automation itself.
+          default: true
+          selector:
+            boolean:
+
+variables:
+  v_child_devices: !input child_devices
+  v_active_days: !input active_days
+  v_block_when_away: !input block_when_away
+  v_presence_entity: !input presence_entity
+  v_blueprint_enabled: !input blueprint_enabled
+  v_block_time: !input block_time
+  v_unblock_time: !input unblock_time
+  v_is_today_active: >
+    {% set days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] %}
+    {{ days[now().weekday()] in v_active_days }}
+  v_in_allowed_window: >
+    {% set now_str = now().strftime('%H:%M:%S') %}
+    {{ now_str >= v_unblock_time and now_str < v_block_time }}
+
+trigger:
+  - trigger: time
+    at: !input block_time
+    id: block_time
+
+  - trigger: time
+    at: !input unblock_time
+    id: unblock_time
+
+  - trigger: state
+    entity_id: !input presence_entity
+    to: "not_home"
+    id: away
+
+  - trigger: state
+    entity_id: !input presence_entity
+    to: "home"
+    id: home
+
+condition:
+  - condition: template
+    value_template: "{{ v_blueprint_enabled }}"
+
+action:
+  - choose:
+      # ── Block at bedtime ─────────────────────────────────────────────────────
+      - conditions:
+          - condition: trigger
+            id: block_time
+          - condition: template
+            value_template: "{{ v_is_today_active }}"
+        sequence:
+          - action: switch.turn_on
+            target:
+              entity_id: "{{ v_child_devices }}"
+
+      # ── Unblock in the morning ───────────────────────────────────────────────
+      - conditions:
+          - condition: trigger
+            id: unblock_time
+          - condition: template
+            value_template: "{{ v_is_today_active }}"
+        sequence:
+          - action: switch.turn_off
+            target:
+              entity_id: "{{ v_child_devices }}"
+
+      # ── Block immediately when nobody is home ────────────────────────────────
+      - conditions:
+          - condition: trigger
+            id: away
+          - condition: template
+            value_template: "{{ v_block_when_away and v_presence_entity != {} }}"
+        sequence:
+          - action: switch.turn_on
+            target:
+              entity_id: "{{ v_child_devices }}"
+
+      # ── Unblock when someone comes home (only during allowed time window) ────
+      - conditions:
+          - condition: trigger
+            id: home
+          - condition: template
+            value_template: "{{ v_block_when_away and v_presence_entity != {} }}"
+          - condition: template
+            value_template: "{{ v_in_allowed_window }}"
+        sequence:
+          - action: switch.turn_off
+            target:
+              entity_id: "{{ v_child_devices }}"
+
+mode: single
+max_exceeded: silent
