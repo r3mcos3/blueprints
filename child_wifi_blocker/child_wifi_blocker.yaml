@@ -1,4 +1,4 @@
-# Version: 1.2.0
+# Version: 1.3.0
 blueprint:
   domain: automation
   name: "📵 Child WiFi Blocker"
@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2024.6.0
   description: >
-    📦 [Version 1.2.0] Block your child's WiFi on a time schedule via the UniFi
+    📦 [Version 1.3.0] Block your child's WiFi on a time schedule via the UniFi
     Network integration 🔒.
 
 
@@ -27,6 +27,9 @@ blueprint:
       (only during the allowed time window)
 
     - ⏸️ Quick enable/disable toggle without removing the automation
+
+    - 🔁 Self-correcting on startup and automation reload — immediately enforces
+      the correct state without needing a manual trigger or HA restart
 
 
     ⚙️ Setup — In Home Assistant, go to Settings → Devices & Services → UniFi Network.
@@ -170,9 +173,20 @@ variables:
   v_is_today_active: >
     {% set days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] %}
     {{ days[now().weekday()] in v_active_days }}
+  v_should_be_blocked: >
+    {% set t = now().strftime('%H:%M:%S') %}
+    {% if v_block_time > v_unblock_time %}
+      {{ t >= v_block_time or t < v_unblock_time }}
+    {% else %}
+      {{ t >= v_block_time and t < v_unblock_time }}
+    {% endif %}
   v_in_allowed_window: >
-    {% set now_str = now().strftime('%H:%M:%S') %}
-    {{ now_str >= v_unblock_time and now_str < v_block_time }}
+    {% set t = now().strftime('%H:%M:%S') %}
+    {% if v_block_time > v_unblock_time %}
+      {{ t >= v_unblock_time and t < v_block_time }}
+    {% else %}
+      {{ t >= v_unblock_time or t < v_block_time }}
+    {% endif %}
 
 trigger:
   - trigger: time
@@ -192,6 +206,14 @@ trigger:
     entity_id: !input presence_entity
     to: "home"
     id: home
+
+  - trigger: homeassistant
+    event: start
+    id: evaluate
+
+  - trigger: event
+    event_type: automation_reloaded
+    id: evaluate
 
 condition:
   - condition: template
@@ -240,6 +262,27 @@ action:
             value_template: "{{ v_block_when_away and v_presence_entity != {} }}"
           - condition: template
             value_template: "{{ v_in_allowed_window }}"
+        sequence:
+          - action: switch.turn_off
+            target:
+              entity_id: "{{ v_child_devices }}"
+
+      # ── Evaluate correct state on HA start or automation reload ─────────────
+      - conditions:
+          - condition: trigger
+            id: evaluate
+          - condition: template
+            value_template: "{{ v_should_be_blocked and v_is_today_active }}"
+        sequence:
+          - action: switch.turn_on
+            target:
+              entity_id: "{{ v_child_devices }}"
+
+      - conditions:
+          - condition: trigger
+            id: evaluate
+          - condition: template
+            value_template: "{{ not v_should_be_blocked and v_is_today_active }}"
         sequence:
           - action: switch.turn_off
             target:
