@@ -1,4 +1,4 @@
-# Version: 1.1.0
+# Version: 1.2.0
 blueprint:
   domain: automation
   name: "📵 Child WiFi Blocker"
@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2024.6.0
   description: >
-    📦 [Version 1.1.0] Block your child's WiFi on a time schedule via the UniFi
+    📦 [Version 1.2.0] Block your child's WiFi on a time schedule via the UniFi
     Network integration 🔒.
 
 
@@ -141,6 +141,7 @@ blueprint:
             Only used when 'Also block when nobody is home' is enabled.
             Select a person, device_tracker, group, or binary_sensor that represents
             whether someone is home. Leave empty to disable the away feature.
+          default: {}
           selector:
             entity:
               filter:
