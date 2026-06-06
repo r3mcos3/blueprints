@@ -1,14 +1,7 @@
 name: Update README with Blueprints
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - '**/**.yaml'
-      - '!.github/**'
-
-  workflow_dispatch: 
+  workflow_dispatch:
 
 jobs:
   update-readme:
