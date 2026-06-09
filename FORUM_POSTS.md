@@ -967,6 +967,120 @@ Full documentation, examples, and troubleshooting: [GitHub Repository](https://g
 
 ---
 
+## 16. 📵 Child WiFi Blocker
+
+**Title:** `📵 Child WiFi Blocker - Block your child's WiFi at bedtime via UniFi`
+
+**Tags:** `automation`, `blueprint`, `network`
+
+**Live URL:** https://community.home-assistant.io/t/child-wifi-blocker-block-your-childs-wifi-at-bedtime-via-unifi/1013322
+
+**Post:**
+
+```markdown
+# Child WiFi Blocker 📵
+
+**Version 1.3.0** | Automatically block your child's WiFi at bedtime and unblock it in the morning — via the UniFi Network integration!
+
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fr3mcos3%2Fblueprints%2Fblob%2Fmain%2Fchild_wifi_blocker%2Fchild_wifi_blocker.yaml)
+
+Create one automation per child. Each child can have multiple devices (phone, tablet, laptop) — all blocked and unblocked together at the same time. 🔒
+
+## Features
+
+- 📵 **Automatic blocking** — Blocks all configured devices at the set bedtime
+- ✅ **Automatic unblocking** — Unblocks devices again in the morning
+- 📅 **Day schedule** — Choose which days the schedule is active (weekdays, weekend, or any combination)
+- 🔁 **Self-correcting** — On HA startup and automation reload, immediately enforces the correct state without waiting for a manual trigger
+- 🏠 **Away blocking** — Optionally block devices immediately when nobody is home, and unblock when someone returns (only during the allowed time window)
+- ⏸️ **Quick toggle** — Enable/disable the schedule without removing the automation
+
+## Requirements
+
+- Home Assistant 2024.6.0+
+- **UniFi Network integration** — Installed and configured in Home Assistant
+- **UniFi client block switches** — The integration creates a `switch` entity per tracked client device. When the switch is ON, the device is blocked from the network.
+
+### Optional
+
+- **Person / device_tracker / group entity** — For the "block when nobody is home" feature
+
+## How It Works
+
+The blueprint uses the UniFi switch entities that the UniFi Network integration creates per tracked device. Flipping a switch ON blocks that device from the network; OFF allows it again.
+
+### Trigger moments
+
+| Trigger | Action |
+|---------|--------|
+| 🌙 Block time reached | Block all devices — only on active days |
+| ☀️ Unblock time reached | Unblock all devices — only on active days |
+| 🏠 Presence → `not_home` | Block immediately (if away-blocking is enabled) |
+| 🏠 Presence → `home` | Unblock (if enabled and within allowed time window) |
+| 🔁 HA startup | Evaluate current time and enforce correct state |
+| 🔁 Automation reloaded | Evaluate current time and enforce correct state |
+
+### Midnight-crossing schedules
+
+The blueprint correctly handles schedules that cross midnight (e.g. block at 22:00, unblock at 07:00):
+
+```
+If block_time > unblock_time  →  blocked when: now ≥ block_time  OR  now < unblock_time
+If block_time < unblock_time  →  blocked when: now ≥ block_time AND now < unblock_time
+```
+
+## Configuration
+
+### 👶 Child
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| 👤 Child's name | Label only — does not affect automation logic | `Child` |
+| 📱 Devices to block | UniFi switch entities for this child's devices (multi-select) | — |
+
+### 📅 Schedule
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| 🌙 Block time | Time at which WiFi is blocked | `21:00:00` |
+| ☀️ Unblock time | Time at which WiFi is unblocked | `07:00:00` |
+| 📆 Active days | Days on which the schedule applies | All days |
+
+### ⚙️ Options (collapsed)
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| 🏠 Also block when nobody is home | Block immediately when presence goes to `not_home` | Off |
+| 👥 Presence entity | Person, device_tracker, group, or binary_sensor | Optional |
+| ✅ Enable this automation | Quick on/off without removing the automation | On |
+
+## Setup — Finding UniFi block switches
+
+1. Go to **Settings** → **Devices & Services** → **UniFi Network**
+2. Open the integration and browse the entities
+3. Look for `switch` entities named after your child's devices
+4. **Switch ON = device blocked**, Switch OFF = device allowed
+
+## Usage Tips
+
+- **Name each automation after the child** — e.g. `📵 WiFi — Emma` and `📵 WiFi — Liam` so they are easy to identify in the automations list
+- **Multiple devices per child** — Select all of a child's devices in one automation; they all block and unblock together
+- **Different schedules per day** — Create two automations per child with different times, each covering different active days (e.g. weekdays vs weekend)
+
+## GitHub
+
+Full documentation, troubleshooting, and version history: [GitHub Repository](https://github.com/r3mcos3/blueprints/tree/main/child_wifi_blocker)
+
+## Changelog
+
+- **1.3.0** - Added self-correcting behaviour: startup and automation-reload triggers immediately enforce the correct block/unblock state; fixed midnight-crossing time window logic
+- **1.2.0** - Fixed "malformed" error on presence entity — added `default: {}` to make the field truly optional
+- **1.1.0** - Device selector now filtered to UniFi switches only — no more unrelated switches in the list
+- **1.0.0** - Initial release
+```
+
+---
+
 # Tips voor het posten
 
 1. **Eén post per blueprint** - Maak een aparte post voor elke blueprint
