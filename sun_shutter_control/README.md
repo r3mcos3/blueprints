@@ -1,6 +1,6 @@
 # ☀️ Sun-Aware Shutter Control
 
-[![version](https://img.shields.io/badge/version-1.17.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.17.1-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 Automatic shutter control based on sun position. Closes shutters when the sun shines on the front or back of your house, and opens them again once the sun moves away. Respects manual operation so you always stay in control! 🌞
@@ -10,7 +10,7 @@ Automatic shutter control based on sun position. Closes shutters when the sun sh
 - ☀️ **Automatic closing** - Closes shutters when the sun shines on that facade
 - 🔄 **Automatic opening** - Opens shutters once the sun moves to another direction (optional)
 - 🏠 **Only when nobody is home** - Optional toggle to disable all shutter operations when someone is home; the automation only acts when the house is empty
-- 🚪 **Door bypass** - Optional door sensors per facade; while a linked door is open the automation will not close that facade's shutters
+- 🚪 **Door bypass** - Optional door or window contact sensors per facade; while a linked door is open the automation will not close that facade's shutters
 - 👥 **Presence-aware re-evaluation** - Immediately re-evaluates shutter positions when the house becomes empty, without waiting for the next sun position update
 - 🖐️ **Manual override** - Detects manual shutter operation and leaves those shutters alone; resets automatically at sunset
 - 👤 **Presence-aware** - When nobody is home the automation takes full control, ignoring any override
@@ -34,7 +34,7 @@ Before using this blueprint, you need:
 
 - **Input Boolean helpers** - For manual override detection (one per facade side)
 - **Person / device_tracker entities** - For presence-aware override behaviour
-- **Door sensors** - `binary_sensor` entities with device class `door`, for shutters that cover a door opening
+- **Door sensors** - `binary_sensor` entities with device class `door` or `window` (some integrations, e.g. Shelly, report door contacts as `window`), for shutters that cover a door opening
 
 ## 🌐 Finding your house azimuth
 
@@ -122,7 +122,7 @@ For the manual override feature, create a toggle helper per facade side:
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| 🚪 Front door sensors | Door sensor(s) (`binary_sensor`, device class `door`) for front shutters that cover a door | Optional |
+| 🚪 Front door sensors | Door/window contact sensor(s) (`binary_sensor`, device class `door` or `window`) for front shutters that cover a door | Optional |
 | 🚪 Back door sensors | Same, for back shutters | Optional |
 
 ## 🎯 How It Works
@@ -188,7 +188,7 @@ When no presence entities are configured, the override always applies.
 
 ### Door bypass
 
-When a door sensor is linked to a facade, the automation checks its state before closing shutters on that side:
+When a door sensor is linked to a facade, the automation checks its state before closing shutters on that side. Sensors with device class `door` or `window` are both accepted — some integrations (e.g. Shelly) report door contacts as `window`:
 
 | Situation | Close? | Open? |
 |-----------|--------|-------|
@@ -319,6 +319,9 @@ automation:
 Make sure you have an **override helper** configured for that facade side. Without a helper the automation has no memory of manual operations and will reopen the shutter on the next auto-open cycle.
 
 ## 📝 Version History
+
+### Version 1.17.1
+- 🚪 Fixed **door bypass sensor filter**: door sensors input now also accepts device class `window` in addition to `door` — some integrations (e.g. Shelly) report door contact sensors as `window`, which meant they didn't show up in the selector before
 
 ### Version 1.17.0
 - 🚪 Added **door bypass**: optional door sensors per facade block automatic closing of that facade's shutters while the door is open — useful when a shutter covers a door opening. Closing resumes automatically as soon as the door closes; automatic opening is unaffected

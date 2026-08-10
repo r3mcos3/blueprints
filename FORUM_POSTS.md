@@ -824,7 +824,7 @@ Full documentation and examples: [GitHub Repository](https://github.com/r3mcos3/
 ```markdown
 # Sun-Aware Shutter Control ☀️
 
-**Version 1.16.0** | Automatically close your shutters when the sun shines on your house — and open them again when it moves away!
+**Version 1.17.1** | Automatically close your shutters when the sun shines on your house — and open them again when it moves away!
 
 > ⚠️ **This blueprint is currently in a testing phase.** It has been tested in a single environment. Feedback and bug reports are very welcome!
 
@@ -839,6 +839,7 @@ Every day the sun moves from one side of your house to the other. In the morning
 - ☀️ **Sun position tracking** - Closes shutters when the sun shines on the front or back facade
 - 🔄 **Automatic opening** - Opens shutters once the sun moves away (optional)
 - 🏠 **Only when nobody is home** - Optional toggle to disable all shutter operations when someone is home; the automation only acts when the house is empty
+- 🚪 **Door bypass** - Optional door or window contact sensors per facade; while a linked door is open, the automation won't close that facade's shutters — useful when a shutter covers a door opening
 - 👥 **Presence-aware re-evaluation** - Immediately re-evaluates shutter positions when the house becomes empty, without waiting for the next sun position update
 - 🖐️ **Smart manual override** - Only triggers when a shutter is manually **closed**; a manual open never blocks the sun-close logic so the automation stays in control
 - 👥 **Presence-aware override** - Configure up to 2 person entities: when someone is home, manual operations are respected; when nobody is home, the automation takes full control regardless
@@ -889,6 +890,7 @@ Go to **[suncalc.org](https://www.suncalc.org/)**, find your house and determine
 
 - **Input Boolean helpers** — for manual override detection (one per facade side). Create via Settings → Helpers → Create Helper → Toggle.
 - **Person entities** — for presence-aware override behavior.
+- **Door sensors** — `binary_sensor` entities with device class `door` or `window` (some integrations, e.g. Shelly, report door contacts as `window`), for shutters that cover a door opening.
 
 ## Configuration
 
@@ -907,6 +909,8 @@ Go to **[suncalc.org](https://www.suncalc.org/)**, find your house and determine
 | 👤 Person 1 | First household member for presence detection | Optional |
 | 👤 Person 2 | Second household member for presence detection | Optional |
 | 🏠 Only when nobody is home | When on, the automation only acts when the house is empty | Off |
+| 🚪 Front door sensors | Door/window contact sensor(s) for front shutters that cover a door | Optional |
+| 🚪 Back door sensors | Door/window contact sensor(s) for back shutters that cover a door | Optional |
 | 🌤️ Weather entity | Weather integration for cloud detection | Optional |
 | 🌥️ Second weather entity | Second weather source as cross-check; both must agree before closing | Optional |
 | ☁️ When to close | Always / Sunny+partly cloudy / Sunny only | Sunny or partly cloudy |
@@ -939,12 +943,18 @@ Configure **Person 1** and/or **Person 2** (optional) to make the override prese
 
 > **Note:** Voice assistant commands (Alexa/Google) don't carry a `user_id` and won't trigger the override.
 
+## Door bypass explained
+
+Link a door or window contact sensor (`binary_sensor` with device class `door` or `window`) per facade if a shutter on that side covers a door opening. Both device classes are accepted since some integrations (e.g. Shelly) report door contacts as `window` instead of `door`. While the door is open, the automation will not close that facade's shutters — as soon as the door closes, it re-evaluates immediately and closes the shutters if the sun is still on that facade. Only closing is blocked; automatic opening always works normally, since an open shutter never obstructs a door.
+
 ## GitHub
 
 Full documentation, examples, and troubleshooting: [GitHub Repository](https://github.com/r3mcos3/blueprints/tree/main/sun_shutter_control)
 
 ## Changelog
 
+- **1.17.1** - Fixed door bypass sensor filter: door sensors input now also accepts device class `window` in addition to `door` — some integrations (e.g. Shelly) report door contact sensors as `window`, which meant they didn't show up in the selector before
+- **1.17.0** - Added door bypass: optional door sensors per facade block automatic closing of that facade's shutters while the door is open — useful when a shutter covers a door opening. Closing resumes automatically once the door closes; automatic opening is unaffected
 - **1.16.0** - Added presence-aware re-evaluation: when a configured person entity changes state, the automation immediately re-evaluates — no waiting for the next sun update when the house becomes empty
 - **1.15.0** - Added "Only when nobody is home" toggle: when enabled the automation skips all shutter operations whenever someone is home — occupants stay in full control
 - **1.14.0** - Added optional second weather entity as cross-check: when both are configured, shutters only close when BOTH agree (AND-logic) — prevents false closes from a single unreliable weather source
