@@ -1,4 +1,4 @@
-# Version: 1.18.0
+# Version: 1.19.0
 blueprint:
   domain: automation
   name: "☀️ Sun-Aware Shutter Control"
@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    📦 [Version 1.18.0] Automatic shutter control based on sun position 🌞.
+    📦 [Version 1.19.0] Automatic shutter control based on sun position 🌞.
 
 
     Automatically closes shutters when the sun shines on the front or back of your house,
@@ -62,6 +62,11 @@ blueprint:
       repeatedly pulled against it, and sends a notification. Resets automatically at
       sunset or as soon as the shutter reaches a target position again, or turn the
       helper off manually to retry right away
+
+    - 🌙 Auto-open exceptions — optionally exclude specific shutters from automatic
+      reopening (e.g. a bedroom shutter you want to stay closed for the night). The
+      excluded shutters are still closed automatically when the sun hits that facade,
+      only the automatic reopen is skipped for them
 
 
     🌐 Finding your house azimuth — Go to https://www.suncalc.org/, find your house and
@@ -418,6 +423,39 @@ blueprint:
               filter:
                 - domain: input_boolean
 
+    # ===== AUTO-OPEN EXCEPTIONS (COLLAPSED) =====
+    auto_open_settings:
+      name: "🌙 Auto-Open Exceptions"
+      icon: mdi:weather-night
+      collapsed: true
+      input:
+        front_auto_open_exclude:
+          name: "🌙 Front shutters to keep closed (optional)"
+          description: >
+            Shutters from the front shutters list above that should stay closed
+            even when the sun moves away and "Automatically open" would normally
+            reopen them — e.g. a bedroom shutter you want closed for the night.
+            They are still closed automatically when the sun shines on the front
+            facade; only the automatic reopening is skipped for these. Leave
+            empty to auto-open all front shutters normally.
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - domain: cover
+
+        back_auto_open_exclude:
+          name: "🌙 Back shutters to keep closed (optional)"
+          description: >
+            Same as above, but for shutters from the back shutters list.
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - domain: cover
+
 variables:
   v_front_facing: !input front_facing_azimuth
   v_sun_window: !input sun_window
@@ -435,6 +473,19 @@ variables:
   v_cooldown: !input cooldown_minutes
   v_close_pos: !input close_position
   v_open_pos: !input open_position
+  v_front_auto_open_exclude: !input front_auto_open_exclude
+  v_back_auto_open_exclude: !input back_auto_open_exclude
+  # Front/back covers minus the ones excluded from auto-open — used as the target
+  # for the reopen command and for the "needs open" check, so an excluded shutter
+  # that stays closed doesn't keep the facade stuck in "still needs to open"
+  v_front_open_covers: >
+    {% set all = [v_front_covers] if v_front_covers is string else v_front_covers | list %}
+    {% set excl = [v_front_auto_open_exclude] if v_front_auto_open_exclude is string else v_front_auto_open_exclude | list %}
+    {{ all | reject('in', excl) | list }}
+  v_back_open_covers: >
+    {% set all = [v_back_covers] if v_back_covers is string else v_back_covers | list %}
+    {% set excl = [v_back_auto_open_exclude] if v_back_auto_open_exclude is string else v_back_auto_open_exclude | list %}
+    {{ all | reject('in', excl) | list }}
   v_front_override_active: >
     {{ v_front_override != {} and is_state(v_front_override, 'on') }}
   v_back_override_active: >
@@ -557,7 +608,7 @@ variables:
     {% endfor %}
     {{ ns.needs }}
   v_front_needs_open: >
-    {% set covers = [v_front_covers] if v_front_covers is string else v_front_covers | list %}
+    {% set covers = v_front_open_covers %}
     {% set target = v_open_pos | int(100) %}
     {% set ns = namespace(needs=false) %}
     {% for c in covers %}
@@ -577,7 +628,7 @@ variables:
     {% endfor %}
     {{ ns.needs }}
   v_back_needs_open: >
-    {% set covers = [v_back_covers] if v_back_covers is string else v_back_covers | list %}
+    {% set covers = v_back_open_covers %}
     {% set target = v_open_pos | int(100) %}
     {% set ns = namespace(needs=false) %}
     {% for c in covers %}
@@ -722,7 +773,8 @@ action:
               - condition: template
                 value_template: >
                   {{ v_front_stuck_helper != {} and v_front_stuck_active | bool
-                     and (not v_front_needs_close | bool or not v_front_needs_open | bool) }}
+                     and (not v_front_needs_close | bool
+                          or (v_front_open_covers | length > 0 and not v_front_needs_open | bool)) }}
             then:
               - service: input_boolean.turn_off
                 target:
@@ -792,7 +844,7 @@ action:
                         then:
                           - service: cover.set_cover_position
                             target:
-                              entity_id: !input front_covers
+                              entity_id: "{{ v_front_open_covers }}"
                             data:
                               position: !input open_position
                           - if:
@@ -837,7 +889,8 @@ action:
               - condition: template
                 value_template: >
                   {{ v_back_stuck_helper != {} and v_back_stuck_active | bool
-                     and (not v_back_needs_close | bool or not v_back_needs_open | bool) }}
+                     and (not v_back_needs_close | bool
+                          or (v_back_open_covers | length > 0 and not v_back_needs_open | bool)) }}
             then:
               - service: input_boolean.turn_off
                 target:
@@ -907,7 +960,7 @@ action:
                         then:
                           - service: cover.set_cover_position
                             target:
-                              entity_id: !input back_covers
+                              entity_id: "{{ v_back_open_covers }}"
                             data:
                               position: !input open_position
                           - if:
