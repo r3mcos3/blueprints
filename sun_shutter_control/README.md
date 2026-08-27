@@ -1,6 +1,6 @@
 # ☀️ Sun-Aware Shutter Control
 
-[![version](https://img.shields.io/badge/version-1.17.1-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.20.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 Automatic shutter control based on sun position. Closes shutters when the sun shines on the front or back of your house, and opens them again once the sun moves away. Respects manual operation so you always stay in control! 🌞
@@ -15,6 +15,7 @@ Automatic shutter control based on sun position. Closes shutters when the sun sh
 - 🖐️ **Manual override** - Detects manual shutter operation and leaves those shutters alone; resets automatically at sunset
 - 👤 **Presence-aware** - When nobody is home the automation takes full control, ignoring any override
 - 🌤️ **Cloud detection** - Optional weather integration (supports two entities as cross-check): open shutters when it's overcast, close again when it clears up
+- 🔆 **Solar power detection** - Optional solar panel power sensor as a real-time check for actual sunlight; shutters only close when panel output is at or above your threshold
 - ⏱️ **Anti-oscillation cooldown** - Minimum wait between moves, prevents rapid up/down on partly cloudy days
 - 📍 **Position awareness** - Skips the command if shutters are already at the target position
 - 📐 **Configurable sun window** - Set how many degrees of margin the sun may be on a facade
@@ -92,6 +93,13 @@ For the manual override feature, create a toggle helper per facade side:
 | 🌥️ Second weather entity | Optional second weather source as cross-check; both must agree before closing | — |
 | ☁️ When to close | Which conditions allow closing: always / sunny+partly cloudy / sunny only | Sunny or partly cloudy |
 
+### 🔆 Solar Power Detection (collapsed)
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| 🔆 Solar power sensor | Sensor reporting your solar panel power output in Watts (optional) | — |
+| 🔆 Solar power threshold | Minimum power (W) that counts as "the sun is shining" | 100 W |
+
 ### ☀️ Sun Settings (collapsed)
 
 | Parameter | Description | Default |
@@ -143,7 +151,7 @@ This formula works correctly for all directions, including the wrap-around near 
 For each facade side (front/back):
 
 ```
-If sun on facade AND weather allows AND (no override OR nobody home) AND no linked door open
+If sun on facade AND weather allows AND solar power allows AND (no override OR nobody home) AND no linked door open
   → Move shutters to close position
 
 If (sun NOT on facade OR cloudy) AND sun above min elevation AND auto-open is on
@@ -197,6 +205,18 @@ When a door sensor is linked to a facade, the automation checks its state before
 
 As soon as the door closes, the state change triggers an immediate re-evaluation — the shutters close right away if the sun is still on that facade. Only closing is blocked; automatic opening always works normally, since an open shutter never obstructs a door.
 
+### Solar power detection
+
+When a solar power sensor is linked, its reported value (in Watts) is compared to your configured threshold on every close/open evaluation — in addition to the weather entity check, if one is also configured:
+
+| Situation | Closes? |
+|-----------|---------|
+| No solar power sensor configured | Weather check (if any) decides, otherwise sun position alone |
+| Power ≥ threshold | Allowed (sun confirmed by actual panel output) |
+| Power < threshold | Blocked — treated the same as overcast weather |
+
+This reacts in real time to actual sunlight and can catch scattered clouds that a weather forecast entity misses. It works as an additional AND-condition alongside the weather check, not a replacement — when both are configured, both must agree before shutters close.
+
 ### Trigger moments
 
 | Trigger | When |
@@ -207,6 +227,7 @@ As soon as the door closes, the state change triggers an immediate re-evaluation
 | 🖐️ Cover state change | Immediately on manual shutter operation (override detection only) |
 | 👥 Presence change | Immediately when a configured person entity changes state — re-evaluates if house is now empty |
 | 🚪 Door state change | Immediately when a linked door opens or closes — re-evaluates the close bypass |
+| 🔆 Solar power change | Immediately when the linked solar power sensor reports a new value — re-evaluates the close/open decision |
 
 ## 💡 Usage Examples
 
@@ -319,6 +340,9 @@ automation:
 Make sure you have an **override helper** configured for that facade side. Without a helper the automation has no memory of manual operations and will reopen the shutter on the next auto-open cycle.
 
 ## 📝 Version History
+
+### Version 1.20.0
+- 🔆 Added **solar power detection**: optional solar panel power sensor as a real-time cross-check for actual sunlight, alongside the existing weather entity check — shutters only close when panel output is at or above your configured threshold. Requested on the forum by a user whose weather integrations don't always reflect reality on partly cloudy days. ⚠️ Not yet tested against live solar hardware — feedback welcome!
 
 ### Version 1.17.1
 - 🚪 Fixed **door bypass sensor filter**: door sensors input now also accepts device class `window` in addition to `door` — some integrations (e.g. Shelly) report door contact sensors as `window`, which meant they didn't show up in the selector before

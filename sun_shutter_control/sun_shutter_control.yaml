@@ -1,4 +1,4 @@
-# Version: 1.19.0
+# Version: 1.20.0
 blueprint:
   domain: automation
   name: "☀️ Sun-Aware Shutter Control"
@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    📦 [Version 1.19.0] Automatic shutter control based on sun position 🌞.
+    📦 [Version 1.20.0] Automatic shutter control based on sun position 🌞.
 
 
     Automatically closes shutters when the sun shines on the front or back of your house,
@@ -51,6 +51,11 @@ blueprint:
       if they were closed). When two entities are configured, both must agree before
       shutters close — prevents false closes caused by a single unreliable source
 
+    - 🔆 Solar power detection — optional solar panel power sensor as a real-time
+      check for actual sunlight; shutters only close when the panel output is at
+      or above your configured threshold, which reacts faster and more accurately
+      to scattered clouds than a weather forecast entity alone
+
     - ⏱️ Anti-oscillation cooldown — minimum wait time between moves to prevent
       rapid up/down on partly cloudy days
 
@@ -92,6 +97,15 @@ blueprint:
     door is open the automation will not close that facade's shutters. As soon
     as the door closes, the automation re-evaluates and closes the shutters if
     the sun is still on that facade.
+
+
+    🔆 Setting up solar power detection — Link a sensor that reports your solar
+    panel's power output (in Watts) below. Shutters will only close when that
+    value is at or above the threshold you set, giving you a real-time check
+    based on actual sunlight — useful on partly cloudy days where a weather
+    forecast entity may not match reality. Works alongside the weather entity
+    check above (both must allow closing when both are configured). Leave
+    empty to skip this check.
 
   input:
     # ===== REQUIRED: HOUSE ORIENTATION =====
@@ -279,6 +293,45 @@ blueprint:
                   value: "sunny_and_partly"
                 - label: "Only when sunny"
                   value: "sunny_only"
+
+    # ===== SOLAR POWER DETECTION (COLLAPSED) =====
+    solar_settings:
+      name: "🔆 Solar Power Detection"
+      icon: mdi:solar-power
+      collapsed: true
+      input:
+        solar_power_sensor:
+          name: "🔆 Solar power sensor (optional)"
+          description: >
+            Link a sensor that reports your solar panel power output (in Watts)
+            to add a real-time cloud check based on actual sunlight, instead of
+            relying only on weather forecast data. When configured, shutters
+            only close if the reported power is at or above the threshold
+            below. This works alongside the weather entity check above — both
+            must allow closing when both are configured.
+            Leave empty to skip this check.
+          default: {}
+          selector:
+            entity:
+              filter:
+                - domain: sensor
+                  device_class: power
+
+        solar_power_threshold:
+          name: "🔆 Solar power threshold (W)"
+          description: >
+            Minimum solar power output (in Watts) that counts as "the sun is
+            shining". Only applies when a solar power sensor is configured
+            above. Tune this to your system size — a small balcony panel and
+            a large rooftop array need very different thresholds.
+          default: 100
+          selector:
+            number:
+              min: 0
+              max: 10000
+              step: 50
+              unit_of_measurement: "W"
+              mode: slider
 
     # ===== MANUAL OVERRIDE (COLLAPSED) =====
     override_settings:
@@ -470,6 +523,8 @@ variables:
   v_weather_entity: !input weather_entity
   v_weather_entity_2: !input weather_entity_2
   v_cloud_mode: !input close_on_cloudy
+  v_solar_power_sensor: !input solar_power_sensor
+  v_solar_power_threshold: !input solar_power_threshold
   v_cooldown: !input cooldown_minutes
   v_close_pos: !input close_position
   v_open_pos: !input open_position
@@ -539,6 +594,12 @@ variables:
     {% set c1 = allows(v_weather_entity) | trim | bool if v_weather_entity != {} else true %}
     {% set c2 = allows(v_weather_entity_2) | trim | bool if v_weather_entity_2 != {} else true %}
     {{ c1 and c2 }}
+  # True when the solar power sensor (if configured) reports at or above the
+  # threshold — a real-time cross-check for actual sunlight, independent of
+  # what a weather forecast entity reports. True when no sensor is configured.
+  v_solar_allows_close: >
+    {{ v_solar_power_sensor == {} or
+       (states(v_solar_power_sensor) | float(0) >= v_solar_power_threshold | float(0)) }}
   # Calculate whether the sun is on the front facade:
   # Azimuth difference is normalized to -180..+180 via ((diff + 180) % 360) - 180
   # Angle difference smaller than the sun window = sun is on that facade
@@ -558,11 +619,12 @@ variables:
     {% set min_el = v_min_elevation | float(10) %}
     {% set diff = ((az - back + 180) % 360) - 180 %}
     {{ el >= min_el and diff | abs <= window }}
-  # Combines sun position and weather: true only when sun is on facade AND weather allows
+  # Combines sun position, weather and solar power: true only when sun is on
+  # facade AND weather allows AND solar power (if configured) confirms it
   v_should_close_front: >
-    {{ v_sun_on_front | bool and v_weather_allows_close | bool }}
+    {{ v_sun_on_front | bool and v_weather_allows_close | bool and v_solar_allows_close | bool }}
   v_should_close_back: >
-    {{ v_sun_on_back | bool and v_weather_allows_close | bool }}
+    {{ v_sun_on_back | bool and v_weather_allows_close | bool and v_solar_allows_close | bool }}
   # True when the sun is above the minimum elevation (daytime)
   # Auto-open only fires when this is true — so shutters stay closed at night
   v_sun_active: >
@@ -674,6 +736,10 @@ trigger:
   - platform: state
     entity_id: !input back_door_sensors
     id: door_changed
+  # Re-evaluate immediately when the solar power sensor reports a new value
+  - platform: state
+    entity_id: !input solar_power_sensor
+    id: solar_changed
 
 action:
   # --- Reset overrides at sunset so the next day starts fresh ---
@@ -759,6 +825,7 @@ action:
           - ha_start
           - presence_changed
           - door_changed
+          - solar_changed
       - condition: template
         value_template: "{{ not v_home_blocks_automation | bool }}"
     then:

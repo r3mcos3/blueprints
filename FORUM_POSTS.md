@@ -824,7 +824,7 @@ Full documentation and examples: [GitHub Repository](https://github.com/r3mcos3/
 ```markdown
 # Sun-Aware Shutter Control ☀️
 
-**Version 1.17.1** | Automatically close your shutters when the sun shines on your house — and open them again when it moves away!
+**Version 1.20.0** | Automatically close your shutters when the sun shines on your house — and open them again when it moves away!
 
 > ⚠️ **This blueprint is currently in a testing phase.** It has been tested in a single environment. Feedback and bug reports are very welcome!
 
@@ -845,6 +845,7 @@ Every day the sun moves from one side of your house to the other. In the morning
 - 👥 **Presence-aware override** - Configure up to 2 person entities: when someone is home, manual operations are respected; when nobody is home, the automation takes full control regardless
 - 🌇 **Sunset reset** - All overrides are automatically cleared at sunset so the next day starts fresh
 - 🌤️ **Cloud detection** - Optional weather integration (supports two entities as cross-check): shutters stay open when overcast, close again when it clears up. When two weather entities are configured, both must agree before shutters close — prevents false closes caused by a single unreliable source
+- 🔆 **Solar power detection** - Optional solar panel power sensor as a real-time check for actual sunlight; shutters only close when panel output is at or above your threshold — reacts faster to scattered clouds than weather forecasts alone
 - ⏱️ **Anti-oscillation cooldown** - Minimum wait between moves, prevents rapid up/down on partly cloudy days
 - 📍 **Position awareness** - Skips the command if shutters are already at the target position
 - 📐 **Configurable sun window** - Control how many degrees of margin counts as "sun on facade"
@@ -914,6 +915,8 @@ Go to **[suncalc.org](https://www.suncalc.org/)**, find your house and determine
 | 🌤️ Weather entity | Weather integration for cloud detection | Optional |
 | 🌥️ Second weather entity | Second weather source as cross-check; both must agree before closing | Optional |
 | ☁️ When to close | Always / Sunny+partly cloudy / Sunny only | Sunny or partly cloudy |
+| 🔆 Solar power sensor | Sensor reporting solar panel power output in Watts | Optional |
+| 🔆 Solar power threshold | Minimum power (W) that counts as "the sun is shining" | 100 W |
 | ⏱️ Cooldown between moves | Minimum minutes between two movements (0 = disabled) | 20 min |
 
 ## Manual override explained
@@ -953,6 +956,7 @@ Full documentation, examples, and troubleshooting: [GitHub Repository](https://g
 
 ## Changelog
 
+- **1.20.0** - Added solar power detection: optional solar panel power sensor as a real-time cross-check for actual sunlight, alongside the weather entity check — shutters only close when panel output is at or above your configured threshold. ⚠️ Not yet tested against live solar hardware — feedback welcome!
 - **1.17.1** - Fixed door bypass sensor filter: door sensors input now also accepts device class `window` in addition to `door` — some integrations (e.g. Shelly) report door contact sensors as `window`, which meant they didn't show up in the selector before
 - **1.17.0** - Added door bypass: optional door sensors per facade block automatic closing of that facade's shutters while the door is open — useful when a shutter covers a door opening. Closing resumes automatically once the door closes; automatic opening is unaffected
 - **1.16.0** - Added presence-aware re-evaluation: when a configured person entity changes state, the automation immediately re-evaluates — no waiting for the next sun update when the house becomes empty
