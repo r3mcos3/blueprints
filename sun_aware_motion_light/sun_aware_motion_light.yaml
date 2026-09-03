@@ -1,10 +1,10 @@
 blueprint:
   name: ✨💡 Sun-aware Motion Light Control 🏃‍♂️☀️
   description: >-
-    📦 [Version 1.0] Smart Light Control for Motion 🏃‍♂️. Turns on a light with adjustable brightness when motion is detected.
+    📦 [Version 1.0.1] Smart Light Control for Motion 🏃‍♂️. Turns on a light with adjustable brightness when motion is detected.
     Optionally, it can use different brightness levels depending on the sun's position 🌅.
   domain: automation
-  source_url: https://github.com/r3mconl/blueprints/blob/main/sun_aware_motion_light/sun_aware_motion_light.yaml
+  source_url: https://github.com/r3mcos3/blueprints/blob/main/sun_aware_motion_light/sun_aware_motion_light.yaml
   author: r3mcos3
   homeassistant:
     min_version: 2025.12.0
