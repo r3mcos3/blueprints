@@ -1,6 +1,6 @@
 # 🚪 Door Open Alert
 
-[![version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 Get notified when a door (e.g. the back door) has been open for too long, and optionally have it announced at full volume on your speakers when the weather is bad. 🚪
@@ -11,6 +11,7 @@ Get notified when a door (e.g. the back door) has been open for too long, and op
 - 🏷️ **Custom Door Name** - Use a friendly name like "the back door" in the notification and announcement
 - 🌧️ **Bad Weather Announcement** - Optional text-to-speech announcement on selected speakers, only when the weather entity reports a bad condition
 - 🔊 **Full Volume** - Announcement volume is adjustable (default 100%)
+- 🌍 **Fully Translatable** - Notification title, messages and the spoken announcement are text inputs, so you can write them in your own language
 - 🔄 **Volume Restore** - Restores the original speaker volume afterwards
 
 ## 📋 Requirements
@@ -34,8 +35,11 @@ Get notified when a door (e.g. the back door) has been open for too long, and op
 | Enable Speaker Announcement | Announce on speakers when the weather is bad |
 | Weather Entity / Bad Weather Conditions | Which conditions count as bad weather |
 | Speakers / TTS Entity | Where and how the announcement is played |
+| Notification Title / Messages | Your own text, with placeholders `{door}` and `{weather}` |
+| Announcement Message | Spoken text (match your TTS voice language), same placeholders |
 | Announcement Volume / Restore Volume | Volume handling for the announcement |
 
 ## 📝 Changelog
 
+- **1.1.0** - Messages and announcement are now configurable (multi-language support)
 - **1.0.0** - Initial release

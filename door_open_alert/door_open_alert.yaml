@@ -5,7 +5,7 @@ blueprint:
   source_url: https://github.com/r3mcos3/blueprints/blob/main/door_open_alert/door_open_alert.yaml
   homeassistant:
     min_version: 2025.12.0
-  description: "\U0001F4E6 [Version 1.0.0] Get notified when a door (e.g. the back
+  description: "\U0001F4E6 [Version 1.1.0] Get notified when a door (e.g. the back
     door) has been open for too long. \U0001F6AA\n\nFeatures:\n- \U0001F4F1 Mobile
     notification after a configurable time\n- \U0001F327️ Optional announcement at
     full volume on selected speakers, only when the weather is bad\n- \U0001F504
@@ -169,6 +169,54 @@ blueprint:
             - tts
           multiple: false
           reorder: false
+    notify_title:
+      name: "\U0001F4AC Notification Title"
+      description: '`Optional`
+
+
+        Title of the mobile notification. Placeholders: `{door}` (door name).
+
+        '
+      default: "{door} is open"
+      selector:
+        text:
+          multiline: false
+    notify_message:
+      name: "\U0001F4AC Notification Message"
+      description: '`Optional`
+
+
+        Message of the mobile notification. Placeholders: `{door}`.
+
+        '
+      default: "{door} has been open for a while."
+      selector:
+        text:
+          multiline: false
+    notify_message_bad_weather:
+      name: "\U0001F327️ Notification Message (Bad Weather)"
+      description: '`Optional`
+
+
+        Message used when the weather is bad. Placeholders: `{door}`, `{weather}` (state of the weather entity).
+
+        '
+      default: "{door} has been open for a while. Weather: {weather}."
+      selector:
+        text:
+          multiline: false
+    announce_message:
+      name: "\U0001F5E3️ Announcement Message"
+      description: '`Optional`
+
+
+        Text spoken on the speakers. Write it in your own language and match it to your TTS voice. Placeholders: `{door}`, `{weather}`.
+
+        '
+      default: "Attention, {door} is open and the weather is bad."
+      selector:
+        text:
+          multiline: false
     announce_volume:
       name: "\U0001F50A Announcement Volume"
       description: '`Optional`
@@ -208,6 +256,10 @@ variables:
   volume: !input announce_volume
   restore: !input restore_volume
   door_label: !input door_label
+  n_title: !input notify_title
+  n_msg: !input notify_message
+  n_msg_bad: !input notify_message_bad_weather
+  a_msg: !input announce_message
   door_name: '{{ door_label if door_label | trim != '''' else (state_attr(door, ''friendly_name'') or door) }}'
 trigger:
 - platform: state
@@ -223,9 +275,9 @@ action:
     sequence:
     - action: notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}
       data:
-        title: "\U0001F6AA {{ door_name | capitalize }} is open"
-        message: "{{ door_name | capitalize }} has been open for a while.{% if is_bad_weather
-          %} Weather: {{ weather_state }}.{% endif %}"
+        title: "{{ n_title | replace('{door}', door_name | capitalize) }}"
+        message: "{{ (n_msg_bad if is_bad_weather else n_msg) | replace('{door}', door_name
+          | capitalize) | replace('{weather}', weather_state) }}"
         data:
           tag: door_open_{{ door.split('.')[1] }}
 - if:
@@ -250,7 +302,8 @@ action:
       entity_id: '{{ tts }}'
     data:
       media_player_entity_id: '{{ speaker_list }}'
-      message: "Attention, {{ door_name }} is open and the weather is bad."
+      message: "{{ a_msg | replace('{door}', door_name) | replace('{weather}', weather_state)
+        }}"
   - wait_template: '{{ speaker_list | select(''is_state'', ''playing'') | list | count
       > 0 }}'
     timeout: 10
