@@ -1,0 +1,273 @@
+blueprint:
+  domain: automation
+  name: "\U0001F6AA Door Open Alert"
+  author: r3mcos3
+  source_url: https://github.com/r3mcos3/blueprints/blob/main/door_open_alert/door_open_alert.yaml
+  homeassistant:
+    min_version: 2025.12.0
+  description: "\U0001F4E6 [Version 1.0.0] Get notified when a door (e.g. the back
+    door) has been open for too long. \U0001F6AA\n\nFeatures:\n- \U0001F4F1 Mobile
+    notification after a configurable time\n- \U0001F327️ Optional announcement at
+    full volume on selected speakers, only when the weather is bad\n- \U0001F504
+    Restores the original speaker volume afterwards\n"
+  input:
+    door_sensor:
+      name: "\U0001F6AA Door Sensor"
+      description: '`Required`
+
+
+        The door/window contact sensor to monitor.
+
+        '
+      selector:
+        entity:
+          filter:
+          - domain:
+            - binary_sensor
+          multiple: false
+          reorder: false
+    door_label:
+      name: "\U0001F3F7️ Door Name"
+      description: '`Optional`
+
+
+        Name used in the notification and announcement (e.g. "the back door").
+        Leave empty to use the sensor name.
+
+        '
+      default: ''
+      selector:
+        text: {}
+    open_duration:
+      name: ⏱️ Open Duration
+      description: '`Optional`
+
+
+        How long the door must stay open before alerting.
+
+        '
+      default:
+        minutes: 10
+      selector:
+        duration: {}
+    mobile_app_device:
+      name: "\U0001F4F1 Mobile Devices"
+      description: '`Required`
+
+
+        Mobile devices that receive the notification.
+
+        '
+      selector:
+        device:
+          filter:
+          - integration: mobile_app
+          multiple: true
+    use_speakers:
+      name: "\U0001F50A Enable Speaker Announcement"
+      description: '`Optional`
+
+
+        Also announce on the selected speakers when the weather is bad.
+
+        '
+      default: false
+      selector:
+        boolean: {}
+    weather_entity:
+      name: "\U0001F327️ Weather Entity"
+      description: '`Conditional`
+
+
+        Weather entity used to determine bad weather (required for the speaker announcement).
+
+        '
+      default: {}
+      selector:
+        entity:
+          filter:
+          - domain:
+            - weather
+          multiple: false
+          reorder: false
+    bad_weather_conditions:
+      name: "☔ Bad Weather Conditions"
+      description: '`Conditional`
+
+
+        Weather conditions that count as bad weather.
+
+        '
+      default:
+      - rainy
+      - pouring
+      - lightning-rainy
+      - hail
+      - snowy
+      - snowy-rainy
+      - windy
+      - windy-variant
+      - exceptional
+      selector:
+        select:
+          multiple: true
+          mode: dropdown
+          options:
+          - label: Rain
+            value: rainy
+          - label: Pouring rain
+            value: pouring
+          - label: Thunderstorm
+            value: lightning
+          - label: Thunderstorm with rain
+            value: lightning-rainy
+          - label: Hail
+            value: hail
+          - label: Snow
+            value: snowy
+          - label: Sleet
+            value: snowy-rainy
+          - label: Wind
+            value: windy
+          - label: Windy and cloudy
+            value: windy-variant
+          - label: Fog
+            value: fog
+          - label: Cloudy
+            value: cloudy
+          - label: Exceptional
+            value: exceptional
+    speakers:
+      name: "\U0001F4E2 Speakers"
+      description: '`Conditional`
+
+
+        Media players that announce the message at full volume.
+
+        '
+      default: []
+      selector:
+        entity:
+          filter:
+          - domain:
+            - media_player
+          multiple: true
+          reorder: false
+    tts_entity:
+      name: "\U0001F5E3️ TTS Entity"
+      description: '`Conditional`
+
+
+        Text-to-speech entity used for the announcement.
+
+        '
+      default: {}
+      selector:
+        entity:
+          filter:
+          - domain:
+            - tts
+          multiple: false
+          reorder: false
+    announce_volume:
+      name: "\U0001F50A Announcement Volume"
+      description: '`Optional`
+
+
+        Volume level for the announcement (0.0 - 1.0).
+
+        '
+      default: 1.0
+      selector:
+        number:
+          min: 0.0
+          max: 1.0
+          step: 0.05
+          mode: slider
+    restore_volume:
+      name: "\U0001F504 Restore Volume"
+      description: '`Optional`
+
+
+        Restore the original speaker volume after the announcement.
+
+        '
+      default: true
+      selector:
+        boolean: {}
+mode: single
+max_exceeded: silent
+variables:
+  door: !input door_sensor
+  devices: !input mobile_app_device
+  speakers_on: !input use_speakers
+  weather: !input weather_entity
+  bad_conditions: !input bad_weather_conditions
+  speaker_list: !input speakers
+  tts: !input tts_entity
+  volume: !input announce_volume
+  restore: !input restore_volume
+  door_label: !input door_label
+  door_name: '{{ door_label if door_label | trim != '''' else (state_attr(door, ''friendly_name'') or door) }}'
+trigger:
+- platform: state
+  entity_id: !input door_sensor
+  to: 'on'
+  for: !input open_duration
+action:
+- variables:
+    is_bad_weather: "{{ weather != {} and states(weather) in bad_conditions }}"
+    weather_state: "{{ states(weather).replace('-', ' ') if weather != {} else '' }}"
+- repeat:
+    for_each: '{{ devices }}'
+    sequence:
+    - action: notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}
+      data:
+        title: "\U0001F6AA {{ door_name | capitalize }} is open"
+        message: "{{ door_name | capitalize }} has been open for a while.{% if is_bad_weather
+          %} Weather: {{ weather_state }}.{% endif %}"
+        data:
+          tag: door_open_{{ door.split('.')[1] }}
+- if:
+  - condition: template
+    value_template: '{{ speakers_on and is_bad_weather and speaker_list | count > 0
+      and tts != {} }}'
+  then:
+  - variables:
+      original_volumes: "{% set ns = namespace(v={}) %}{% for e in speaker_list %}{%
+        set ns.v = dict(ns.v, **{e: state_attr(e, 'volume_level') | float(0.5)})
+        %}{% endfor %}{{ ns.v }}"
+  - repeat:
+      for_each: '{{ speaker_list }}'
+      sequence:
+      - action: media_player.volume_set
+        target:
+          entity_id: '{{ repeat.item }}'
+        data:
+          volume_level: '{{ volume }}'
+  - action: tts.speak
+    target:
+      entity_id: '{{ tts }}'
+    data:
+      media_player_entity_id: '{{ speaker_list }}'
+      message: "Attention, {{ door_name }} is open and the weather is bad."
+  - wait_template: '{{ speaker_list | select(''is_state'', ''playing'') | list | count
+      > 0 }}'
+    timeout: 10
+    continue_on_timeout: true
+  - wait_template: '{{ speaker_list | select(''is_state'', ''playing'') | list | count
+      == 0 }}'
+    timeout: 60
+    continue_on_timeout: true
+  - if:
+    - condition: template
+      value_template: '{{ restore }}'
+    then:
+    - repeat:
+        for_each: '{{ speaker_list }}'
+        sequence:
+        - action: media_player.volume_set
+          target:
+            entity_id: '{{ repeat.item }}'
+          data:
+            volume_level: '{{ original_volumes[repeat.item] }}'
