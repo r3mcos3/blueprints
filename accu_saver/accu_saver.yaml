@@ -1,4 +1,4 @@
-# Version: 1.2.0
+# Version: 1.3.0
 blueprint:
   domain: automation
   name: "🔋 Accu Saver - Battery Health Manager"
@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    📦 [Version 1.2.0] Smart battery health management for laptop servers!
+    📦 [Version 1.3.0] Smart battery health management for laptop servers!
     Automatically controls charging via smart plug to maintain optimal battery levels
     and extend battery lifespan. 🔌⚡
 
@@ -39,7 +39,6 @@ blueprint:
         entity:
           filter:
             - domain: sensor
-              
 
     # ===== REQUIRED: SMART PLUG CONTROL =====
     smart_plug:
@@ -96,11 +95,6 @@ variables:
   upper_limit: !input upper_threshold
   lower_limit: !input lower_threshold
 
-  # Current state calculations
-  current_battery_level: "{{ states(battery) | float(0) }}"
-  plug_is_on: "{{ is_state(plug, 'on') }}"
-  battery_sensor_available: "{{ not is_state(battery, 'unavailable') and not is_state(battery, 'unknown') }}"
-
 triggers:
   # ===== BATTERY LEVEL TRIGGERS =====
   - trigger: numeric_state
@@ -135,127 +129,55 @@ triggers:
     minutes: "/5"
     id: periodic_check
 
-conditions: []
+# Guard against a misconfigured window (upper must be above lower), which would make the plug flip constantly
+conditions:
+  - condition: template
+    value_template: "{{ upper_limit | float(80) > lower_limit | float(20) }}"
 
 actions:
-  # ===== BATTERY HIGH - STOP CHARGING =====
-  - choose:
-      - conditions:
-          - condition: trigger
-            id: battery_high
-          - condition: template
-            value_template: "{{ battery_sensor_available }}"
-          - condition: template
-            value_template: "{{ plug_is_on }}"
-        sequence:
-          - action: switch.turn_off
-            target:
-              entity_id: "{{ plug }}"
+  # ===== STARTUP / RELOAD: WAIT FOR SENSORS =====
+  # The delay must come before the state is read below, otherwise stale values are used
+  - if:
+      - condition: trigger
+        id:
+          - ha_start
+          - automation_reload
+    then:
+      - delay:
+          seconds: 10
 
-      # ===== BATTERY LOW - START CHARGING =====
-      - conditions:
-          - condition: trigger
-            id: battery_low
-          - condition: template
-            value_template: "{{ battery_sensor_available }}"
-          - condition: template
-            value_template: "{{ not plug_is_on }}"
-        sequence:
-          - action: switch.turn_on
-            target:
-              entity_id: "{{ plug }}"
+  # ===== READ CURRENT STATE =====
+  - variables:
+      battery_sensor_available: "{{ states(battery) | is_number }}"
+      current_battery_level: "{{ states(battery) | float(0) }}"
+      plug_is_on: "{{ is_state(plug, 'on') }}"
 
-      # ===== SENSOR RECOVERED - SYNC STATE =====
-      - conditions:
-          - condition: trigger
-            id: sensor_recovered
-          - condition: template
-            value_template: "{{ battery_sensor_available }}"
-        sequence:
-          - choose:
-              # Battery is high, ensure plug is OFF
-              - conditions:
-                  - condition: template
-                    value_template: "{{ current_battery_level >= upper_limit }}"
-                  - condition: template
-                    value_template: "{{ plug_is_on }}"
-                sequence:
-                  - action: switch.turn_off
-                    target:
-                      entity_id: "{{ plug }}"
+  # ===== SYNC PLUG WITH BATTERY LEVEL =====
+  # Every trigger runs the same idempotent check, so a threshold crossing, a restart,
+  # a recovered sensor and the periodic check all end up in the same correct state.
+  - if:
+      - condition: template
+        value_template: "{{ battery_sensor_available }}"
+    then:
+      - choose:
+          # Battery at/above upper threshold - ensure charging is OFF
+          - conditions:
+              - condition: template
+                value_template: "{{ current_battery_level >= upper_limit }}"
+              - condition: template
+                value_template: "{{ plug_is_on }}"
+            sequence:
+              - action: switch.turn_off
+                target:
+                  entity_id: "{{ plug }}"
 
-              # Battery is low, ensure plug is ON
-              - conditions:
-                  - condition: template
-                    value_template: "{{ current_battery_level <= lower_limit }}"
-                  - condition: template
-                    value_template: "{{ not plug_is_on }}"
-                sequence:
-                  - action: switch.turn_on
-                    target:
-                      entity_id: "{{ plug }}"
-
-      # ===== STARTUP/RELOAD - INITIALIZE STATE =====
-      - conditions:
-          - condition: trigger
-            id:
-              - ha_start
-              - automation_reload
-          - condition: template
-            value_template: "{{ battery_sensor_available }}"
-        sequence:
-          - delay:
-              seconds: 10
-          - choose:
-              # Battery above upper threshold - ensure charging is OFF
-              - conditions:
-                  - condition: template
-                    value_template: "{{ current_battery_level >= upper_limit }}"
-                  - condition: template
-                    value_template: "{{ plug_is_on }}"
-                sequence:
-                  - action: switch.turn_off
-                    target:
-                      entity_id: "{{ plug }}"
-
-              # Battery below lower threshold - ensure charging is ON
-              - conditions:
-                  - condition: template
-                    value_template: "{{ current_battery_level <= lower_limit }}"
-                  - condition: template
-                    value_template: "{{ not plug_is_on }}"
-                sequence:
-                  - action: switch.turn_on
-                    target:
-                      entity_id: "{{ plug }}"
-
-      # ===== PERIODIC CHECK - SYNC STATE =====
-      - conditions:
-          - condition: trigger
-            id: periodic_check
-          - condition: template
-            value_template: "{{ battery_sensor_available }}"
-        sequence:
-          - choose:
-              # Battery above upper threshold - ensure charging is OFF
-              - conditions:
-                  - condition: template
-                    value_template: "{{ current_battery_level >= upper_limit }}"
-                  - condition: template
-                    value_template: "{{ plug_is_on }}"
-                sequence:
-                  - action: switch.turn_off
-                    target:
-                      entity_id: "{{ plug }}"
-
-              # Battery below lower threshold - ensure charging is ON
-              - conditions:
-                  - condition: template
-                    value_template: "{{ current_battery_level <= lower_limit }}"
-                  - condition: template
-                    value_template: "{{ not plug_is_on }}"
-                sequence:
-                  - action: switch.turn_on
-                    target:
-                      entity_id: "{{ plug }}"
-    default: []
+          # Battery at/below lower threshold - ensure charging is ON
+          - conditions:
+              - condition: template
+                value_template: "{{ current_battery_level <= lower_limit }}"
+              - condition: template
+                value_template: "{{ not plug_is_on }}"
+            sequence:
+              - action: switch.turn_on
+                target:
+                  entity_id: "{{ plug }}"
