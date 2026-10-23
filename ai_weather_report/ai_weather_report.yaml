@@ -1,7 +1,8 @@
+# Version: 1.1.0
 blueprint:
   name: 🤖 AI Weather Report Generator
   description: >
-    📦 [Version 1.0.2] Fetches weather forecasts at regular intervals, uses AI to create an emoji-rich
+    📦 [Version 1.1.0] Fetches weather forecasts at regular intervals, uses AI to create an emoji-rich
     summary, and stores it in a text helper. Perfect for dashboard displays or
     notifications! ☀️🌧️⛈️
   domain: automation
@@ -17,7 +18,7 @@ blueprint:
       selector:
         entity:
           filter:
-            domain: weather
+            - domain: weather
 
     forecast_type:
       name: 📊 Forecast Type
@@ -48,8 +49,8 @@ blueprint:
               value: "/6"
             - label: Every 12 hours
               value: "/12"
-            - label: Once per day (24 hours)
-              value: "/24"
+            - label: Once per day (06:00)
+              value: "6"
 
     ai_task_entity:
       name: 🧠 AI Task Entity
@@ -57,7 +58,7 @@ blueprint:
       selector:
         entity:
           filter:
-            domain: ai_task
+            - domain: ai_task
 
     report_length:
       name: 📝 Report Length
@@ -95,14 +96,17 @@ blueprint:
       selector:
         entity:
           filter:
-            domain: input_text
+            - domain: input_text
 
 mode: single
+max_exceeded: silent
 
 variables:
   weather_entity_id: !input weather_entity
   report_max_length: !input report_length
   selected_language: !input ai_language
+  selected_forecast_type: !input forecast_type
+  target_helper: !input target_input_text
 
 triggers:
   - trigger: time_pattern
@@ -112,7 +116,6 @@ conditions: []
 
 actions:
   - action: weather.get_forecasts
-    metadata: {}
     target:
       entity_id: !input weather_entity
     data:
@@ -120,29 +123,40 @@ actions:
     response_variable: hourly_forecast
 
   - variables:
+      # Only send the near future: keeps the prompt small (fewer tokens, better summary)
       forecast_list: >
-        {{ hourly_forecast[weather_entity_id].forecast | default([]) }}
+        {% set entries = (hourly_forecast | default({}, true)).get(weather_entity_id, {}).get('forecast', []) %}
+        {{ entries[:(24 if selected_forecast_type == 'hourly' else 7)] }}
       language_instructions:
-        dutch: "Hier is het weer voor de aankomende uren in JSON: {{ forecast_list | tojson }}. Maak hier een weerbericht van in {{ report_max_length }} letters. Gebruik veel emojis."
-        english: "Here is the weather for the upcoming hours in JSON: {{ forecast_list | tojson }}. Create a weather report in {{ report_max_length }} characters. Use many emojis."
-        german: "Hier ist das Wetter für die kommenden Stunden in JSON: {{ forecast_list | tojson }}. Erstelle einen Wetterbericht in {{ report_max_length }} Zeichen. Verwende viele Emojis."
-        french: "Voici la météo pour les heures à venir en JSON: {{ forecast_list | tojson }}. Créez un rapport météo en {{ report_max_length }} caractères. Utilisez beaucoup d'emojis."
-        spanish: "Aquí está el clima para las próximas horas en JSON: {{ forecast_list | tojson }}. Crea un informe meteorológico en {{ report_max_length }} caracteres. Usa muchos emojis."
+        dutch: "Hier is het weer voor de aankomende uren in JSON: {{ forecast_list | tojson }}. Maak hier een weerbericht van in maximaal {{ report_max_length }} tekens. Gebruik veel emojis en geef alleen de tekst van het bericht terug."
+        english: "Here is the weather for the upcoming hours in JSON: {{ forecast_list | tojson }}. Create a weather report of at most {{ report_max_length }} characters. Use many emojis and return only the text of the report."
+        german: "Hier ist das Wetter für die kommenden Stunden in JSON: {{ forecast_list | tojson }}. Erstelle einen Wetterbericht mit höchstens {{ report_max_length }} Zeichen. Verwende viele Emojis und gib nur den Text des Berichts zurück."
+        french: "Voici la météo pour les heures à venir en JSON: {{ forecast_list | tojson }}. Créez un rapport météo de {{ report_max_length }} caractères au maximum. Utilisez beaucoup d'emojis et ne renvoyez que le texte du rapport."
+        spanish: "Aquí está el clima para las próximas horas en JSON: {{ forecast_list | tojson }}. Crea un informe meteorológico de como máximo {{ report_max_length }} caracteres. Usa muchos emojis y devuelve solo el texto del informe."
       ai_instructions_text: >
         {{ language_instructions[selected_language] }}
 
+  # Without forecast data the AI would invent a report - keep the previous one instead
+  - condition: template
+    value_template: "{{ forecast_list | length > 0 }}"
+
   - action: ai_task.generate_data
-    metadata: {}
     data:
       task_name: weather_forecast_summary
       entity_id: !input ai_task_entity
       instructions: "{{ ai_instructions_text }}"
     response_variable: ai_response
 
+  # Keep the previous report when the AI returned nothing usable
+  - condition: template
+    value_template: "{{ ai_response is mapping and (ai_response.data | default('', true) | string | trim) != '' }}"
+
+  # input_text.set_value fails when the value exceeds the helper's maximum length
+  - variables:
+      helper_max_length: "{{ state_attr(target_helper, 'max') | int(255) }}"
+
   - action: input_text.set_value
-    metadata: {}
     target:
       entity_id: !input target_input_text
     data:
-      value: >
-        {{ ai_response.data | default('Geen Data Beschikbaar.') }}
+      value: "{{ (ai_response.data | string | trim)[:helper_max_length] }}"
