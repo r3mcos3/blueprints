@@ -1,6 +1,6 @@
 # 💡 Presence - Home/Away Lights
 
-[![version](https://img.shields.io/badge/version-1.0.13-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 This blueprint automatically controls your lights based on presence detection. Lights turn on when someone arrives home after sunset, and turn off when the last person leaves. Perfect for a welcoming home and energy savings! 💡
@@ -11,7 +11,7 @@ This blueprint automatically controls your lights based on presence detection. L
 - 🌅 **Sunset-Aware** - Only turns on lights after sunset for energy efficiency
 - ✨ **Customizable Brightness** - Set your preferred arrival brightness level
 - 🔌 **Flexible Turn-Off Options** - Choose to turn off all lights or just specific ones
-- 👥 **Multi-Person Support** - Works with multiple people, only turns off when last person leaves
+- 👥 **Multi-Person Support** - Works with multiple people: lights turn on when the first person arrives and turn off when the last person leaves
 - 🔄 **Restart Mode** - Seamlessly handles overlapping arrivals and departures
 
 ## 📋 Requirements
@@ -46,7 +46,7 @@ When creating an automation from this blueprint, you'll configure:
 |-----------|-------------|---------|
 | 💡 Target Lights | Lights to control based on presence | - |
 | 🏠 Presence Zone | Zone to monitor for arrivals/departures | - |
-| ✨ Arrival Brightness | Brightness percentage when lights turn on | 33% |
+| ✨ Arrival Brightness | Brightness percentage when lights turn on (1-100%) | 33% |
 | 🔌 Turn off all lights on departure | If enabled, turns off ALL lights when leaving | false |
 
 ## 💡 Usage Examples
@@ -114,11 +114,16 @@ Result: Pathway and porch lights create a subtle, low-brightness welcome after s
 
 ### Wrong Brightness Level
 
-1. Verify the brightness percentage is set correctly (0-100)
+1. Verify the brightness percentage is set correctly (1-100)
 2. Check that your lights support brightness control
 3. Some lights may have minimum brightness limits
 
 ## 📝 Version History
+
+### Version 1.1.0
+- 🐛 Fixed: arrival brightness 0% switched the lights off — the minimum is now 1%
+- 🔧 Modernized syntax (`triggers`/`actions`, `action:` instead of the deprecated `service:`, `filter` entity selector)
+- 📝 Documentation: lights turn on for the *first* person arriving (zone goes from 0 to 1+)
 
 ### Version 1.0.13 (2025-12-15)
 - 🐛 Fix boolean filter issue

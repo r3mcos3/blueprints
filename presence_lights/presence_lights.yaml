@@ -1,8 +1,8 @@
-# Version: 1.0.13
+# Version: 1.1.0
 blueprint:
   name: "💡 Presence - Home/Away Lights"
   description:
-    "📦 [Version 1.0.13] Turns on specified lights when someone arrives home after sunset, and turns
+    "📦 [Version 1.1.0] Turns on specified lights when someone arrives home after sunset, and turns
     them off when the last person leaves."
   domain: automation
   source_url: https://github.com/r3mcos3/blueprints/blob/main/presence_lights/presence_lights.yaml
@@ -16,14 +16,15 @@ blueprint:
       selector:
         target:
           entity:
-            domain: light
+            - domain: light
 
     presence_zone:
       name: 🏠 Presence Zone
       description: The zone to monitor for arrivals and departures (e.g., zone.home).
       selector:
         entity:
-          domain: zone
+          filter:
+            - domain: zone
 
     arrival_brightness:
       name: "✨ Arrival Brightness"
@@ -31,9 +32,10 @@ blueprint:
       default: 33
       selector:
         number:
-          min: 0
+          min: 1
           max: 100
           unit_of_measurement: "%"
+          mode: slider
 
     turn_off_all_lights:
       name: "🔌 Turn off all lights on departure"
@@ -45,17 +47,17 @@ blueprint:
 mode: restart
 max_exceeded: silent
 
-trigger:
-  - platform: numeric_state
+triggers:
+  - trigger: numeric_state
     entity_id: !input presence_zone
     above: 0
     id: home
-  - platform: numeric_state
+  - trigger: numeric_state
     entity_id: !input presence_zone
     below: 1
     id: away
 
-action:
+actions:
   - variables:
       _turn_off_all_lights: !input turn_off_all_lights
   - choose:
@@ -67,7 +69,7 @@ action:
             entity_id: sun.sun
             state: "below_horizon"
         sequence:
-          - service: light.turn_on
+          - action: light.turn_on
             target: !input lights_target
             data:
               brightness_pct: !input arrival_brightness
@@ -83,12 +85,10 @@ action:
                   - condition: template
                     value_template: "{{ _turn_off_all_lights | bool }}"
                 sequence:
-                  - service: light.turn_off
-                    data: {}
+                  - action: light.turn_off
                     target:
                       entity_id: all
             # If the 'turn_off_all_lights' switch is OFF (default)
             default:
-              - service: light.turn_off
+              - action: light.turn_off
                 target: !input lights_target
-                data: {}
