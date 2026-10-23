@@ -1,3 +1,4 @@
+# Version: 1.3.0
 blueprint:
   domain: automation
   name: "\U0001F6AA Door Open Alert"
@@ -5,11 +6,11 @@ blueprint:
   source_url: https://github.com/r3mcos3/blueprints/blob/main/door_open_alert/door_open_alert.yaml
   homeassistant:
     min_version: 2025.12.0
-  description: "\U0001F4E6 [Version 1.2.0] Get notified when a door (e.g. the back
+  description: "\U0001F4E6 [Version 1.3.0] Get notified when a door (e.g. the back
     door) has been open for too long. \U0001F6AA\n\nFeatures:\n- \U0001F4F1 Mobile
     notification after a configurable time\n- \U0001F327️ Optional announcement at
     full volume on selected speakers, only when the weather is bad\n- \U0001F504
-    Restores the original speaker volume afterwards\n"
+    Restores the original speaker volume afterwards\n- \U0001F9F9 Clears the notification when the door is closed again\n"
   input:
     door_sensor:
       name: "\U0001F6AA Door Sensor"
@@ -82,7 +83,7 @@ blueprint:
         Weather entity used to determine bad weather (required for the speaker announcement).
 
         '
-      default: {}
+      default: []
       selector:
         entity:
           filter:
@@ -161,7 +162,7 @@ blueprint:
         Text-to-speech entity used for the announcement.
 
         '
-      default: {}
+      default: []
       selector:
         entity:
           filter:
@@ -268,7 +269,8 @@ blueprint:
       default: true
       selector:
         boolean: {}
-mode: single
+mode: queued
+max: 5
 max_exceeded: silent
 variables:
   door: !input door_sensor
@@ -278,6 +280,8 @@ variables:
   bad_conditions: !input bad_weather_conditions
   speaker_list: !input speakers
   tts: !input tts_entity
+  weather_set: '{{ weather is string and weather | length > 0 }}'
+  tts_set: '{{ tts is string and tts | length > 0 }}'
   volume: !input announce_volume
   restore: !input restore_volume
   door_label: !input door_label
@@ -313,43 +317,75 @@ variables:
   n_msg_bad: !input notify_message_bad_weather
   a_msg: !input announce_message
   door_name: '{{ door_label if door_label | trim != '''' else (state_attr(door, ''friendly_name'') or door) }}'
-trigger:
-- platform: state
+  door_name_cap: '{{ door_name[:1] | upper ~ door_name[1:] }}'
+triggers:
+- trigger: state
   entity_id: !input door_sensor
   to: 'on'
   for: !input open_duration
-action:
+  id: open_too_long
+- trigger: state
+  entity_id: !input door_sensor
+  to: 'off'
+  id: closed
+conditions:
+# A closed door only needs action when an alert was actually sent for this opening
+# (last_triggered is then later than the moment the door opened)
+- condition: or
+  conditions:
+  - condition: trigger
+    id: open_too_long
+  - condition: template
+    value_template: >
+      {% set last = this.attributes.last_triggered %}
+      {{ last is not none and trigger.from_state is not none and last > trigger.from_state.last_changed }}
+actions:
+- if:
+  - condition: trigger
+    id: closed
+  then:
+  - repeat:
+      for_each: '{{ devices }}'
+      sequence:
+      - action: notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}
+        continue_on_error: true
+        data:
+          message: clear_notification
+          data:
+            tag: door_open_{{ door.split('.')[1] }}
+  - stop: Door closed, notification cleared
 - variables:
-    is_bad_weather: "{{ weather != {} and states(weather) in bad_conditions }}"
-    weather_state: "{{ state_translated(weather) if weather != {} else '' }}"
+    is_bad_weather: "{{ weather_set and states(weather) in bad_conditions }}"
+    weather_state: "{{ state_translated(weather) if weather_set else '' }}"
 - repeat:
     for_each: '{{ devices }}'
     sequence:
     - action: notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}
       data:
-        title: "{{ (n_title if n_title | trim != '' else texts[lang].title) | replace('{door}', door_name | capitalize) }}"
-        message: "{{ ((n_msg_bad if n_msg_bad | trim != '' else texts[lang].msg_bad) if is_bad_weather else (n_msg if n_msg | trim != '' else texts[lang].msg)) | replace('{door}', door_name
-          | capitalize) | replace('{weather}', weather_state) }}"
+        title: "{{ (n_title if n_title | trim != '' else texts[lang].title) | replace('{door}', door_name_cap) }}"
+        message: "{{ ((n_msg_bad if n_msg_bad | trim != '' else texts[lang].msg_bad) if is_bad_weather else (n_msg if n_msg | trim != '' else texts[lang].msg)) | replace('{door}', door_name_cap) | replace('{weather}', weather_state) }}"
         data:
           tag: door_open_{{ door.split('.')[1] }}
 - if:
   - condition: template
     value_template: '{{ speakers_on and is_bad_weather and speaker_list | count > 0
-      and tts != {} }}'
+      and tts_set }}'
   then:
   - variables:
       original_volumes: "{% set ns = namespace(v={}) %}{% for e in speaker_list %}{%
-        set ns.v = dict(ns.v, **{e: state_attr(e, 'volume_level') | float(0.5)})
-        %}{% endfor %}{{ ns.v }}"
+        if state_attr(e, 'volume_level') is number %}{% set ns.v = dict(ns.v, **{e: state_attr(e, 'volume_level')})
+        %}{% endif %}{% endfor %}{{ ns.v }}"
   - repeat:
       for_each: '{{ speaker_list }}'
       sequence:
       - action: media_player.volume_set
+        continue_on_error: true
         target:
           entity_id: '{{ repeat.item }}'
         data:
           volume_level: '{{ volume }}'
   - action: tts.speak
+    continue_on_error: true
     target:
       entity_id: '{{ tts }}'
     data:
@@ -371,8 +407,13 @@ action:
     - repeat:
         for_each: '{{ speaker_list }}'
         sequence:
-        - action: media_player.volume_set
-          target:
-            entity_id: '{{ repeat.item }}'
-          data:
-            volume_level: '{{ original_volumes[repeat.item] }}'
+        - if:
+          - condition: template
+            value_template: '{{ repeat.item in original_volumes }}'
+          then:
+          - action: media_player.volume_set
+            continue_on_error: true
+            target:
+              entity_id: '{{ repeat.item }}'
+            data:
+              volume_level: '{{ original_volumes[repeat.item] }}'

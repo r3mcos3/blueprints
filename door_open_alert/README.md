@@ -1,6 +1,6 @@
 # 🚪 Door Open Alert
 
-[![version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 Get notified when a door (e.g. the back door) has been open for too long, and optionally have it announced at full volume on your speakers when the weather is bad. 🚪
@@ -14,7 +14,8 @@ Get notified when a door (e.g. the back door) has been open for too long, and op
 - 🌍 **Multi-language** - Built-in texts for English, Dutch, German, French and Spanish, selectable via a dropdown
 - ✍️ **Custom Texts** - Optionally override the notification and announcement texts with your own (placeholders `{door}` and `{weather}`)
 - 🌦️ **Translated Weather** - The weather state in messages follows your Home Assistant language
-- 🔄 **Volume Restore** - Restores the original speaker volume afterwards
+- 🔄 **Volume Restore** - Restores the original speaker volume afterwards (speakers that were off are left alone)
+- 🧹 **Auto-clear** - The notification disappears from your phone again when the door is closed
 
 ## 📋 Requirements
 
@@ -43,6 +44,7 @@ Get notified when a door (e.g. the back door) has been open for too long, and op
 
 ## 📝 Changelog
 
+- **1.3.0** - The notification is cleared when the door closes (only when an alert was actually sent). Door name keeps its own capitalization (only the first letter is capitalized). Speakers that were off are no longer "restored" to 0.5 and a failing speaker or TTS call no longer prevents the volume restore. Mode is now `queued` so a closing door is never missed during an announcement. Optional weather/TTS entities default to an empty list.
 - **1.2.0** - Language selection with built-in translations; weather state translated to the Home Assistant language
 - **1.1.0** - Messages and announcement are now configurable (multi-language support)
 - **1.0.0** - Initial release
