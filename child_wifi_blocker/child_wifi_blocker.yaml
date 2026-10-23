@@ -1,13 +1,13 @@
-# Version: 1.3.0
+# Version: 1.4.0
 blueprint:
   domain: automation
   name: "📵 Child WiFi Blocker"
   author: r3mcos3
   source_url: https://github.com/r3mcos3/blueprints/blob/main/child_wifi_blocker/child_wifi_blocker.yaml
   homeassistant:
-    min_version: 2024.6.0
+    min_version: 2024.10.0
   description: >
-    📦 [Version 1.3.0] Block your child's WiFi on a time schedule via the UniFi
+    📦 [Version 1.4.0] Block your child's WiFi on a time schedule via the UniFi
     Network integration 🔒.
 
 
@@ -84,7 +84,8 @@ blueprint:
           name: "☀️ Unblock time (WiFi on)"
           description: >
             Time at which this child's devices are unblocked again. Example: 07:00:00
-            in the morning. Must be earlier in the day than the block time.
+            in the morning. For a schedule over midnight (e.g. block 21:00, unblock 07:00) the unblock time is
+            simply the next morning.
           default: "07:00:00"
           selector:
             time:
@@ -130,7 +131,7 @@ blueprint:
           name: "🏠 Also block when nobody is home"
           description: >
             When enabled, this child's devices are also blocked the moment the
-            selected presence entity goes to 'not_home'. When someone returns home
+            selected presence entity is no longer home (not_home, off or another zone). When someone returns home
             (presence back to 'home'), the devices are unblocked — but only if the
             current time is still within the allowed window (between unblock time and
             block time). Outside that window the schedule takes precedence.
@@ -143,8 +144,9 @@ blueprint:
           description: >
             Only used when 'Also block when nobody is home' is enabled.
             Select a person, device_tracker, group, or binary_sensor that represents
-            whether someone is home. Leave empty to disable the away feature.
-          default: {}
+            whether someone is home ('home' or 'on' = home, any other state = away).
+            Leave empty to disable the away feature.
+          default: []
           selector:
             entity:
               filter:
@@ -170,25 +172,9 @@ variables:
   v_blueprint_enabled: !input blueprint_enabled
   v_block_time: !input block_time
   v_unblock_time: !input unblock_time
-  v_is_today_active: >
-    {% set days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] %}
-    {{ days[now().weekday()] in v_active_days }}
-  v_should_be_blocked: >
-    {% set t = now().strftime('%H:%M:%S') %}
-    {% if v_block_time > v_unblock_time %}
-      {{ t >= v_block_time or t < v_unblock_time }}
-    {% else %}
-      {{ t >= v_block_time and t < v_unblock_time }}
-    {% endif %}
-  v_in_allowed_window: >
-    {% set t = now().strftime('%H:%M:%S') %}
-    {% if v_block_time > v_unblock_time %}
-      {{ t >= v_unblock_time and t < v_block_time }}
-    {% else %}
-      {{ t >= v_unblock_time or t < v_block_time }}
-    {% endif %}
+  v_presence_set: "{{ v_presence_entity is string and v_presence_entity | length > 0 }}"
 
-trigger:
+triggers:
   - trigger: time
     at: !input block_time
     id: block_time
@@ -197,15 +183,10 @@ trigger:
     at: !input unblock_time
     id: unblock_time
 
+  # Any state change of the presence entity; the actions decide if it means "left" or "arrived"
   - trigger: state
     entity_id: !input presence_entity
-    to: "not_home"
-    id: away
-
-  - trigger: state
-    entity_id: !input presence_entity
-    to: "home"
-    id: home
+    id: presence_change
 
   - trigger: homeassistant
     event: start
@@ -215,11 +196,51 @@ trigger:
     event_type: automation_reloaded
     id: evaluate
 
-condition:
+conditions:
   - condition: template
     value_template: "{{ v_blueprint_enabled }}"
 
-action:
+actions:
+  # ── After a restart/reload wait until the UniFi switches are available ────────
+  # (commands to unavailable entities are silently ignored)
+  - if:
+      - condition: trigger
+        id: evaluate
+    then:
+      - wait_template: >
+          {{ expand(v_child_devices) | rejectattr('state', 'in', ['unavailable', 'unknown']) | list | count
+             == v_child_devices | count }}
+        timeout: "00:02:00"
+        continue_on_timeout: true
+
+  # ── Read the current situation (after any wait, so it is never stale) ────────
+  - variables:
+      v_days: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+      v_now_time: "{{ now().strftime('%H:%M:%S') }}"
+      v_cross_midnight: "{{ v_block_time > v_unblock_time }}"
+      v_is_today_active: "{{ v_days[now().weekday()] in v_active_days }}"
+      v_is_yesterday_active: "{{ v_days[(now().weekday() - 1) % 7] in v_active_days }}"
+      # A block window belongs to the day it STARTS on. For a schedule over midnight the
+      # unblock in the morning therefore follows the active-days setting of yesterday,
+      # otherwise the child would stay blocked all day when the morning is a skipped day.
+      v_unblock_day_active: "{{ v_is_yesterday_active if v_cross_midnight else v_is_today_active }}"
+      v_schedule_day_active: >
+        {{ v_is_yesterday_active if (v_cross_midnight and v_now_time < v_unblock_time) else v_is_today_active }}
+      v_should_be_blocked: >
+        {% if v_cross_midnight %}
+          {{ v_now_time >= v_block_time or v_now_time < v_unblock_time }}
+        {% else %}
+          {{ v_now_time >= v_block_time and v_now_time < v_unblock_time }}
+        {% endif %}
+      v_in_allowed_window: "{{ not v_should_be_blocked }}"
+      # Away-blocking is active and the presence entity says nobody is home
+      v_away_blocked: >
+        {% if v_block_when_away and v_presence_set %}
+          {{ states(v_presence_entity) not in ['home', 'on', 'unavailable', 'unknown'] }}
+        {% else %}
+          false
+        {% endif %}
+
   - choose:
       # ── Block at bedtime ─────────────────────────────────────────────────────
       - conditions:
@@ -232,12 +253,12 @@ action:
             target:
               entity_id: "{{ v_child_devices }}"
 
-      # ── Unblock in the morning ───────────────────────────────────────────────
+      # ── Unblock in the morning (not while away-blocking applies) ─────────────
       - conditions:
           - condition: trigger
             id: unblock_time
           - condition: template
-            value_template: "{{ v_is_today_active }}"
+            value_template: "{{ v_unblock_day_active and not v_away_blocked }}"
         sequence:
           - action: switch.turn_off
             target:
@@ -246,9 +267,14 @@ action:
       # ── Block immediately when nobody is home ────────────────────────────────
       - conditions:
           - condition: trigger
-            id: away
+            id: presence_change
           - condition: template
-            value_template: "{{ v_block_when_away and v_presence_entity != {} }}"
+            value_template: "{{ v_block_when_away and v_presence_set }}"
+          - condition: template
+            value_template: >
+              {{ trigger.from_state is not none and trigger.to_state is not none
+                 and trigger.from_state.state != trigger.to_state.state
+                 and trigger.to_state.state not in ['home', 'on', 'unavailable', 'unknown'] }}
         sequence:
           - action: switch.turn_on
             target:
@@ -257,9 +283,14 @@ action:
       # ── Unblock when someone comes home (only during allowed time window) ────
       - conditions:
           - condition: trigger
-            id: home
+            id: presence_change
           - condition: template
-            value_template: "{{ v_block_when_away and v_presence_entity != {} }}"
+            value_template: "{{ v_block_when_away and v_presence_set }}"
+          - condition: template
+            value_template: >
+              {{ trigger.from_state is not none and trigger.to_state is not none
+                 and trigger.from_state.state != trigger.to_state.state
+                 and trigger.to_state.state in ['home', 'on'] }}
           - condition: template
             value_template: "{{ v_in_allowed_window }}"
         sequence:
@@ -272,7 +303,7 @@ action:
           - condition: trigger
             id: evaluate
           - condition: template
-            value_template: "{{ v_should_be_blocked and v_is_today_active }}"
+            value_template: "{{ v_away_blocked or (v_should_be_blocked and v_schedule_day_active) }}"
         sequence:
           - action: switch.turn_on
             target:
@@ -282,7 +313,7 @@ action:
           - condition: trigger
             id: evaluate
           - condition: template
-            value_template: "{{ not v_should_be_blocked and v_is_today_active }}"
+            value_template: "{{ not v_away_blocked and not v_should_be_blocked and v_schedule_day_active }}"
         sequence:
           - action: switch.turn_off
             target:

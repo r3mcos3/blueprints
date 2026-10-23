@@ -1,7 +1,7 @@
 # 📵 Child WiFi Blocker
 
-[![version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/r3mcos3/blueprints)
-[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.6.0%2B-blue.svg)](https://www.home-assistant.io/)
+[![version](https://img.shields.io/badge/version-1.4.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.10.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 Automatically block your child's WiFi at bedtime and unblock it in the morning — via the UniFi Network integration. Create one automation per child. Each child can have multiple devices (phone, tablet, laptop) that are all blocked and unblocked at the same time. 🔒
 
@@ -83,10 +83,14 @@ Before using this blueprint, you need:
 |---------|--------|
 | 🌙 Block time reached | Turn ON all device switches (block) — only on active days |
 | ☀️ Unblock time reached | Turn OFF all device switches (allow) — only on active days |
-| 🏠 Presence → `not_home` | Block immediately (if away-blocking is enabled) |
-| 🏠 Presence → `home` | Unblock (if away-blocking is enabled and within allowed time window) |
-| 🔁 HA startup | Evaluate current time and set correct block/unblock state |
-| 🔁 Automation reloaded | Evaluate current time and set correct block/unblock state |
+| 🏠 Presence → away (`not_home`, `off`, another zone) | Block immediately (if away-blocking is enabled) |
+| 🏠 Presence → `home` / `on` | Unblock (if away-blocking is enabled and within allowed time window) |
+| 🔁 HA startup | Wait (max 2 min) until the UniFi switches are available, then set the correct block/unblock state |
+| 🔁 Automation reloaded | Same as startup |
+
+### Active days and schedules over midnight
+
+A block window belongs to the day it **starts** on. With block 21:00 and unblock 07:00, Friday night is blocked when Friday is active, and the unblock on Saturday morning follows Friday's setting — so the child is never left blocked all Saturday just because Saturday is not an active day.
 
 ### Time window logic
 
@@ -99,9 +103,9 @@ If block_time < unblock_time  →  blocked when: now ≥ block_time AND now < un
 
 ### Away blocking
 
-When the presence entity goes to `not_home`, all devices are blocked immediately regardless of the time schedule.
+When the presence entity leaves `home` (to `not_home`, another zone, or a binary_sensor going `off`), all devices are blocked immediately regardless of the time schedule. While nobody is home, the morning unblock and the startup check do not unblock the devices.
 
-When someone returns home (`home`), the devices are unblocked — **but only if the current time is within the allowed window** (between unblock time and block time). Outside that window the time schedule takes precedence and the devices stay blocked.
+When someone returns home (`home`, or `on` for a binary_sensor), the devices are unblocked — **but only if the current time is within the allowed window** (between unblock time and block time). Outside that window the time schedule takes precedence and the devices stay blocked.
 
 ## 💡 Usage Tips
 
@@ -124,13 +128,22 @@ The blueprint includes a startup trigger that re-evaluates and corrects the stat
 
 ### The blueprint shows "malformed" on the presence entity
 
-Leave the presence entity field empty if you do not use the away-blocking feature. It is optional and defaults to empty.
+Leave the presence entity field empty if you do not use the away-blocking feature. It is optional and defaults to an empty list.
 
 ### The away feature unblocks at the wrong time
 
 The unblock-on-home trigger only fires when the current time is within the allowed window (between unblock time and block time). Outside that window, the schedule takes precedence.
 
 ## 📝 Version History
+
+### Version 1.4.0
+- 🐛 Fixed: with a schedule over midnight the morning unblock was skipped when the morning day was not an active day, leaving the devices blocked all day
+- 🐛 Fixed: away-blocking only reacted to `not_home` — now any non-home state counts (e.g. a person in another zone); binary_sensors (`on`/`off`) now work too
+- 🐛 Fixed: attribute changes of the presence entity could trigger an unblock
+- 🐛 Fixed: the morning unblock and the startup check unblocked devices while away-blocking applied
+- 🐛 Fixed: the startup check ran before the UniFi switches were available and silently did nothing — it now waits (max 2 min)
+- 🔧 Minimum Home Assistant version corrected to 2024.10.0 (the `trigger: time` syntax needs it); modernized `triggers`/`conditions`/`actions`
+- 🔧 Optional presence entity now defaults to an empty list
 
 ### Version 1.3.0
 - 🔁 Added **self-correcting** behaviour: two new triggers (`homeassistant: start` and `automation_reloaded`) evaluate the correct block/unblock state immediately without needing a manual trigger or HA restart
