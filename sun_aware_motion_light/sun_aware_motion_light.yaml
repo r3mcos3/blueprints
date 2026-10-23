@@ -1,7 +1,8 @@
+# Version: 1.1.0
 blueprint:
   name: ✨💡 Sun-aware Motion Light Control 🏃‍♂️☀️
   description: >-
-    📦 [Version 1.0.1] Smart Light Control for Motion 🏃‍♂️. Turns on a light with adjustable brightness when motion is detected.
+    📦 [Version 1.1.0] Smart Light Control for Motion 🏃‍♂️. Turns on a light with adjustable brightness when motion is detected.
     Optionally, it can use different brightness levels depending on the sun's position 🌅.
   domain: automation
   source_url: https://github.com/r3mcos3/blueprints/blob/main/sun_aware_motion_light/sun_aware_motion_light.yaml
@@ -14,24 +15,26 @@ blueprint:
       description: The 🏃‍♂️ motion sensor that detects presence.
       selector:
         entity:
-          domain: binary_sensor
-          device_class: motion
+          filter:
+            - domain: binary_sensor
+              device_class: motion
     target_light:
       name: 💡 Target Light
       description: The 💡 light or group of lights controlled by this automation.
       selector:
         target:
           entity:
-            domain: light
+            - domain: light
     default_brightness:
       name: 🔆 Default Brightness
       description: The 🔆 brightness percentage to use when sun-aware mode is disabled.
       default: 80
       selector:
         number:
-          min: 0
+          min: 1
           max: 100
           unit_of_measurement: "%"
+          mode: slider
     sun_aware_settings:
       name: ☀️ Sun-aware Settings
       description: Configure brightness levels 🌓 based on the sun's position ☀️🌙.
@@ -50,20 +53,22 @@ blueprint:
           default: 100
           selector:
             number:
-              min: 0
+              min: 1
               max: 100
               unit_of_measurement: "%"
+              mode: slider
         brightness_night:
           name: 🌙 Brightness (Night)
           description: The ✨ brightness percentage for when the sun 🌙 is down (only if sun-aware mode is enabled).
           default: 10
           selector:
             number:
-              min: 0
+              min: 1
               max: 100
               unit_of_measurement: "%"
+              mode: slider
     turn_off_delay:
-      name: Turn-off delay
+      name: ⏱️ Turn-off delay
       description: The ⏱️ wait time in minutes before the light turns off after no motion is detected. Set to 0 for no delay.
       default: 5
       selector:
@@ -74,13 +79,13 @@ blueprint:
           unit_of_measurement: minutes
           mode: slider
 
-trigger:
-  - platform: state
+triggers:
+  - trigger: state
     entity_id: !input motion_sensor
     from: "off"
     to: "on"
     id: motion_on
-  - platform: state
+  - trigger: state
     entity_id: !input motion_sensor
     from: "on"
     to: "off"
@@ -92,48 +97,36 @@ trigger:
 
 variables:
   sun_aware_enabled: !input sun_aware_enabled
+  day_brightness: !input brightness_day
+  night_brightness: !input brightness_night
+  fixed_brightness: !input default_brightness
 
-action:
+actions:
   - choose:
       # Motion detected
       - conditions:
           - condition: trigger
             id: motion_on
         sequence:
-          - choose:
-              # Sun-aware mode is enabled
-              - conditions:
-                  - condition: template
-                    value_template: "{{ sun_aware_enabled }}"
-                sequence:
-                  # Original sun-aware logic
-                  - choose:
-                      - conditions:
-                          - condition: state
-                            entity_id: sun.sun
-                            state: "above_horizon"
-                        sequence:
-                          - service: light.turn_on
-                            target: !input target_light
-                            data:
-                              brightness_pct: !input brightness_day
-                    default:
-                      - service: light.turn_on
-                        target: !input target_light
-                        data:
-                          brightness_pct: !input brightness_night
-            # Sun-aware mode is disabled
-            default:
-              - service: light.turn_on
-                target: !input target_light
-                data:
-                  brightness_pct: !input default_brightness
+          - action: light.turn_on
+            target: !input target_light
+            data:
+              # Sun-aware: day/night level depending on the sun, otherwise one fixed level
+              brightness_pct: >
+                {% if not sun_aware_enabled %}
+                  {{ fixed_brightness }}
+                {% elif is_state('sun.sun', 'above_horizon') %}
+                  {{ day_brightness }}
+                {% else %}
+                  {{ night_brightness }}
+                {% endif %}
 
       # Motion stopped
       - conditions:
           - condition: trigger
             id: motion_off
         sequence:
-          - service: light.turn_off
+          - action: light.turn_off
             target: !input target_light
+
 mode: restart

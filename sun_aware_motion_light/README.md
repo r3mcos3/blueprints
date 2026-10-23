@@ -1,6 +1,6 @@
 # ☀️ Sun-aware Motion Light
 
-[![version](https://img.shields.io/badge/version-1.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 Smart motion-activated lighting that adapts to the sun's position! Turn on lights when motion is detected with different brightness levels for day and night. Perfect for hallways, bathrooms, and outdoor areas! 💡
@@ -46,7 +46,7 @@ When creating an automation from this blueprint, you'll configure:
 |-----------|-------------|---------|
 | 🏃‍♂️ Motion Sensor | Binary sensor that detects motion | Required |
 | 💡 Target Light | Light or group of lights to control | Required |
-| 🔆 Default Brightness | Brightness when sun-aware mode is disabled | 80% |
+| 🔆 Default Brightness | Brightness when sun-aware mode is disabled (1-100%) | 80% |
 | ☀️ Sun-aware Mode | Enable different brightness for day/night | Enabled |
 | ☀️ Brightness (Day) | Brightness when sun is above horizon | 100% |
 | 🌙 Brightness (Night) | Brightness when sun is below horizon | 10% |
@@ -176,6 +176,15 @@ automation:
 4. Ensure "Sun-aware Mode" toggle is enabled in configuration
 
 ## 📝 Version History
+
+### Version 1.1.0
+- 🐛 Fixed: brightness 0% switched the lights off — the minimum is now 1%
+- 🧹 Replaced three nested `choose` blocks by a single brightness calculation (same behaviour)
+- 🔧 Modernized syntax (`triggers`/`actions`, `action:` instead of the deprecated `service:`, `filter` entity selectors)
+- 📝 README version synced (it said 1.0 while the blueprint was 1.0.1)
+
+### Version 1.0.1
+- 🐛 Fixed `source_url` typo
 
 ### Version 1.0 (2025-12-15)
 - 🎉 Initial release
