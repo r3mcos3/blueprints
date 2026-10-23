@@ -1,6 +1,6 @@
 # ☀️ Sun Notifications
 
-[![version](https://img.shields.io/badge/version-1.1.2-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 Get notified at sunrise and sunset via Telegram! Stay informed about the day-night cycle with customizable notifications and time offsets. Perfect for planning outdoor activities or automating home routines! 🌅
@@ -9,7 +9,7 @@ Get notified at sunrise and sunset via Telegram! Stay informed about the day-nig
 
 - 🌅 **Sunrise Notifications** - Get notified when the sun rises
 - 🌇 **Sunset Notifications** - Get notified when the sun sets
-- ⏰ **Time Offsets** - Set notifications before or after sunrise/sunset
+- ⏰ **Time Offsets** - Set notifications before or after sunrise/sunset (presets or your own value)
 - 💬 **Custom Messages** - Personalize your notification messages with templates
 - 🔔 **Telegram Integration** - Receive notifications via Telegram Bot
 - ⚙️ **Independent Control** - Enable/disable sunrise and sunset notifications separately
@@ -35,20 +35,12 @@ Before using this blueprint, you need:
 
 ### Configure Telegram in Home Assistant
 
-Add to your `configuration.yaml`:
+1. Go to **Settings** → **Devices & Services** → **Add Integration** → **Telegram bot**
+2. Enter your bot token and choose polling or webhooks
+3. Add your chat ID as an allowed chat
+4. Select this Telegram bot instance in the blueprint
 
-```yaml
-telegram_bot:
-  - platform: polling
-    api_key: YOUR_BOT_TOKEN
-    allowed_chat_ids:
-      - YOUR_CHAT_ID
-
-notify:
-  - platform: telegram
-    name: telegram
-    chat_id: YOUR_CHAT_ID
-```
+See the [Telegram bot integration](https://www.home-assistant.io/integrations/telegram_bot/) for details.
 
 ## 🚀 Installation
 
@@ -74,14 +66,15 @@ When creating an automation from this blueprint, you'll configure:
 |-----------|-------------|---------|
 | 📱 Telegram Bot | Telegram Bot integration for notifications | Required |
 | 🌅 Enable Sunrise Notification | Toggle sunrise notifications on/off | Enabled |
-| ⏰ Sunrise Offset | Time before (-) or after (+) sunrise | 00:00:00 |
+| ⏰ Sunrise Offset | Preset or custom `HH:MM:SS`, with a leading `-` for before | 00:00:00 |
 | 💬 Sunrise Message | Custom message for sunrise (supports templates) | "De zon komt op ☀️" |
 | 🌇 Enable Sunset Notification | Toggle sunset notifications on/off | Enabled |
-| ⏰ Sunset Offset | Time before (-) or after (+) sunset | 00:00:00 |
+| ⏰ Sunset Offset | Preset or custom `HH:MM:SS`, with a leading `-` for before | 00:00:00 |
 | 💬 Sunset Message | Custom message for sunset (supports templates) | "De zon gaat onder 🌃" |
 
 ### Offset Examples
 
+- Pick a preset from the dropdown, or type your own value
 - `-00:30:00` = 30 minutes before
 - `00:00:00` = Exactly at sunrise/sunset
 - `00:15:00` = 15 minutes after
@@ -233,6 +226,12 @@ automation:
 4. Ensure both messages are configured
 
 ## 📝 Version History
+
+### Version 1.2.0
+- 🐛 Fixed: the selected Telegram bot was never passed to `telegram_bot.send_message` (`config_entry_id` was missing)
+- 🐛 Fixed: the offset used a time picker, so negative offsets ("before sunrise/sunset") could not be entered — it is now a dropdown with presets and a custom value
+- ⚡ Disabled sunrise/sunset events are no longer registered at all (instead of running and doing nothing)
+- 🔧 Modernized syntax (`triggers`/`actions`); README now describes the current Telegram bot setup via the UI
 
 ### Version 1.1.2 (2025-12-18)
 - 📱 Updated to use Telegram Bot config_entry selector
