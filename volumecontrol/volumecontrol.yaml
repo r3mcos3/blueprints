@@ -1,4 +1,4 @@
-# Version: 1.0
+# Version: 1.1.0
 blueprint:
   domain: automation
   name: 🔈 Volume Control!
@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    📦 [Version 1.0] Blueprint to automate all your speakers 🔈
+    📦 [Version 1.1.0] Blueprint to automate all your speakers 🔈
 
   input:
     media:
@@ -48,9 +48,9 @@ blueprint:
       default: 0.6
       selector:
         number:
-          min: 0.1
+          min: 0.05
           max: 1.0
-          step: 0.1
+          step: 0.05
           mode: slider
     volume_down:
       name: 🔈 Volume Down Level
@@ -62,9 +62,9 @@ blueprint:
       default: 0.2
       selector:
         number:
-          min: 0.1
+          min: 0.05
           max: 1.0
-          step: 0.1
+          step: 0.05
           mode: slider
     custom_action:
       name: 🎬 Custom Action
@@ -73,41 +73,55 @@ blueprint:
 
 
         This custom action gets executed if scheduler get to 'on' or 'off'
-      default:
+      default: []
       selector:
         action:
 mode: single
 
-trigger:
-  - platform: state
+triggers:
+  - trigger: state
     entity_id: !input scheduler
     to: "on"
-    id: aan
-  - platform: state
+    id: schedule_on
+  - trigger: state
     entity_id: !input scheduler
     to: "off"
-    id: uit
-action:
+    id: schedule_off
+  # Bring the speakers in line with the schedule after a restart or when the automation is reloaded
+  - trigger: homeassistant
+    event: start
+    id: sync
+  - trigger: event
+    event_type: automation_reloaded
+    id: sync
+
+variables:
+  scheduler_entity: !input scheduler
+
+actions:
   - choose:
       - conditions:
-          - condition: trigger
-            id:
-              - aan
+          - condition: template
+            value_template: >
+              {{ trigger.id == 'schedule_on' or (trigger.id == 'sync' and is_state(scheduler_entity, 'on')) }}
         sequence:
-          - service: media_player.volume_set
+          - action: media_player.volume_set
+            continue_on_error: true
             target: !input media
             data:
               volume_level: !input volume_up
       - conditions:
-          - condition: trigger
-            id:
-              - uit
+          - condition: template
+            value_template: >
+              {{ trigger.id == 'schedule_off' or (trigger.id == 'sync' and is_state(scheduler_entity, 'off')) }}
         sequence:
-          - service: media_player.volume_set
+          - action: media_player.volume_set
+            continue_on_error: true
             target: !input media
             data:
               volume_level: !input volume_down
+  # Optional custom action: runs when the schedule changes, not on the startup sync
   - if:
       - condition: template
-        value_template: "{{ input_custom_action != none }}"
+        value_template: "{{ trigger.id != 'sync' }}"
     then: !input custom_action

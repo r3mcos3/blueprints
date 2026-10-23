@@ -1,6 +1,6 @@
 # 🔈 Volume Control
 
-[![version](https://img.shields.io/badge/version-1.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 This blueprint automates volume control for your media players based on a schedule. Perfect for automatically adjusting speaker volume during different times of the day, like quiet hours at night or louder volume during the day! 🔊
@@ -11,6 +11,7 @@ This blueprint automates volume control for your media players based on a schedu
 - 🔊 **Dual Volume Levels** - Set different volumes for high and low periods
 - 📻 **Multi-Speaker Support** - Control multiple media players simultaneously
 - 🎬 **Custom Actions** - Execute additional actions when schedule changes
+- 🔁 **Startup Sync** - After a Home Assistant restart or an automation reload the speakers are set to the volume that belongs to the current schedule state
 - ⚙️ **Simple Configuration** - Easy slider-based volume settings
 - 🔄 **Single Mode** - Prevents overlapping executions
 
@@ -56,9 +57,9 @@ When creating an automation from this blueprint, you'll configure:
 |-----------|-------------|---------|
 | 📻 Media Players | Speakers or media players to control | - |
 | 🗓️ Scheduler | Schedule entity that triggers volume changes | - |
-| 🔊 Volume Up Level | Volume level when schedule turns ON (0.1-1.0) | 0.6 (60%) |
-| 🔈 Volume Down Level | Volume level when schedule turns OFF (0.1-1.0) | 0.2 (20%) |
-| 🎬 Custom Action | Optional additional action to execute | None |
+| 🔊 Volume Up Level | Volume level when schedule turns ON (0.05-1.0) | 0.6 (60%) |
+| 🔈 Volume Down Level | Volume level when schedule turns OFF (0.05-1.0) | 0.2 (20%) |
+| 🎬 Custom Action | Optional additional action to execute when the schedule turns on or off (not on the startup sync) | None |
 
 ## 💡 Usage Examples
 
@@ -110,10 +111,10 @@ Media Players: media_player.living_room
 Scheduler: schedule.morning_routine (ON at 7:00 AM)
 Volume Up Level: 0.5 (50%)
 Custom Action:
-  - service: scene.turn_on
+  - action: scene.turn_on
     target:
       entity_id: scene.morning_lights
-  - service: notify.mobile_app
+  - action: notify.mobile_app
     data:
       message: "Good morning! Volume adjusted."
 ```
@@ -158,6 +159,13 @@ Result: At 7 AM, speaker volume increases AND morning scene activates with notif
 
 
 ## 📝 Version History
+
+### Version 1.1.0
+- 🐛 Fixed: the custom action check used an undefined variable (`input_custom_action`) and only worked by accident; an empty custom action now simply does nothing
+- 🔁 Added startup/reload sync so the speakers follow the schedule after a restart
+- 🛡️ A speaker that is off or unavailable no longer stops the other speakers and the custom action (`continue_on_error`)
+- 🎚️ Volume sliders now go down to 0.05 in steps of 0.05
+- 🔧 Modernized syntax (`triggers`/`actions`, English trigger ids)
 
 ### Version 1.0 (2025-12-15)
 - 🎉 Initial release
