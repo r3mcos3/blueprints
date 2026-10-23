@@ -1,6 +1,6 @@
 # ☀️ Sun-Aware Shutter Control
 
-[![version](https://img.shields.io/badge/version-1.17.1-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.20.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 Automatic shutter control based on sun position. Closes shutters when the sun shines on the front or back of your house, and opens them again once the sun moves away. Respects manual operation so you always stay in control! 🌞
@@ -16,7 +16,9 @@ Automatic shutter control based on sun position. Closes shutters when the sun sh
 - 👤 **Presence-aware** - When nobody is home the automation takes full control, ignoring any override
 - 🌤️ **Cloud detection** - Optional weather integration (supports two entities as cross-check): open shutters when it's overcast, close again when it clears up
 - ⏱️ **Anti-oscillation cooldown** - Minimum wait between moves, prevents rapid up/down on partly cloudy days
-- 📍 **Position awareness** - Skips the command if shutters are already at the target position
+- 📍 **Position awareness** - Skips the command if shutters are already at the target position (covers without a position fall back to open/closed)
+- 🧊 **Stuck shutter protection** - Optional per-facade helper: stops sending commands to a shutter that does not move (frozen/jammed) and notifies you
+- 🌙 **Auto-open exceptions** - Keep specific shutters (e.g. a bedroom) closed when the sun moves away; they still close with the sun
 - 📐 **Configurable sun window** - Set how many degrees of margin the sun may be on a facade
 - 🌅 **Minimum sun elevation** - No action during low morning or evening sun
 - 🔽 **Flexible positions** - Configure close and open position (e.g. half-close at 50%)
@@ -34,6 +36,7 @@ Before using this blueprint, you need:
 
 - **Input Boolean helpers** - For manual override detection (one per facade side)
 - **Person / device_tracker entities** - For presence-aware override behaviour
+- **Stuck helpers** - Input Boolean per facade for the stuck shutter protection
 - **Door sensors** - `binary_sensor` entities with device class `door` or `window` (some integrations, e.g. Shelly, report door contacts as `window`), for shutters that cover a door opening
 
 ## 🌐 Finding your house azimuth
@@ -92,6 +95,8 @@ For the manual override feature, create a toggle helper per facade side:
 | 🌥️ Second weather entity | Optional second weather source as cross-check; both must agree before closing | — |
 | ☁️ When to close | Which conditions allow closing: always / sunny+partly cloudy / sunny only | Sunny or partly cloudy |
 
+A weather entity that is `unavailable` or `unknown` is ignored (it does not block closing and does not make the shutters open).
+
 ### ☀️ Sun Settings (collapsed)
 
 | Parameter | Description | Default |
@@ -124,6 +129,21 @@ For the manual override feature, create a toggle helper per facade side:
 |-----------|-------------|---------|
 | 🚪 Front door sensors | Door/window contact sensor(s) (`binary_sensor`, device class `door` or `window`) for front shutters that cover a door | Optional |
 | 🚪 Back door sensors | Same, for back shutters | Optional |
+
+### 🧊 Stuck Shutter Protection (collapsed)
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| 🧊 Stuck helper front | Input Boolean helper for the front facade | Optional |
+| 🧊 Stuck helper back | Input Boolean helper for the back facade | Optional |
+| ⏱️ Grace time | Minutes a shutter gets to move before it counts as stuck | 5 min |
+
+### 🌙 Auto-Open Exceptions (collapsed)
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| 🌙 Front shutters to keep closed | Front shutters that are not reopened automatically | Optional |
+| 🌙 Back shutters to keep closed | Same, for the back | Optional |
 
 ## 🎯 How It Works
 
@@ -197,6 +217,17 @@ When a door sensor is linked to a facade, the automation checks its state before
 
 As soon as the door closes, the state change triggers an immediate re-evaluation — the shutters close right away if the sun is still on that facade. Only closing is blocked; automatic opening always works normally, since an open shutter never obstructs a door.
 
+### Stuck shutter protection
+
+When a stuck helper is linked to a facade, the blueprint switches it **on** just before it sends a close/open command. From then on it sends no further commands to that facade until it has proof that the shutter works:
+
+| Situation | Result |
+|-----------|--------|
+| A shutter moved after the command **and** the shutters are at a target position | Helper is switched off, normal operation continues |
+| Nothing moved yet, within the grace time (default 5 min) | Wait — the shutter may still be moving |
+| Nothing moved after the grace time | The facade is paused and a persistent notification is shown |
+| **Sun sets** or you switch the helper off | Protection resets, the automation tries again |
+
 ### Trigger moments
 
 | Trigger | When |
@@ -204,7 +235,7 @@ As soon as the door closes, the state change triggers an immediate re-evaluation
 | ☀️ Sun position change | Every time the sun's azimuth updates (event-driven, typically every few minutes) |
 | 🌇 Sun sets | When `sun.sun` transitions to `below_horizon` — resets overrides |
 | 🏠 HA restart | On Home Assistant startup |
-| 🖐️ Cover state change | Immediately on manual shutter operation (override detection only) |
+| 🖐️ Cover state change | Immediately on manual shutter operation (override detection only); runs are queued so a manual action is never missed |
 | 👥 Presence change | Immediately when a configured person entity changes state — re-evaluates if house is now empty |
 | 🚪 Door state change | Immediately when a linked door opens or closes — re-evaluates the close bypass |
 
@@ -319,6 +350,21 @@ automation:
 Make sure you have an **override helper** configured for that facade side. Without a helper the automation has no memory of manual operations and will reopen the shutter on the next auto-open cycle.
 
 ## 📝 Version History
+
+### Version 1.20.0
+- 🐛 Fixed **stuck shutter protection**: the flag was cleared as soon as the shutter stood on *either* target position — which a frozen shutter always does (it keeps its starting position) — so a stuck shutter got a new command every other run plus a notification. The helper is now switched on *before* the command and only cleared when a shutter has actually moved and reached a target; a configurable grace time (default 5 min) prevents false alarms while the shutter is still moving, and no commands are sent while the facade is waiting or stuck
+- 🐛 Fixed: an `unavailable`/`unknown` weather entity counted as "do not close" and therefore opened the shutters on a sunny day — it is now ignored
+- 🐛 Fixed: a manual close could be missed while another run was busy (the automation then reopened the shutter) — runs are now queued instead of dropped
+- 🐛 Fixed: a cover without `current_position` was always considered "not at target" — it now falls back to its open/closed state
+- 🐛 Fixed: the override detection could fail on a cover's first state (no previous state), and the cooldown check on a cover that no longer exists
+- 🔧 Optional entities now default to an empty list; modernized syntax (`triggers`/`actions`); front and back logic simplified (shared normalised cover lists)
+- 📝 README brought up to date (it still described version 1.17.1: stuck protection and auto-open exceptions were not documented)
+
+### Version 1.19.0
+- 🌙 Added **auto-open exceptions**: choose shutters per facade that are closed with the sun but not reopened automatically (e.g. a bedroom shutter for the night)
+
+### Version 1.18.0
+- 🧊 Added **stuck shutter protection**: optional per-facade helper that stops commands to a shutter that does not move and sends a notification
 
 ### Version 1.17.1
 - 🚪 Fixed **door bypass sensor filter**: door sensors input now also accepts device class `window` in addition to `door` — some integrations (e.g. Shelly) report door contact sensors as `window`, which meant they didn't show up in the selector before
