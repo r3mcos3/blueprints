@@ -1,6 +1,6 @@
 # 🔄 Update Notifications (Android)
 
-[![version](https://img.shields.io/badge/version-2.6.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-2.7.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://www.android.com/)
 
@@ -14,9 +14,10 @@ Get notified about Home Assistant updates via Mobile App! Receive notifications 
 - 🔔 **Update Alerts** - Get notified when new updates are available
 - 🎛️ **Actionable Buttons** - Install, skip, or view changelog directly from notifications
 - 📋 **Changelog Button** - Quick access to release notes (when available)
-- ✅ **Completion Notifications** - Know when updates finish installing
+- ✅ **Completion Notifications** - Know when updates finish installing (skipping an update just clears its notification)
 - ⏳ **Progress Updates** - See when updates start
-- 🔁 **Periodic Reminders** - Configurable reminders for pending updates (5min - 24h intervals)
+- 🔁 **Periodic Reminders** - Configurable reminders for the pending updates you monitor (5min - 24h intervals)
+- 🌙 **Quiet Hours** - Updates that appear outside the notification window are announced as soon as the window opens (even with reminders disabled)
 - 🏠 **HA Notifications** - Optional persistent notifications in Home Assistant
 - ⚙️ **Config Check** - Automatically run config check before core updates
 - 💾 **Backup Support** - Option to create backup before updating
@@ -72,7 +73,7 @@ Before using this blueprint, you need:
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | ⏰ Reminder Interval | Time between reminders (5min to 24h or disabled) | 3 hours |
-| 🌅 Only After | Only send notifications after this time | 07:00 |
+| 🌅 Only After | Only send notifications after this time (a new update outside the window is announced when it opens) | 07:00 |
 | 🌙 Only Before | Only send notifications before this time | 22:00 |
 
 **Available reminder intervals:**
@@ -85,7 +86,7 @@ Before using this blueprint, you need:
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| 💾 Take Backup | Create backup before updating | true |
+| 💾 Take Backup | Create backup before updating (only for update entities that support backups) | true |
 | ✅ Run Config Check | Run config check for core updates | false |
 | 📋 Custom Changelog URLs | Custom URLs for entities without changelogs | {} |
 
@@ -177,7 +178,7 @@ automation:
 
 1. Verify the Companion App is connected and working on your Android device
 2. Check that you've selected the correct device in the blueprint
-3. Ensure the time is within your configured notification window
+3. Check your notification window (a new update outside the window is announced when the window opens, so you may simply have to wait)
 4. Check Home Assistant logs for errors
 
 ### Buttons Not Working
@@ -218,6 +219,18 @@ Install callback received - Action: install_update, Raw tag: reminder_home_assis
 
 
 ## 📝 Version History
+
+### Version 2.7.0
+- 🐛 Fixed: pressing **Skip** triggered a "✅ Update Complete" notification — the state also goes `on` → `off` for a skipped update. Now the notification (and its reminder) is simply cleared
+- 🐛 Fixed: reminders listed *all* update entities instead of only the ones you selected
+- 🐛 Fixed: an update that appeared outside the notification window was silently dropped (no persistent notification, no config check, no later notice when reminders are disabled). It is now announced when the window opens
+- 🐛 Fixed: update entities without a device (some integrations) broke the "new update" notification
+- 🐛 Fixed: install failed for update entities that do not support backups while "Take Backup" was on
+- 🔒 Install/Skip buttons are only handled for monitored update entities, so multiple automations/apps no longer react to each other's buttons; unrelated notification actions no longer produce warnings in the log
+- 🧹 HA startup now dismisses the persistent notifications of *all* monitored updates that are no longer pending (not only core/OS)
+- 🔧 A failing notify service for one device no longer stops the notifications for the other devices
+- 🔧 The "5 minutes (testing)" reminder rounds correctly; the reminder trigger is not registered when reminders are disabled
+- 🔧 Modernized syntax (`triggers`, `trigger:`, `filter` selectors)
 
 ### Version 2.6.0 (2025-12-19)
 - ✨ Added Changelog button to notifications (3rd action button)
