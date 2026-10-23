@@ -1,4 +1,4 @@
-# Version: 1.9.0
+# Version: 1.10.0
 blueprint:
   domain: automation
   name: "🔥 Smart Heating Controller"
@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    📦 [Version 1.9.0] Intelligent climate control with presence detection, door/window protection,
+    📦 [Version 1.10.0] Intelligent climate control with presence detection, door/window protection,
     manual override, and energy-saving features! 🌡️
 
 
@@ -113,7 +113,7 @@ blueprint:
             Optional input_number helper to dynamically adjust comfort temperature via UI.
             When configured, this overrides the default comfort temperature above.
             Create a helper: input_number.heating_comfort_temp (min: 5, max: 25, step: 0.5)
-          default: {}
+          default: []
           selector:
             entity:
               filter:
@@ -273,7 +273,7 @@ blueprint:
           name: "💧 Humidity Sensor"
           description: >
             Indoor humidity sensor (optional).
-          default: {}
+          default: []
           selector:
             entity:
               filter:
@@ -303,7 +303,7 @@ blueprint:
           name: "🔘 Override Helper"
           description: >
             Input boolean helper to activate/deactivate override (create: input_boolean.heating_override_active). Leave empty to disable this feature.
-          default: {}
+          default: []
           selector:
             entity:
               filter:
@@ -383,7 +383,8 @@ blueprint:
           selector:
             boolean:
 
-mode: single
+mode: queued
+max: 10
 max_exceeded: silent
 
 variables:
@@ -397,8 +398,9 @@ variables:
   # Temperature settings - comfort temp uses helper if configured, otherwise default
   comfort_temp_default: !input comfort_temp
   comfort_temp_entity: !input comfort_temp_helper
+  comfort_helper_configured: "{{ comfort_temp_entity is string and comfort_temp_entity | length > 0 }}"
   temp_comfort: >
-    {% if comfort_temp_entity != {} and comfort_temp_entity != '' %}
+    {% if comfort_helper_configured %}
       {{ states(comfort_temp_entity) | float(comfort_temp_default) }}
     {% else %}
       {{ comfort_temp_default }}
@@ -416,12 +418,14 @@ variables:
   # Other settings
   preheat_mins: !input preheat_minutes
   humidity_entity: !input humidity_sensor
+  humidity_configured: "{{ humidity_entity is string and humidity_entity | length > 0 }}"
   night_start_time: !input night_start
   night_end_time: !input night_end
 
   # Manual override settings
   override_duration_hours: !input override_duration
   override_entity: !input override_helper
+  override_configured: "{{ override_entity is string and override_entity | length > 0 }}"
 
   # Virtual window detection
   virtual_window_enabled: !input use_virtual_window_detection
@@ -508,6 +512,7 @@ triggers:
   # ===== VIRTUAL WINDOW: RAPID INDOOR TEMPERATURE DROP =====
   - trigger: state
     entity_id: !input indoor_temp_sensor
+    enabled: !input use_virtual_window_detection
     id: indoor_rapid_drop
 
 conditions: []
@@ -592,7 +597,7 @@ actions:
 
       # Humidity adjustment
       humidity_adjustment: >
-        {% if humidity_enabled and humidity_entity != {} and humidity_entity != '' %}
+        {% if humidity_enabled and humidity_configured %}
           {% set humidity = states(humidity_entity) | float(50) %}
           {% if humidity > 70 %}
             -0.5
@@ -607,14 +612,14 @@ actions:
 
       # Manual override state
       override_is_active: >
-        {% if override_entity != {} and override_entity != '' %}
+        {% if override_configured %}
           {{ is_state(override_entity, 'on') }}
         {% else %}
           false
         {% endif %}
 
       override_has_expired: >
-        {% if override_is_active and override_entity != {} and override_entity != '' %}
+        {% if override_is_active and override_configured %}
           {% set last_changed_ts = as_timestamp(states[override_entity].last_changed) | float(0) %}
           {% if last_changed_ts > 0 %}
             {% set now_ts = now().timestamp() %}
@@ -669,6 +674,23 @@ actions:
 
       heat_needed: "{{ current_indoor < target_temp }}"
 
+      # Setpoint to send: target_temp, or one transition step towards it when
+      # gradual transitions are enabled (used by every branch that changes the setpoint)
+      stepped_target: >
+        {% if gradual_transitions_enabled and current_target > 0 %}
+          {% set step = transition_step_size | float(0.5) %}
+          {% set gap = target_temp - current_target %}
+          {% if gap > step %}
+            {{ current_target + step }}
+          {% elif gap < -step %}
+            {{ current_target - step }}
+          {% else %}
+            {{ target_temp }}
+          {% endif %}
+        {% else %}
+          {{ target_temp }}
+        {% endif %}
+
   # ===== MAIN CONTROL LOGIC =====
   - choose:
       # ----- FROST PROTECTION (highest priority) -----
@@ -676,6 +698,14 @@ actions:
           - condition: template
             value_template: "{{ target_mode == 'frost_protection' }}"
         sequence:
+          # Frost protection always wins: cancel an active manual override
+          - if:
+              - condition: template
+                value_template: "{{ override_is_active }}"
+            then:
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: "{{ override_entity }}"
           - action: climate.set_temperature
             target:
               entity_id: "{{ climate }}"
@@ -690,7 +720,7 @@ actions:
           - condition: template
             value_template: "{{ override_is_active }}"
           - condition: template
-            value_template: "{{ override_entity != {} and override_entity != '' }}"
+            value_template: "{{ override_configured }}"
         sequence:
           - action: input_boolean.turn_off
             target:
@@ -708,37 +738,41 @@ actions:
           - condition: template
             value_template: "{{ override_has_expired }}"
           - condition: template
-            value_template: "{{ override_entity != {} and override_entity != '' }}"
+            value_template: "{{ override_configured }}"
         sequence:
           - action: input_boolean.turn_off
             target:
               entity_id: "{{ override_entity }}"
-          - variables:
-              # Calculate post-override temperature based on current state
-              post_override_temp: >
-                {% set adj = humidity_adjustment | float(0) %}
-                {% if people_count == 0 %}
-                  {{ temp_away }}
-                {% elif is_preheat_time %}
-                  {{ temp_comfort + adj }}
-                {% elif is_night %}
-                  {{ temp_night + adj }}
-                {% else %}
-                  {{ temp_comfort + adj }}
-                {% endif %}
-          - action: climate.set_temperature
-            target:
-              entity_id: "{{ climate }}"
-            data:
-              temperature: "{{ post_override_temp }}"
-              hvac_mode: "{{ 'heat' if heat_needed else hvac_mode }}"
+          # The override has expired, so target_mode/target_temp already describe
+          # the normal program (including eco)
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ target_mode == 'eco' }}"
+                sequence:
+                  - if:
+                      - condition: template
+                        value_template: "{{ hvac_mode != 'off' }}"
+                    then:
+                      - action: climate.set_hvac_mode
+                        target:
+                          entity_id: "{{ climate }}"
+                        data:
+                          hvac_mode: "off"
+            default:
+              - action: climate.set_temperature
+                target:
+                  entity_id: "{{ climate }}"
+                data:
+                  temperature: "{{ target_temp }}"
+                  hvac_mode: "{{ 'heat' if heat_needed and not any_opening_open else hvac_mode }}"
 
       # ----- MANUAL OVERRIDE: USER CANCELLED (turned off helper manually) -----
       - conditions:
           - condition: trigger
             id: override_toggled
           - condition: template
-            value_template: "{{ override_entity != {} and override_entity != '' }}"
+            value_template: "{{ override_configured }}"
           - condition: template
             value_template: "{{ is_state(override_entity, 'off') }}"
           - condition: template
@@ -768,37 +802,22 @@ actions:
               temperature: "{{ post_cancel_temp }}"
               hvac_mode: "{{ 'heat' if heat_needed else hvac_mode }}"
 
-      # ----- MANUAL OVERRIDE: FROST PROTECTION OVERRIDE -----
-      - conditions:
-          - condition: template
-            value_template: "{{ override_is_active }}"
-          - condition: template
-            value_template: "{{ current_indoor < temp_frost }}"
-          - condition: template
-            value_template: "{{ override_entity != {} and override_entity != '' }}"
-        sequence:
-          - action: input_boolean.turn_off
-            target:
-              entity_id: "{{ override_entity }}"
-          - action: climate.set_temperature
-            target:
-              entity_id: "{{ climate }}"
-            data:
-              temperature: "{{ temp_frost }}"
-              hvac_mode: heat
-
       # ----- OUTDOOR WARM - ECO MODE -----
+      # Matches even when HVAC is already off, so later branches (night, away, ...)
+      # cannot call set_temperature and accidentally wake the thermostat up.
       - conditions:
           - condition: template
             value_template: "{{ target_mode == 'eco' }}"
-          - condition: template
-            value_template: "{{ hvac_mode != 'off' }}"
         sequence:
-          - action: climate.set_hvac_mode
-            target:
-              entity_id: "{{ climate }}"
-            data:
-              hvac_mode: "off"
+          - if:
+              - condition: template
+                value_template: "{{ hvac_mode != 'off' }}"
+            then:
+              - action: climate.set_hvac_mode
+                target:
+                  entity_id: "{{ climate }}"
+                data:
+                  hvac_mode: "off"
 
       # ----- DOOR/WINDOW OPEN -----
       - conditions:
@@ -849,7 +868,7 @@ actions:
             target:
               entity_id: "{{ climate }}"
             data:
-              temperature: "{{ temp_away }}"
+              temperature: "{{ stepped_target }}"
 
       # ----- ARRIVED HOME -----
       - conditions:
@@ -862,7 +881,7 @@ actions:
             target:
               entity_id: "{{ climate }}"
             data:
-              temperature: "{{ target_temp }}"
+              temperature: "{{ stepped_target }}"
               hvac_mode: "{{ 'heat' if heat_needed else hvac_mode }}"
 
       # ----- DOOR CLOSED - RESUME -----
@@ -878,7 +897,7 @@ actions:
             target:
               entity_id: "{{ climate }}"
             data:
-              temperature: "{{ target_temp }}"
+              temperature: "{{ stepped_target }}"
               hvac_mode: "{{ 'heat' if heat_needed else hvac_mode }}"
 
       # ----- NIGHT START -----
@@ -896,7 +915,7 @@ actions:
             target:
               entity_id: "{{ climate }}"
             data:
-              temperature: "{{ temp_night + humidity_adjustment | float(0) }}"
+              temperature: "{{ stepped_target }}"
 
       # ----- NIGHT END -----
       - conditions:
@@ -915,7 +934,7 @@ actions:
             target:
               entity_id: "{{ climate }}"
             data:
-              temperature: "{{ temp_comfort + humidity_adjustment | float(0) }}"
+              temperature: "{{ stepped_target }}"
               hvac_mode: "{{ 'heat' if heat_needed else hvac_mode }}"
 
       # ----- OUTDOOR COLD AGAIN -----
@@ -931,7 +950,7 @@ actions:
             target:
               entity_id: "{{ climate }}"
             data:
-              temperature: "{{ target_temp }}"
+              temperature: "{{ stepped_target }}"
               hvac_mode: "{{ 'heat' if heat_needed else hvac_mode }}"
 
       # ----- PRE-HEAT MODE -----
@@ -951,7 +970,7 @@ actions:
             target:
               entity_id: "{{ climate }}"
             data:
-              temperature: "{{ target_temp }}"
+              temperature: "{{ stepped_target }}"
               hvac_mode: "{{ 'heat' if heat_needed else hvac_mode }}"
 
       # ----- COMFORT TEMPERATURE HELPER CHANGED -----
@@ -971,7 +990,7 @@ actions:
             target:
               entity_id: "{{ climate }}"
             data:
-              temperature: "{{ temp_comfort + humidity_adjustment | float(0) }}"
+              temperature: "{{ stepped_target }}"
 
       # ----- STARTUP / RELOAD (initialize state) -----
       - conditions:
@@ -983,7 +1002,7 @@ actions:
           # First, disable any expired override helper (edge case: restart during expired override)
           - if:
               - condition: template
-                value_template: "{{ override_has_expired and override_entity != {} and override_entity != '' }}"
+                value_template: "{{ override_has_expired and override_configured }}"
             then:
               - action: input_boolean.turn_off
                 target:
@@ -993,7 +1012,7 @@ actions:
           - variables:
               startup_target_temp: >
                 {% set adj = humidity_adjustment | float(0) %}
-                {% set still_overriding = override_entity != {} and override_entity != '' and is_state(override_entity, 'on') and not override_has_expired %}
+                {% set still_overriding = override_configured and is_state(override_entity, 'on') and not override_has_expired %}
                 {% if current_indoor < temp_frost %}
                   {{ temp_frost }}
                 {% elif still_overriding %}
@@ -1042,27 +1061,12 @@ actions:
                  (transition_step_size / 2 if gradual_transitions_enabled else 0.5)
                  or (hvac_mode == 'off' and heat_needed) }}
         sequence:
-          - variables:
-              sync_target_temp: >
-                {% if gradual_transitions_enabled %}
-                  {% set step = transition_step_size | float(0.5) %}
-                  {% set gap = target_temp - current_target %}
-                  {% if gap > step %}
-                    {{ current_target + step }}
-                  {% elif gap < -step %}
-                    {{ current_target - step }}
-                  {% else %}
-                    {{ target_temp }}
-                  {% endif %}
-                {% else %}
-                  {{ target_temp }}
-                {% endif %}
           - action: climate.set_temperature
             target:
               entity_id: "{{ climate }}"
             data:
-              temperature: "{{ sync_target_temp }}"
-              hvac_mode: "{{ 'heat' if current_indoor < sync_target_temp else hvac_mode }}"
+              temperature: "{{ stepped_target }}"
+              hvac_mode: "{{ 'heat' if current_indoor < stepped_target else hvac_mode }}"
 
   # ===== DEBUG NOTIFICATION =====
   - if:
@@ -1073,12 +1077,14 @@ actions:
         data:
           title: "🔥 Smart Heating Debug"
           notification_id: "smart_heating_debug"
-          message: >
-            **Mode:** {{ target_mode }}
-            **Target temp:** {{ target_temp }}°C
-            **Indoor:** {{ current_indoor }}°C | **Outdoor:** {{ current_outdoor }}°C
-            **People home:** {{ people_count }}
-            **Night:** {{ is_night }} | **Pre-heat:** {{ is_preheat_time }}
-            **Override active:** {{ override_is_active }}
-            **Any door/window open:** {{ any_opening_open }}
-            **Last run:** {{ now().strftime('%Y-%m-%d %H:%M:%S') }}
+          message: |
+            - **Trigger:** {{ trigger.id | default('none') }}
+            - **Mode:** {{ target_mode }}
+            - **Target temp:** {{ target_temp }}°C (setpoint sent: {{ stepped_target }}°C)
+            - **Current setpoint:** {{ current_target }}°C | **HVAC:** {{ hvac_mode }}
+            - **Indoor:** {{ current_indoor }}°C | **Outdoor:** {{ current_outdoor }}°C
+            - **People home:** {{ people_count }}
+            - **Night:** {{ is_night }} | **Pre-heat:** {{ is_preheat_time }}
+            - **Override active:** {{ override_is_active }}
+            - **Any door/window open:** {{ any_opening_open }}
+            - **Last run:** {{ now().strftime('%Y-%m-%d %H:%M:%S') }}

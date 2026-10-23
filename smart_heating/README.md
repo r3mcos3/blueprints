@@ -1,6 +1,6 @@
 # 🔥 Smart Heating Controller
 
-[![version](https://img.shields.io/badge/version-1.9.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.10.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 Intelligent climate control that adapts to your presence, outdoor conditions, door/window states, and time schedules. Save energy while maintaining comfort with smart temperature management! 🌡️
@@ -126,11 +126,13 @@ Before using this blueprint, you need:
 | 🔄 Enable Gradual Transitions | Step toward target temp instead of jumping directly | false |
 | ↗️ Temperature Step | Change per step, applied every 15 minutes | 0.5°C |
 
+Gradual transitions apply to every setpoint change (arriving, leaving, night start/end, pre-heat, door closed, comfort helper change and the periodic check). Frost protection and manual override are never stepped.
+
 ### 🔍 Debug Settings (Collapsed)
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| 🔍 Enable Debug Mode | Persistent notification after every run with full state info | false |
+| 🔍 Enable Debug Mode | Persistent notification after every run with full state info (trigger, mode, setpoint, HVAC mode, ...) | false |
 
 ## 🎯 How It Works
 
@@ -142,7 +144,7 @@ Here is a step-by-step explanation of how the controller decides what the temper
 The blueprint checks the situation in this exact order. As soon as a condition is 'true', that action is executed and the decision-making stops for that moment.
 
 1.  **❄️ Frost Protection (Highest Priority):**
-    *   *If* the indoor temperature is dangerously low (below the set frost threshold, default 7°C), the heating turns **on immediately** at that minimum temperature, regardless of whether windows are open or no one is home. Safety comes first.
+    *   *If* the indoor temperature is dangerously low (below the set frost threshold, default 7°C), the heating turns **on immediately** at that minimum temperature, regardless of whether windows are open or no one is home. An active manual override is cancelled. Safety comes first.
 
 2.  **🛠️ Manual Override:**
     *   *If* you have turned on the 'Override Helper' (a switch in Home Assistant), the automation ignores the normal schedule.
@@ -151,6 +153,7 @@ The blueprint checks the situation in this exact order. As soon as a condition i
 
 3.  **☀️ Eco Mode (Warm Outside):**
     *   *If* it is warmer outside than the set threshold value (default 18°C), the heating is completely **switched off** (HVAC mode: off). It makes no sense to heat if it is already warm enough outside.
+    *   While eco mode is active, no other event (leaving/arriving, night start/end, ...) touches the thermostat, so it stays off.
 
 4.  **🚪 Windows/Doors Open (pause):**
     *   *If* a window or door is open longer than the 'delay time' (default 300 sec), the heating is switched **off** (HVAC mode: off).
@@ -343,6 +346,16 @@ automation:
 5. Check if sensor is reporting correct units (°C)
 
 ## 📝 Version History
+
+### Version 1.10.0
+- 🐛 Fixed: in eco mode other events (night start/end, leaving, ...) could still call `set_temperature` and wake up a switched-off thermostat
+- 🐛 Fixed: when a manual override expired during eco mode the comfort temperature was set instead of keeping the heating off
+- 🐛 Fixed: frost protection now cancels an active manual override (the old branch for this was unreachable and has been removed)
+- 🔄 Gradual transitions now apply to all setpoint changes, not only to the 15-minute check
+- 🧹 Optional helper inputs now default to an empty list (`[]`), the usual way to leave a trigger entity empty; existing configurations keep working
+- ⚡ Virtual window trigger is only registered when the feature is enabled (no more runs on every indoor sensor update)
+- ⚙️ Run mode changed from `single` to `queued` (max 10) so events during the 30 s startup delay are no longer dropped
+- 🔍 Debug notification is now a readable bullet list and also shows the trigger, current setpoint and HVAC mode
 
 ### Version 1.9.0
 - 🐛 Fixed: heating could stay off after a door/window, virtual window or eco pause — the periodic check now also restarts heating when HVAC is off but heat is needed
