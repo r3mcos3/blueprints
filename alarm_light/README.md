@@ -1,6 +1,6 @@
 # ⏰ Alarm Light
 
-[![version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 Wake up gently with lights that turn on before your alarm! This blueprint uses your phone's next alarm sensor to automatically illuminate your room, making mornings easier. 🌅
@@ -10,8 +10,9 @@ Wake up gently with lights that turn on before your alarm! This blueprint uses y
 - ⏰ **Alarm Integration** - Syncs with your phone's next alarm sensor
 - 💡 **Gradual Wake-up** - Lights turn on before your alarm rings
 - 🏠 **Presence Aware** - Only triggers when you're home
-- 🌙 **Darkness Check** - Only activates when it's dark outside
-- 📅 **Day Selection** - Choose all days, weekdays only, or weekends only
+- 🌙 **Darkness Check** - Only activates when it's dark outside (can be switched off)
+- 🌅 **Fade-in** - Optionally let the lights fade in over up to 15 minutes
+- 📅 **Day Selection** - Choose all days, weekdays only, or weekends only (based on the day the alarm rings)
 - ⏱️ **Flexible Offset** - Set lights to turn on 5-60 minutes before alarm
 - ✨ **Adjustable Brightness** - Configure the perfect wake-up brightness
 
@@ -93,7 +94,9 @@ If you use the **Sleep Schedule** feature in the iOS Health app:
 | 👤 Person | Person entity to check if home | - |
 | 💡 Target Lights | Lights to turn on | - |
 | ⏱️ Offset Before Alarm | Minutes before alarm to turn on lights | 10 min |
-| ✨ Brightness | Brightness percentage (0-100%) | 33% |
+| ✨ Brightness | Brightness percentage (1-100%) | 33% |
+| 🌅 Fade-in Duration | Seconds over which the lights fade in (0 = immediately, needs light transition support) | 0 |
+| 🌙 Only When Dark | Only turn on when `sun.sun` is below the horizon | On |
 | 📅 Active Days | All days, weekdays only, or weekends only | All Days |
 
 ### Offset Options
@@ -139,8 +142,8 @@ Turn on multiple lights at different times for a gradual sunrise effect by creat
 
 1. **Check alarm sensor** - Verify the sensor has a valid timestamp in Developer Tools → States
 2. **Check presence** - Ensure your person entity shows "home"
-3. **Check darkness** - The automation only runs when `sun.sun` is `below_horizon`
-4. **Check day selection** - Make sure today matches your active days setting
+3. **Check darkness** - By default the automation only runs when `sun.sun` is `below_horizon` (turn off *Only When Dark* to disable this)
+4. **Check day selection** - Make sure the day your alarm rings matches your active days setting
 
 ### Alarm Sensor Not Updating
 
@@ -158,6 +161,13 @@ If lights turn on at the wrong time, check your Home Assistant timezone configur
 
 
 ## 📝 Version History
+
+### Version 1.1.0
+- 🐛 Fixed: active days were checked against the day the lights turn on instead of the day the alarm rings (wrong for an alarm shortly after midnight)
+- 🐛 Fixed: brightness 0% switched the lights off — the minimum is now 1%
+- 🌅 Added optional fade-in (transition) duration
+- 🌙 Added switch to disable the darkness check
+- 🔧 Modernized syntax (`triggers`/`conditions`/`actions`, `filter` selector)
 
 ### Version 1.0.0 (2025-12-17)
 - 🎉 Initial release
