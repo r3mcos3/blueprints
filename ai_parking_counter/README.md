@@ -1,6 +1,6 @@
 # 🚗 AI Parking Spot Counter
 
-[![version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 This blueprint automatically uses AI to analyze camera feeds and count free and occupied parking spaces when you arrive home. Perfect for keeping track of available parking spots in front of your house! 🅿️
@@ -14,6 +14,8 @@ This blueprint automatically uses AI to analyze camera feeds and count free and 
 - 💾 **Automatic Updates** - Updates sensor entities with free and occupied counts
 - 📱 **Telegram Notifications** - Optional notifications with customizable messages
 - 📸 **Snapshot Storage** - Optionally save camera snapshots for review
+- ⏱️ **Scan Cooldown** - Avoids several AI calls when you pass multiple zones on one trip
+- 🛡️ **Safe Results** - An incomplete AI answer never overwrites your counters; values are limited to 0 – total spaces
 - 🎯 **Flexible Configuration** - Customize AI instructions and parking space count
 - 📦 **Collapsed Sections** - Clean UI with organized, collapsible input sections
 
@@ -100,6 +102,7 @@ When creating an automation from this blueprint, you'll configure:
 | 🅿️ Total Parking Spaces | Total number of parking spaces (1-20) | 3 |
 | 🟢 Free Spots Sensor | Input number entity for free spots count | - |
 | 🔴 Occupied Spots Sensor | Input number entity for occupied spots count | - |
+| ⏱️ Scan Cooldown | Minimum minutes between two scans (0 = scan on every arrival) | 10 |
 
 ### 📱 Notification Settings (Collapsed)
 
@@ -180,9 +183,10 @@ Analyze this image of my driveway. There are {total_spaces} parking spots visibl
 ### Trigger Not Working
 
 1. Verify your zone is correctly configured
-2. Check if the person entity is tracking correctly
-3. If using proximity sensor, ensure it's enabled and showing "towards" when approaching
-4. For testing, disable the proximity sensor check
+2. A scan is skipped when the previous one was less than the **Scan Cooldown** ago (set it to 0 for testing)
+3. Check if the person entity is tracking correctly
+4. If using proximity sensor, ensure it's enabled and showing "towards" when approaching
+5. For testing, disable the proximity sensor check
 
 ## Screenshot
 
@@ -191,6 +195,15 @@ Analyze this image of my driveway. There are {total_spaces} parking spots visibl
 
 
 ## 📝 Version History
+
+### Version 2.1.0
+- 🐛 Fixed: without a Telegram bot configured the blueprint still tried to send a message, failed, and skipped the snapshot
+- 🐛 Fixed: an incomplete AI answer silently wrote "0 free spots"; the run now stops without touching the counters
+- 🛡️ Counters are limited to 0 – total spaces; the Telegram message uses the same validated value
+- ⏱️ Added scan cooldown (default 10 min) to avoid duplicate AI calls when several zones trigger
+- 🤖 AI response fields now carry a description so the model knows what to count
+- 📱 A failing Telegram notification no longer prevents saving the snapshot
+- 🔧 Modernized syntax (`triggers`/`conditions`/`actions`, `filter` entity selectors)
 
 ### Version 2.0.0 (2025-12-17)
 - 🏘️ Support for 1 required + 4 optional zone detection points
