@@ -1,6 +1,6 @@
 # 🛡️ Persistent Motion Light 💡
 
-> **Version:** 1.0
+> **Version:** 1.2.0
 
 This blueprint turns on a light or switch when motion is detected and ensures it **stays on** as long as motion is present.
 
@@ -29,3 +29,18 @@ This blueprint turns on a light or switch when motion is detected and ensures it
 6.  It turns the light **OFF**.
 
 If motion is detected again during step 5, the automation restarts from step 1, keeping the light on.
+
+> **Note:** if you turn the light off while motion is still detected it is switched back on straight away — that is the purpose of this blueprint. Wait until the motion sensor reports "no motion" (or disable the automation) when you really want the light off.
+
+## 📝 Version History
+
+### Version 1.2.0
+- 🔧 Modernized syntax (`triggers`/`actions`, `action:` instead of the deprecated `service:`, `filter` entity selectors)
+- 📌 Added minimum Home Assistant version (2025.12.0)
+- 📝 README version synced with the blueprint (it still said 1.0)
+
+### Version 1.1
+- 🛡️ Safety feature: switch the light back on when it is turned off manually while motion is detected
+
+### Version 1.0
+- 🎉 Initial release
