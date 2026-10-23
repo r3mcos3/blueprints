@@ -1,4 +1,4 @@
-# Version: 1.8.0
+# Version: 1.9.0
 blueprint:
   domain: automation
   name: "🔥 Smart Heating Controller"
@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    📦 [Version 1.8.0] Intelligent climate control with presence detection, door/window protection,
+    📦 [Version 1.9.0] Intelligent climate control with presence detection, door/window protection,
     manual override, and energy-saving features! 🌡️
 
 
@@ -513,6 +513,18 @@ triggers:
 conditions: []
 
 actions:
+  # ===== STARTUP / RELOAD: WAIT BEFORE READING ANY STATE =====
+  # Sensors and zones are often still unavailable right after a restart, so the
+  # delay must come before the state is calculated below.
+  - if:
+      - condition: trigger
+        id:
+          - ha_start
+          - automation_reload
+    then:
+      - delay:
+          seconds: 30
+
   # ===== CALCULATE CURRENT STATE =====
   - variables:
       current_outdoor: "{{ states(outdoor_sensor) | float(10) }}"
@@ -811,8 +823,12 @@ actions:
             value_template: "{{ virtual_window_enabled }}"
           - condition: template
             value_template: >
-              {{ (trigger.from_state.state | float(20) - trigger.to_state.state | float(20))
-                 >= virtual_window_temp_drop_threshold }}
+              {{ trigger.from_state is not none
+                 and trigger.to_state is not none
+                 and trigger.from_state.state | is_number
+                 and trigger.to_state.state | is_number
+                 and (trigger.from_state.state | float - trigger.to_state.state | float)
+                     >= virtual_window_temp_drop_threshold }}
           - condition: template
             value_template: "{{ hvac_mode != 'off' }}"
           - condition: template
@@ -839,6 +855,8 @@ actions:
       - conditions:
           - condition: trigger
             id: arrived_home
+          - condition: template
+            value_template: "{{ not any_opening_open }}"
         sequence:
           - action: climate.set_temperature
             target:
@@ -885,7 +903,13 @@ actions:
           - condition: trigger
             id: night_end
           - condition: template
+            value_template: "{{ night_mode_enabled }}"
+          - condition: template
             value_template: "{{ people_count > 0 }}"
+          - condition: template
+            value_template: "{{ not override_is_active }}"
+          - condition: template
+            value_template: "{{ not any_opening_open }}"
         sequence:
           - action: climate.set_temperature
             target:
@@ -900,6 +924,8 @@ actions:
             id: outdoor_cold
           - condition: template
             value_template: "{{ hvac_mode == 'off' }}"
+          - condition: template
+            value_template: "{{ not any_opening_open }}"
         sequence:
           - action: climate.set_temperature
             target:
@@ -915,7 +941,11 @@ actions:
           - condition: template
             value_template: "{{ target_mode == 'preheat' }}"
           - condition: template
-            value_template: "{{ (current_target - target_temp) | abs > 0.5 }}"
+            value_template: "{{ not any_opening_open }}"
+          - condition: template
+            value_template: >
+              {{ (current_target - target_temp) | abs > 0.5
+                 or (hvac_mode == 'off' and heat_needed) }}
         sequence:
           - action: climate.set_temperature
             target:
@@ -934,6 +964,8 @@ actions:
             value_template: "{{ people_count > 0 }}"
           - condition: template
             value_template: "{{ not override_is_active }}"
+          - condition: template
+            value_template: "{{ not any_opening_open }}"
         sequence:
           - action: climate.set_temperature
             target:
@@ -948,8 +980,6 @@ actions:
               - ha_start
               - automation_reload
         sequence:
-          - delay:
-              seconds: 30
           # First, disable any expired override helper (edge case: restart during expired override)
           - if:
               - condition: template
@@ -958,7 +988,8 @@ actions:
               - action: input_boolean.turn_off
                 target:
                   entity_id: "{{ override_entity }}"
-          # Recalculate post-override temperature since helper state may have just changed
+          # Recalculate target since the override helper may have just been turned off
+          # (all other state was read after the startup delay at the top of the run)
           - variables:
               startup_target_temp: >
                 {% set adj = humidity_adjustment | float(0) %}
@@ -1008,7 +1039,8 @@ actions:
           - condition: template
             value_template: >
               {{ (current_target - target_temp) | abs >
-                 (transition_step_size / 2 if gradual_transitions_enabled else 0.5) }}
+                 (transition_step_size / 2 if gradual_transitions_enabled else 0.5)
+                 or (hvac_mode == 'off' and heat_needed) }}
         sequence:
           - variables:
               sync_target_temp: >

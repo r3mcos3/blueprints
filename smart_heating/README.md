@@ -1,6 +1,6 @@
 # 🔥 Smart Heating Controller
 
-[![version](https://img.shields.io/badge/version-1.8.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.9.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 Intelligent climate control that adapts to your presence, outdoor conditions, door/window states, and time schedules. Save energy while maintaining comfort with smart temperature management! 🌡️
@@ -70,6 +70,7 @@ Before using this blueprint, you need:
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | 🏠 Comfort Temperature | Target when people are home | 21°C |
+| 🎛️ Comfort Temperature Helper | Optional `input_number` to adjust comfort temperature from the UI (overrides the value above) | - |
 | 🏃 Away Temperature | Target when nobody is home | 17°C |
 | ❄️ Frost Protection Temperature | Minimum temperature to prevent freezing | 7°C |
 | 🌙 Night Temperature | Target during sleeping hours | 18°C |
@@ -79,7 +80,7 @@ Before using this blueprint, you need:
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| ⏱️ Door Open Delay | Wait time before pausing heating | 120 seconds |
+| ⏱️ Door Open Delay | Wait time before pausing heating | 300 seconds |
 | ⏱️ Door Closed Resume Delay | Wait time before resuming heating | 60 seconds |
 
 ### 🌙 Night Mode Settings (Collapsed)
@@ -151,9 +152,10 @@ The blueprint checks the situation in this exact order. As soon as a condition i
 3.  **☀️ Eco Mode (Warm Outside):**
     *   *If* it is warmer outside than the set threshold value (default 18°C), the heating is completely **switched off** (HVAC mode: off). It makes no sense to heat if it is already warm enough outside.
 
-4.  **🚪 Windows/Doors Open:**
-    *   *If* a window or door is open longer than the 'delay time' (default 120 sec), the heating drops to the frost protection temperature.
-    *   This prevents heating the outdoors. As soon as everything is closed again, the normal program resumes after a short wait.
+4.  **🚪 Windows/Doors Open (pause):**
+    *   *If* a window or door is open longer than the 'delay time' (default 300 sec), the heating is switched **off** (HVAC mode: off).
+    *   This prevents heating the outdoors. While something is open, other events (arriving home, night end, outdoor temperature drop, pre-heat, comfort helper change) no longer switch the heating back on.
+    *   As soon as everything is closed again, the normal program resumes after the 'closed resume delay' (default 60 sec).
 
 5.  **🏃 Away:**
     *   *If* no one is home (detected via the `presence_zone`), the thermostat goes to the 'Away Temperature' (default 17°C).
@@ -184,7 +186,7 @@ If you enable this, the system subtly adjusts the target temperature based on hu
 | 🎛️ Comfort temp helper | Immediately when the UI slider changes |
 | 🔘 Override helper | Immediately when manually toggled |
 | 🏠 HA restart | On Home Assistant startup (30-second delay) |
-| 🔄 Every 15 minutes | Periodic sync to correct any drift |
+| 🔄 Every 15 minutes | Periodic sync to correct any drift, and to switch heating back on when it was paused (HVAC off) but heat is needed again |
 
 ## 💡 Usage Examples
 
@@ -212,7 +214,7 @@ automation:
 - Comfort temperature (21°C) when home
 - Away temperature (17°C) when away
 - Night temperature (18°C) during 23:00-07:00
-- Heating pauses if doors/windows open >2 minutes
+- Heating pauses if doors/windows open >5 minutes
 - Pre-heating starts 30 minutes before 07:00
 
 ### Example 2: Advanced Configuration
@@ -296,7 +298,7 @@ automation:
 
 1. Verify binary sensors are in correct state (`on` = open, `off` = closed)
 2. Check sensor device_class is set to `door`, `window`, or `opening`
-3. Ensure door_open_delay matches your needs (default 120 seconds)
+3. Ensure door_open_delay matches your needs (default 300 seconds)
 4. Test by opening a door/window and waiting for the configured delay
 5. Check automation traces to see if triggers are firing
 
@@ -341,6 +343,14 @@ automation:
 5. Check if sensor is reporting correct units (°C)
 
 ## 📝 Version History
+
+### Version 1.9.0
+- 🐛 Fixed: heating could stay off after a door/window, virtual window or eco pause — the periodic check now also restarts heating when HVAC is off but heat is needed
+- 🐛 Fixed: startup logic read its state (presence, temperatures) *before* the 30 s delay, giving wrong values after a restart — the delay now comes first
+- 🐛 Fixed: virtual window detection no longer triggers on `unavailable`/`unknown` sensor states
+- 🐛 Fixed: arriving home, night end, outdoor temperature drop, pre-heat and comfort helper change no longer switch heating on while a door/window is open
+- 🐛 Fixed: night end no longer runs when night mode is disabled or a manual override is active
+- 📝 README synced with the blueprint (door delay default, door pause behaviour, comfort helper, override FAQ)
 
 ### Version 1.8.0
 - 🐛 Fixed: `current_target` was used before being defined — manual override mode now correctly holds the existing temperature
@@ -391,7 +401,7 @@ automation:
 A: Create separate automations for each climate entity. Each automation can have different settings optimized for that room.
 
 **Q: What happens if I manually change the temperature?**
-A: The automation will override manual changes on the next trigger (arrival home, mode change, or periodic check). To temporarily override, disable the automation.
+A: The automation will override manual changes on the next trigger (arrival home, mode change, or periodic check). To hold a temperature on purpose, configure the Override Helper and turn it on: the automation then leaves the thermostat alone until the override duration has passed (or you leave home).
 
 **Q: Does this work with non-Celsius temperatures?**
 A: The blueprint is designed for Celsius. For Fahrenheit, adjust all temperature values accordingly.
