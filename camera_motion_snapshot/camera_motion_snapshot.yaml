@@ -1,7 +1,8 @@
+# Version: 1.10.0
 blueprint:
   name: 📸 Camera Snapshot on Motion to Telegram 🤖
   description: >
-    📦 [Version 1.9.0] Automatically capture a snapshot from your camera 📷 when motion is detected 🏃‍♂️ and send it instantly via your Telegram bot 📨.
+    📦 [Version 1.10.0] Automatically capture a snapshot from your camera 📷 when motion is detected 🏃‍♂️ and send it instantly via your Telegram bot 📨.
 
     ✨ Features:
     - 📸 Instant high-quality snapshot.
@@ -13,20 +14,24 @@ blueprint:
   domain: automation
   author: r3mcos3
   source_url: https://github.com/r3mcos3/blueprints/blob/main/camera_motion_snapshot/camera_motion_snapshot.yaml
+  homeassistant:
+    min_version: 2025.12.0
   input:
     motion_sensor:
       name: 🏃‍♂️ Motion Sensor
       description: 🔍 Select the sensor that should trigger the snapshot.
       selector:
         entity:
-          domain: binary_sensor
-          device_class: motion
+          filter:
+            - domain: binary_sensor
+              device_class: motion
     camera:
       name: 📷 Camera
       description: 🖼️ Choose the camera to take the snapshot from.
       selector:
         entity:
-          domain: camera
+          filter:
+            - domain: camera
     telegram_bot_entry:
       name: 🤖 Telegram Bot Instance
       description: 🔌 Select the Telegram Bot integration instance to use.
@@ -56,7 +61,7 @@ blueprint:
       default: 1
       selector:
         number:
-          min: 1
+          min: 0
           max: 10
           unit_of_measurement: seconds
           mode: box
@@ -89,14 +94,16 @@ blueprint:
       default: []
       selector:
         entity:
-          domain: person
+          filter:
+            - domain: person
     person_entity_2:
       name: 👤 Second Person Tracker (Optional)
       description: 🔍 Select a second person entity to track for presence detection. Only used when Presence Mode is not set to 'Always'.
       default: []
       selector:
         entity:
-          domain: person
+          filter:
+            - domain: person
 
 variables:
   target_chat_id_var: !input target_chat_id
@@ -104,23 +111,26 @@ variables:
   person_entity_var: !input person_entity
   person_entity_2_var: !input person_entity_2
 
-trigger:
-  - platform: state
+triggers:
+  - trigger: state
     entity_id: !input motion_sensor
     from: "off"
     to: "on"
 
 mode: single
+max_exceeded: silent
 
-condition:
+conditions:
   - condition: template
     value_template: >
       {% set mode = presence_mode_var %}
       {% set p1 = person_entity_var %}
       {% set p2 = person_entity_2_var %}
-      {% set p1_home = p1 != [] and states(p1) == 'home' %}
-      {% set p2_home = p2 != [] and states(p2) == 'home' %}
-      {% if mode == 'always' %}
+      {% set p1_set = p1 is string and p1 | length > 0 %}
+      {% set p2_set = p2 is string and p2 | length > 0 %}
+      {% set p1_home = p1_set and is_state(p1, 'home') %}
+      {% set p2_home = p2_set and is_state(p2, 'home') %}
+      {% if mode == 'always' or (not p1_set and not p2_set) %}
         true
       {% elif mode == 'away' %}
         {{ not p1_home and not p2_home }}
@@ -130,7 +140,7 @@ condition:
         true
       {% endif %}
 
-action:
+actions:
   - delay: !input motion_delay
   - action: camera.snapshot
     target:
@@ -140,6 +150,7 @@ action:
   - delay: "00:00:02"
   - action: telegram_bot.send_photo
     data:
+      config_entry_id: !input telegram_bot_entry
       chat_id: "{{ target_chat_id_var }}"
       file: !input snapshot_path
       caption: !input message_caption

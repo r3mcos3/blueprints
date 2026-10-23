@@ -1,5 +1,8 @@
 # 📸 Camera Snapshot on Motion to Telegram 🤖
 
+[![version](https://img.shields.io/badge/version-1.10.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
+
 This blueprint 🏗️ automatically takes a snapshot 🖼️ from a specified camera 📷 when a motion sensor 🏃‍♂️ is triggered and sends it to a specific Telegram chat 📨.
 
 ## ✨ Features
@@ -24,9 +27,13 @@ This blueprint 🏗️ automatically takes a snapshot 🖼️ from a specified c
 | 🆔 Target Chat ID | The ID of the chat/user to send the photo to. | ✅ Yes |
 | ✍️ Message Caption | The exact text to send with the photo. | ✅ Yes |
 | 📂 Snapshot Path | Local storage path for the image. | ✅ Yes |
+| ⏳ Motion Delay | Seconds between motion and snapshot (0-10). | ❌ No (Default: 1s) |
+| 🏠 Presence Mode | Always, only when away, or only when at home. | ❌ No (Default: always) |
 | 👤 First Person Tracker | Select the first person entity to track. | ❌ No (Default: []) |
 | 👤 Second Person Tracker | Select a second person entity to track. | ❌ No (Default: []) |
 | ⏱️ Timeout (Cooldown) | The time to wait after a snapshot before allowing another one. | ❌ No (Default: 60s) |
+
+> If Presence Mode is *away* or *home* but no person is selected, the presence filter is ignored.
 
 ## 🚀 Installation
 1. 📥 Import this blueprint into Home Assistant.
@@ -39,6 +46,7 @@ This blueprint 🏗️ automatically takes a snapshot 🖼️ from a specified c
 
 
 ## 🏷️ Version History
+- **1.10.0**: 🐛 The selected Telegram bot instance is now actually used (`config_entry_id` was missing). 🔇 No more "already running" warnings in the log during the cooldown. 🏠 Presence filter no longer breaks when no person is selected. ⏳ Motion delay can be 0. 🔧 Modernized syntax and selectors.
 - **1.9.0**: 👥 Added support for a second person tracker for presence-based filtering.
 - **1.8.1**: 🐛 Fixed deprecated `target` parameter in Telegram action and modernized service calls to actions.
 - **1.8.0**: 🏠 Added presence-based filtering (only when home/away).
