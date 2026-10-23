@@ -1,20 +1,21 @@
 # 🔄 Update Notifications (Telegram)
 
-[![version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.4.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 [![Platform](https://img.shields.io/badge/Platform-Telegram-blue.svg)](https://telegram.org/)
 
-Get notified about Home Assistant updates via Telegram! Receive notifications when updates are available for core, addons, or integrations with inline keyboard buttons to install, skip, or view changelogs directly from the message. 🚀
+Get notified about Home Assistant updates via Telegram! Receive notifications when updates are available for core, addons, or integrations with inline keyboard buttons to install or skip updates directly from the message. 🚀
 
 ## ✨ Features
 
 - 💬 **Telegram Notifications** - Get notified via Telegram Bot
 - 🔔 **Update Alerts** - Get notified when new updates are available
-- 🎛️ **Inline Keyboard Buttons** - Install, skip, or view changelog directly from messages
-- 📋 **Changelog Button** - Quick access to release notes (when available)
-- ✅ **Completion Notifications** - Know when updates finish installing
+- 🎛️ **Inline Keyboard Buttons** - Install or skip directly from messages
+- 📋 **Changelog Link** - Quick access to release notes in the message (when available)
+- ✅ **Completion Notifications** - Know when updates finish installing (skipping an update does not send one)
 - ⏳ **Progress Updates** - See when updates start
-- 🔁 **Periodic Reminders** - Configurable reminders for pending updates (5min - 24h intervals)
+- 🔁 **Periodic Reminders** - Configurable reminders for the pending updates you monitor (5min - 24h intervals)
+- 🌙 **Quiet Hours** - Updates that appear outside the notification window are announced when the window opens
 - 🏠 **HA Notifications** - Optional persistent notifications in Home Assistant
 - ⚙️ **Config Check** - Automatically run config check before core updates
 - 💾 **Backup Support** - Option to create backup before updating
@@ -25,9 +26,8 @@ Get notified about Home Assistant updates via Telegram! Receive notifications wh
 Before using this blueprint, you need:
 
 1. **Telegram Bot** - Create a bot via [@BotFather](https://t.me/botfather)
-2. **Telegram Integration** - Set up in Home Assistant
-3. **Chat ID** - Your Telegram user or group chat ID
-4. **Update Entities** - The update entities you want to monitor
+2. **Telegram bot integration** - Set up in Home Assistant (with your chat as an allowed chat)
+3. **Update Entities** - The update entities you want to monitor
 
 ### Setting Up Telegram Bot
 
@@ -41,20 +41,12 @@ Before using this blueprint, you need:
 
 ### Configure Telegram in Home Assistant
 
-Add to your `configuration.yaml`:
+1. Go to **Settings** → **Devices & Services** → **Add Integration** → **Telegram bot**
+2. Enter your bot token and choose polling or webhooks
+3. Add your chat ID as an allowed chat
+4. Select this Telegram bot in the blueprint (*Telegram Bot* input)
 
-```yaml
-telegram_bot:
-  - platform: polling
-    api_key: YOUR_BOT_TOKEN
-    allowed_chat_ids:
-      - YOUR_CHAT_ID
-
-notify:
-  - platform: telegram
-    name: telegram
-    chat_id: YOUR_CHAT_ID
-```
+See the [Telegram bot integration](https://www.home-assistant.io/integrations/telegram_bot/) for details.
 
 ## 🚀 Installation
 
@@ -84,8 +76,7 @@ notify:
 
 | Parameter | Description | Default | Example |
 |-----------|-------------|---------|---------|
-| 💬 Telegram Notify Service | Name of your Telegram notify service | - | `telegram` |
-| 💬 Telegram Chat ID | Your Telegram chat ID | - | `123456789` |
+| 📱 Telegram Bot | The Telegram bot integration used for all messages | - | *(pick from dropdown)* |
 | 🏠 Send to HA | Also send persistent notifications in HA | false | - |
 
 ### ⏰ Reminder Settings (Collapsed)
@@ -93,7 +84,7 @@ notify:
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | ⏰ Reminder Interval | Time between reminders (5min to 24h or disabled) | 3 hours |
-| 🌅 Only After | Only send notifications after this time | 07:00 |
+| 🌅 Only After | Only send notifications after this time (a new update outside the window is announced when it opens) | 07:00 |
 | 🌙 Only Before | Only send notifications before this time | 22:00 |
 
 **Available reminder intervals:**
@@ -106,7 +97,7 @@ notify:
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| 💾 Take Backup | Create backup before updating | true |
+| 💾 Take Backup | Create backup before updating (only for update entities that support backups) | true |
 | ✅ Run Config Check | Run config check for core updates | false |
 | 📋 Custom Changelog URLs | Custom URLs for entities without changelogs | {} |
 
@@ -116,10 +107,11 @@ The blueprint includes built-in callback handling for inline keyboard buttons. W
 
 - ✅ **Install** - Starts the update with optional backup (configured in Advanced Settings)
 - ⏭️ **Skip** - Skips the current version of the update
-- 📋 **Changelog** - Opens the release notes URL (only shown when available)
 
 **Features:**
 - Instant feedback when buttons are pressed
+- Buttons only work for the update entities you monitor
+- The changelog link is part of the message text (Telegram limits button data to 64 bytes, too short for most release URLs)
 - Error messages if update is no longer available
 - Buttons work for all notification types (new, reminder, config check)
 
@@ -137,8 +129,7 @@ automation:
           - update.home_assistant_core_update
           - update.home_assistant_operating_system_update
           - update.home_assistant_supervisor_update
-        telegram_notify_service: "telegram"
-        telegram_chat_id: "123456789"
+        telegram_bot_config: <your_telegram_bot_config_entry_id>
         reminder_hours: "6"
 ```
 
@@ -152,8 +143,7 @@ automation:
       input:
         update_entities:
           - update.home_assistant_core_update
-        telegram_notify_service: "telegram"
-        telegram_chat_id: "123456789"
+        telegram_bot_config: <your_telegram_bot_config_entry_id>
         run_config_check: true
         take_backup: true
 ```
@@ -168,8 +158,7 @@ automation:
       input:
         update_entities:
           - update.home_assistant_core_update
-        telegram_notify_service: "telegram"
-        telegram_chat_id: "123456789"
+        telegram_bot_config: <your_telegram_bot_config_entry_id>
         reminder_hours: "0.083"  # 5 minutes
 ```
 
@@ -185,8 +174,7 @@ automation:
       input:
         update_entities:
           - update.my_custom_addon
-        telegram_notify_service: "telegram"
-        telegram_chat_id: "123456789"
+        telegram_bot_config: <your_telegram_bot_config_entry_id>
         changelog_urls:
           update.my_custom_addon: "https://github.com/user/addon/releases"
 ```
@@ -195,10 +183,10 @@ automation:
 
 ### Notifications Not Sending
 
-1. Verify the Telegram bot token is correct in configuration.yaml
-2. Check that your chat_id is correct
-3. Ensure the time is within your configured notification window
-4. Test the notify service: Developer Tools → Services → `notify.telegram`
+1. Verify the Telegram bot integration is set up and the right bot is selected in the blueprint
+2. Check that your chat is an allowed chat of the bot
+3. Check your notification window (a new update outside the window is announced when the window opens)
+4. Test the bot: Developer Tools → Actions → `telegram_bot.send_message`
 5. Check Home Assistant logs for Telegram errors
 
 ### Buttons Not Working
@@ -230,13 +218,28 @@ If you're not sure about your chat_id:
 2. Verify the core update entity is included in your monitored entities
 3. Make sure the Check Configuration addon is installed
 
-### Changelog Button Not Appearing
+### Changelog Link Not Appearing
 
-1. The changelog button only appears when a `release_url` is available on the update entity
+1. The changelog link only appears when a `release_url` is available on the update entity
 2. You can provide custom URLs via the "Custom Changelog URLs" setting in Advanced Settings
 3. Some addons don't have changelog URLs available
 
 ## 📝 Version History
+
+### Version 1.4.0
+- 🐛 Fixed: the selected Telegram bot was never passed to the Telegram actions (`config_entry_id` was missing)
+- 🐛 Fixed: pressing **Skip** triggered a "✅ Update Complete" message — the state also goes `on` → `off` for a skipped update
+- 🐛 Fixed: names or release notes containing `_`, `*`, `` ` `` or `[` broke the Markdown message, so the notification was not delivered — they are now escaped
+- 🐛 Fixed: the Changelog button put the release URL in Telegram's 64-byte `callback_data`; long URLs made the whole message fail. The changelog is now a link in the message text
+- 🐛 Fixed: reminders listed *all* update entities instead of only the ones you selected
+- 🐛 Fixed: an update that appeared outside the notification window was silently dropped (no persistent notification, no config check, no later notice when reminders are disabled). It is now announced when the window opens
+- 🐛 Fixed: update entities without a device broke the "new update" notification
+- 🐛 Fixed: install failed for update entities that do not support backups while "Take Backup" was on
+- 🔒 Install/Skip buttons are only handled for monitored update entities
+- 🧹 HA startup now dismisses the persistent notifications of *all* monitored updates that are no longer pending
+- 🔧 A failing Telegram message no longer stops the persistent notification and config check
+- 🔧 The "5 minutes (testing)" reminder rounds correctly; the reminder trigger is not registered when reminders are disabled
+- 🔧 Modernized syntax (`triggers`, `trigger:`, `filter` selectors); README brought in line with the blueprint (it still described the old notify-service inputs)
 
 ### Version 1.0.0 (2025-12-19)
 - 🎉 Initial release
@@ -251,10 +254,10 @@ If you're not sure about your chat_id:
 ## ❓ FAQ
 
 **Q: Can I use this with multiple Telegram chats?**
-A: Currently, the blueprint supports one chat_id at a time. You can create multiple automations with the same blueprint for different chats.
+A: Messages go to the default chat of the selected bot. Use a separate bot (integration entry) per chat, each with its own automation.
 
-**Q: Why don't I see the changelog button?**
-A: The changelog button only appears when the update entity has a `release_url` attribute or you've configured a custom URL.
+**Q: Why don't I see the changelog link?**
+A: The changelog link only appears when the update entity has a `release_url` attribute or you've configured a custom URL.
 
 **Q: Can I test the notifications quickly?**
 A: Yes! Use the "Every 5 minutes (testing)" reminder interval to get quick test notifications. Don't forget to change it back to a longer interval after testing.
