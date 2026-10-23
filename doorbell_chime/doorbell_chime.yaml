@@ -1,4 +1,4 @@
-# Version: 1.0.4
+# Version: 1.1.0
 blueprint:
   domain: automation
   name: "\U0001F514 Doorbell Chime"
@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    📦 [Version 1.0.4] Play a chime sound on your media players when the doorbell rings! 🔔
+    📦 [Version 1.1.0] Play a chime sound on your media players when the doorbell rings! 🔔
 
 
     Features:
@@ -136,12 +136,28 @@ blueprint:
 
 
         An input_boolean helper that silences the chime when turned on (requires DND enabled).
-      default: {}
+      default: []
       selector:
         entity:
           filter:
             - domain:
                 - input_boolean
+
+    chime_max_seconds:
+      name: "⏱️ Maximum Chime Length"
+      description: >
+        `Optional`
+
+
+        Volume is restored when the chime has finished playing, but never later than
+        this many seconds after it started. Raise it for long chime files.
+      default: 10
+      selector:
+        number:
+          min: 3
+          max: 60
+          unit_of_measurement: "seconds"
+          mode: slider
 
 mode: single
 max_exceeded: silent
@@ -150,16 +166,19 @@ variables:
   use_time: !input use_time_condition
   use_dnd_mode: !input use_dnd
   dnd_entity: !input dnd_helper
+  dnd_set: "{{ dnd_entity is string and dnd_entity | length > 0 }}"
+  max_chime_seconds: !input chime_max_seconds
   restore: !input restore_volume
   target_players: !input media_players_target
   volume: !input chime_volume
 
-trigger:
-  - platform: state
+triggers:
+  - trigger: state
     entity_id: !input doorbell_sensor
+    from: "off"
     to: "on"
 
-condition:
+conditions:
   - condition: or
     conditions:
       - "{{ not use_time }}"
@@ -169,58 +188,60 @@ condition:
   - condition: or
     conditions:
       - "{{ not use_dnd_mode }}"
-      - "{{ dnd_entity == {} }}"
+      - "{{ not dnd_set }}"
       - condition: template
         value_template: "{{ states(dnd_entity) == 'off' }}"
 
-action:
+actions:
   - variables:
       player_entities: >
+        {% set t = target_players %}
         {% set ns = namespace(entities=[]) %}
-        {% if target_players.entity_id is defined %}
-          {% if target_players.entity_id is string %}
-            {% set ns.entities = [target_players.entity_id] %}
-          {% else %}
-            {% set ns.entities = target_players.entity_id %}
-          {% endif %}
+        {% if t.entity_id is defined and t.entity_id %}
+          {% set ns.entities = ns.entities + ([t.entity_id] if t.entity_id is string else t.entity_id) %}
         {% endif %}
-        {% if target_players.device_id is defined %}
-          {% for device in target_players.device_id if target_players.device_id is not string %}
-            {% set ns.entities = ns.entities + [device_entities(device) | select('match', 'media_player.') | list | first] %}
+        {% if t.device_id is defined and t.device_id %}
+          {% for device in ([t.device_id] if t.device_id is string else t.device_id) %}
+            {% set ns.entities = ns.entities + (device_entities(device) | select('match', 'media_player\\.') | list) %}
           {% endfor %}
-          {% if target_players.device_id is string %}
-            {% set ns.entities = ns.entities + [device_entities(target_players.device_id) | select('match', 'media_player.') | list | first] %}
-          {% endif %}
         {% endif %}
-        {% if target_players.area_id is defined %}
-          {% for area in target_players.area_id if target_players.area_id is not string %}
-            {% set ns.entities = ns.entities + area_entities(area) | select('match', 'media_player.') | list %}
+        {% if t.area_id is defined and t.area_id %}
+          {% for area in ([t.area_id] if t.area_id is string else t.area_id) %}
+            {% set ns.entities = ns.entities + (area_entities(area) | select('match', 'media_player\\.') | list) %}
           {% endfor %}
-          {% if target_players.area_id is string %}
-            {% set ns.entities = ns.entities + area_entities(target_players.area_id) | select('match', 'media_player.') | list %}
-          {% endif %}
         {% endif %}
-        {{ ns.entities }}
+        {{ ns.entities | unique | list }}
 
   - variables:
       original_volumes: >
         {% set ns = namespace(volumes={}) %}
         {% for entity in player_entities %}
-          {% set ns.volumes = dict(ns.volumes, **{entity: state_attr(entity, 'volume_level') | float(0.5)}) %}
+          {% if state_attr(entity, 'volume_level') is number %}
+            {% set ns.volumes = dict(ns.volumes, **{entity: state_attr(entity, 'volume_level')}) %}
+          {% endif %}
         {% endfor %}
         {{ ns.volumes }}
 
+  # A player that is off or unavailable must not stop the chime on the other players
   - action: media_player.volume_set
+    continue_on_error: true
     target: !input media_players_target
     data:
       volume_level: !input chime_volume
 
   - action: media_player.play_media
+    continue_on_error: true
     target: !input media_players_target
     data: !input media_file
 
+  # Give the players time to start, then wait until the chime is finished (or the maximum is reached)
   - delay:
       seconds: 3
+
+  - wait_template: "{{ expand(player_entities) | selectattr('state', 'eq', 'playing') | list | count == 0 }}"
+    timeout:
+      seconds: "{{ max_chime_seconds }}"
+    continue_on_timeout: true
 
   - if:
       - condition: template
@@ -229,8 +250,13 @@ action:
       - repeat:
           for_each: "{{ player_entities }}"
           sequence:
-            - action: media_player.volume_set
-              target:
-                entity_id: "{{ repeat.item }}"
-              data:
-                volume_level: "{{ original_volumes[repeat.item] }}"
+            - if:
+                - condition: template
+                  value_template: "{{ repeat.item in original_volumes }}"
+              then:
+                - action: media_player.volume_set
+                  continue_on_error: true
+                  target:
+                    entity_id: "{{ repeat.item }}"
+                  data:
+                    volume_level: "{{ original_volumes[repeat.item] }}"

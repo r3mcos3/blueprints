@@ -1,6 +1,6 @@
 # 🔔 Doorbell Chime
 
-[![version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 Play a chime sound on your media players when the doorbell rings! Perfect for ensuring you never miss a visitor, even when you're in another room or have headphones on. 🔔
@@ -8,7 +8,7 @@ Play a chime sound on your media players when the doorbell rings! Perfect for en
 ## ✨ Features
 
 - 🔊 **Adjustable Volume** - Set the perfect chime volume for your space
-- 🔄 **Volume Restore** - Automatically restores original volume after the chime
+- 🔄 **Volume Restore** - Restores the original volume once the chime has finished playing (players that were off are left alone)
 - 🌙 **Time-Based Conditions** - Only play during specific hours (quiet hours support)
 - 🚫 **Do Not Disturb Mode** - Temporarily disable chimes with a helper toggle
 - ⏱️ **Built-in Cooldown** - Prevents chime spam with single mode
@@ -67,6 +67,7 @@ When creating an automation from this blueprint, you'll configure:
 | ⏰ End Time | When chime stops being allowed | 22:00 |
 | 🚫 Enable Do Not Disturb | Use a helper to silence chimes | No |
 | 🚫 Do Not Disturb Helper | Toggle entity to control DND | None |
+| ⏱️ Maximum Chime Length | Volume is restored when the chime ends, at the latest after this many seconds | 10 s |
 
 ## 💡 Usage Examples
 
@@ -143,8 +144,9 @@ Result: Complete doorbell notification system with time restrictions and manual 
 
 1. Ensure "Restore Volume" is enabled
 2. Some media players may not report volume level correctly
-3. Check that the 3-second delay is sufficient for your chime sound
+3. For a long chime file raise **Maximum Chime Length** — the volume is restored when the player stops playing, at the latest after that many seconds
 4. Verify media player supports `media_player.volume_set` service
+5. Players that were off (or did not report a volume) when the doorbell rang are not restored
 
 ### Time Condition Not Working
 
@@ -168,6 +170,18 @@ The blueprint uses `mode: single` to prevent overlapping chimes. If you hear mul
 3. Consider adding a cooldown to your doorbell sensor
 
 ## 📝 Version History
+
+### Version 1.1.0
+- 🐛 Fixed: a device or area without a `media_player` entity broke the whole run (`| first` on an empty list)
+- 🐛 Fixed: volume was restored after a fixed 3 seconds, cutting long chimes — it now waits until playback ends (max. configurable)
+- 🐛 Fixed: players that were off were "restored" to 0.5 volume
+- 🐛 Fixed: one failing player no longer stops the chime on the other players
+- 🐛 Doorbell now only triggers on `off` → `on` (no false chime on `unavailable` → `on`)
+- 🔧 Modernized syntax; optional DND helper defaults to an empty list
+- 📝 Version badge in README synced (it still said 1.0.0)
+
+### Version 1.0.x
+- Minor fixes (see git history)
 
 ### Version 1.0.0 (2025-12-16)
 - 🎉 Initial release
