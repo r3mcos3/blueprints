@@ -1,4 +1,4 @@
-# Version: 1.10.0
+# Version: 1.12.0
 blueprint:
   domain: automation
   name: "🔥 Smart Heating Controller"
@@ -7,7 +7,7 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    📦 [Version 1.10.0] Intelligent climate control with presence detection, door/window protection,
+    📦 [Version 1.12.0] Intelligent climate control with presence detection, door/window protection,
     manual override, and energy-saving features! 🌡️
 
 
@@ -28,6 +28,8 @@ blueprint:
     - ❄️ Frost protection (minimum temperature)
 
     - 🛠️ Manual override with configurable timeout
+
+    - 🎯 Sensor offset compensation (regulate on your own room sensor, not the thermostat's)
 
     - 🔍 Debug mode with persistent notification for troubleshooting
 
@@ -367,6 +369,36 @@ blueprint:
               unit_of_measurement: "°C"
               mode: slider
 
+    # ===== SENSOR OFFSET COMPENSATION (COLLAPSED) =====
+    sensor_compensation_settings:
+      name: "🎯 Sensor Offset Compensation"
+      icon: mdi:thermometer-auto
+      collapsed: true
+      input:
+        use_sensor_offset:
+          name: "🎯 Regulate on the Indoor Sensor"
+          description: >
+            The thermostat regulates on its own built-in sensor, which can read higher or lower
+            than your room sensor. When enabled, the difference (thermostat reading minus your
+            Indoor Temperature Sensor) is added to the setpoint, so the room reaches the target
+            temperature as measured by your own sensor.
+          default: true
+          selector:
+            boolean:
+
+        max_sensor_offset:
+          name: "↕️ Maximum Offset"
+          description: >
+            Upper limit for the compensation, as a safety net against a faulty sensor.
+          default: 3
+          selector:
+            number:
+              min: 0.5
+              max: 5
+              step: 0.5
+              unit_of_measurement: "°C"
+              mode: slider
+
     # ===== DEBUG SETTINGS (COLLAPSED) =====
     debug_settings:
       name: "🔍 Debug Settings"
@@ -434,6 +466,10 @@ variables:
   # Gradual transitions
   gradual_transitions_enabled: !input use_gradual_transitions
   transition_step_size: !input transition_step
+
+  # Sensor offset compensation
+  offset_enabled: !input use_sensor_offset
+  max_offset: !input max_sensor_offset
 
   # Debug
   debug_mode_enabled: !input enable_debug_mode
@@ -536,6 +572,19 @@ actions:
       current_indoor: "{{ states(indoor_sensor) | float(20) }}"
       people_count: "{{ states(zone) | int(0) }}"
       is_outdoor_warm: "{{ current_outdoor >= outdoor_threshold }}"
+
+      # Thermostat reading minus room sensor, rounded to 0.5 and capped. Added to the
+      # setpoint so the room (not the thermostat) reaches the target. 0 when disabled
+      # or when either reading is unavailable.
+      sensor_offset: >
+        {% set thermo = state_attr(climate, 'current_temperature') %}
+        {% if offset_enabled and thermo is number and states(indoor_sensor) | is_number %}
+          {% set raw = thermo - states(indoor_sensor) | float %}
+          {% set capped = [[raw, 0 - max_offset | float(3)] | max, max_offset | float(3)] | min %}
+          {{ ((capped * 2) | round(0)) / 2 }}
+        {% else %}
+          0
+        {% endif %}
 
       # Adaptive pre-heat: scale preheat window by how cold it is outside
       # (colder outside → longer warm-up needed; capped at 3× base)
@@ -674,21 +723,30 @@ actions:
 
       heat_needed: "{{ current_indoor < target_temp }}"
 
+      # Value for the thermostat: target plus sensor offset. Frost, eco and manual
+      # override keep their plain value.
+      setpoint_target: >
+        {% if target_mode in ['comfort', 'night', 'preheat', 'away'] %}
+          {{ target_temp | float(0) + sensor_offset | float(0) }}
+        {% else %}
+          {{ target_temp }}
+        {% endif %}
+
       # Setpoint to send: target_temp, or one transition step towards it when
       # gradual transitions are enabled (used by every branch that changes the setpoint)
       stepped_target: >
         {% if gradual_transitions_enabled and current_target > 0 %}
           {% set step = transition_step_size | float(0.5) %}
-          {% set gap = target_temp - current_target %}
+          {% set gap = setpoint_target - current_target %}
           {% if gap > step %}
             {{ current_target + step }}
           {% elif gap < -step %}
             {{ current_target - step }}
           {% else %}
-            {{ target_temp }}
+            {{ setpoint_target }}
           {% endif %}
         {% else %}
-          {{ target_temp }}
+          {{ setpoint_target }}
         {% endif %}
 
   # ===== MAIN CONTROL LOGIC =====
@@ -729,7 +787,7 @@ actions:
             target:
               entity_id: "{{ climate }}"
             data:
-              temperature: "{{ temp_away }}"
+              temperature: "{{ temp_away + sensor_offset | float(0) }}"
 
       # ----- MANUAL OVERRIDE: CANCEL ON TIMEOUT -----
       - conditions:
@@ -764,7 +822,7 @@ actions:
                 target:
                   entity_id: "{{ climate }}"
                 data:
-                  temperature: "{{ target_temp }}"
+                  temperature: "{{ setpoint_target }}"
                   hvac_mode: "{{ 'heat' if heat_needed and not any_opening_open else hvac_mode }}"
 
       # ----- MANUAL OVERRIDE: USER CANCELLED (turned off helper manually) -----
@@ -787,13 +845,13 @@ actions:
                 {% elif is_outdoor_warm %}
                   {{ temp_frost }}
                 {% elif people_count == 0 %}
-                  {{ temp_away }}
+                  {{ temp_away + sensor_offset | float(0) }}
                 {% elif is_preheat_time %}
-                  {{ temp_comfort + adj }}
+                  {{ temp_comfort + adj + sensor_offset | float(0) }}
                 {% elif is_night %}
-                  {{ temp_night + adj }}
+                  {{ temp_night + adj + sensor_offset | float(0) }}
                 {% else %}
-                  {{ temp_comfort + adj }}
+                  {{ temp_comfort + adj + sensor_offset | float(0) }}
                 {% endif %}
           - action: climate.set_temperature
             target:
@@ -963,7 +1021,7 @@ actions:
             value_template: "{{ not any_opening_open }}"
           - condition: template
             value_template: >
-              {{ (current_target - target_temp) | abs > 0.5
+              {{ (current_target - setpoint_target | float(0)) | abs > 0.1
                  or (hvac_mode == 'off' and heat_needed) }}
         sequence:
           - action: climate.set_temperature
@@ -978,7 +1036,7 @@ actions:
           - condition: trigger
             id: comfort_temp_changed
           - condition: template
-            value_template: "{{ target_mode == 'comfort' }}"
+            value_template: "{{ target_mode in ['comfort', 'preheat'] }}"
           - condition: template
             value_template: "{{ people_count > 0 }}"
           - condition: template
@@ -991,6 +1049,7 @@ actions:
               entity_id: "{{ climate }}"
             data:
               temperature: "{{ stepped_target }}"
+              hvac_mode: "{{ 'heat' if heat_needed else hvac_mode }}"
 
       # ----- STARTUP / RELOAD (initialize state) -----
       - conditions:
@@ -1020,13 +1079,13 @@ actions:
                 {% elif is_outdoor_warm %}
                   {{ temp_frost }}
                 {% elif people_count == 0 %}
-                  {{ temp_away }}
+                  {{ temp_away + sensor_offset | float(0) }}
                 {% elif is_preheat_time %}
-                  {{ temp_comfort + adj }}
+                  {{ temp_comfort + adj + sensor_offset | float(0) }}
                 {% elif is_night %}
-                  {{ temp_night + adj }}
+                  {{ temp_night + adj + sensor_offset | float(0) }}
                 {% else %}
-                  {{ temp_comfort + adj }}
+                  {{ temp_comfort + adj + sensor_offset | float(0) }}
                 {% endif %}
               startup_is_eco: "{{ is_outdoor_warm and not (current_indoor < temp_frost) }}"
           - choose:
@@ -1057,8 +1116,8 @@ actions:
             value_template: "{{ not any_opening_open }}"
           - condition: template
             value_template: >
-              {{ (current_target - target_temp) | abs >
-                 (transition_step_size / 2 if gradual_transitions_enabled else 0.5)
+              {{ (current_target - setpoint_target | float(0)) | abs >
+                 (transition_step_size / 2 if gradual_transitions_enabled else 0.1)
                  or (hvac_mode == 'off' and heat_needed) }}
         sequence:
           - action: climate.set_temperature
@@ -1066,7 +1125,7 @@ actions:
               entity_id: "{{ climate }}"
             data:
               temperature: "{{ stepped_target }}"
-              hvac_mode: "{{ 'heat' if current_indoor < stepped_target else hvac_mode }}"
+              hvac_mode: "{{ 'heat' if heat_needed else hvac_mode }}"
 
   # ===== DEBUG NOTIFICATION =====
   - if:
@@ -1080,7 +1139,7 @@ actions:
           message: |
             - **Trigger:** {{ trigger.id | default('none') }}
             - **Mode:** {{ target_mode }}
-            - **Target temp:** {{ target_temp }}°C (setpoint sent: {{ stepped_target }}°C)
+            - **Target temp:** {{ target_temp }}°C (setpoint sent: {{ stepped_target }}°C, sensor offset: {{ sensor_offset }}°C)
             - **Current setpoint:** {{ current_target }}°C | **HVAC:** {{ hvac_mode }}
             - **Indoor:** {{ current_indoor }}°C | **Outdoor:** {{ current_outdoor }}°C
             - **People home:** {{ people_count }}
