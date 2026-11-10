@@ -1,4 +1,4 @@
-# Version: 1.0.0
+# Version: 1.1.0
 blueprint:
   domain: automation
   name: "🔥 Simple Heating"
@@ -7,14 +7,14 @@ blueprint:
   homeassistant:
     min_version: 2025.12.0
   description: >
-    📦 [Version 1.0.0] Dead-simple heating: a Home temperature and an Away temperature, 🏠 / 🏃 switched by who is home and by your sleep schedule. 🌙
+    📦 [Version 1.1.0] Dead-simple heating: a Home temperature and an Away temperature, 🏠 / 🏃 switched by who is home and by your sleep schedule. 🌙
 
 
     Features:
 
     - 🏠 Home / 🏃 Away temperature, both adjustable
 
-    - 👥 2 required persons + 2 optional persons: anyone home = Home, nobody home = Away
+    - 👥 2 required persons + 2 optional persons: anyone home = Home (instantly), nobody home = Away (after an adjustable delay, default 10 min)
 
     - ✋ Manual changes on the thermostat are respected and held until you change them again, everybody leaves, or you go to sleep
 
@@ -114,6 +114,27 @@ blueprint:
               filter:
                 - domain: input_boolean
 
+    # ===== PRESENCE (COLLAPSED) =====
+    presence_settings:
+      name: "🚪 Leaving Delay"
+      icon: mdi:timer-outline
+      collapsed: true
+      input:
+        leave_delay:
+          name: "⏱️ Leaving Delay"
+          description: >
+            Minutes the house must stay empty before switching to Away (and dropping a manual
+            change). Somebody coming back within this time = nothing happens. 0 = immediately.
+            Arriving home is always instant.
+          default: 10
+          selector:
+            number:
+              min: 0
+              max: 120
+              step: 1
+              unit_of_measurement: "min"
+              mode: slider
+
     # ===== EXTRA PERSONS (COLLAPSED) =====
     extra_persons:
       name: "👥 Extra Persons"
@@ -179,11 +200,14 @@ triggers:
       {{ tv_persons | select('is_state', 'home') | list | length > 0 }}
     id: first_arrival
 
-  # Everybody that is *known* is away. Unavailable / unknown persons are ignored.
+  # Everybody that is *known* is away, for the whole leaving delay (the timer restarts
+  # when somebody comes back). Unavailable / unknown persons are ignored.
   - trigger: template
     value_template: >
       {% set known = tv_persons | reject('is_state', 'unavailable') | reject('is_state', 'unknown') | list %}
       {{ known | length > 0 and (known | select('is_state', 'home') | list | length) == 0 }}
+    for:
+      minutes: !input leave_delay
     id: all_left
 
   # ===== SLEEP: FIXED TIMES =====
@@ -273,13 +297,17 @@ actions:
         {% elif desired_mode == 'away' %}{{ temp_away }}
         {% else %}none{% endif %}
 
+      # (After a restart the "for" timer of all_left is lost, so a restart with an empty
+      # house counts as "left": the last-person-left rule is applied by the clause above.)
       # Events that *replace* any manual setting (the three ways an override ends,
       # plus the morning). Each one is guarded against a stale queued run.
       is_forced_event: >
         {{ (trigger_id in ['sleep_time', 'sleep_helper_on', 'wake_time', 'sleep_helper_off']
               and desired_mode != 'unknown')
            or (trigger_id == 'all_left' and desired_mode == 'away')
-           or (trigger_id == 'first_arrival' and desired_mode == 'home') }}
+           or (trigger_id == 'first_arrival' and desired_mode == 'home')
+           or (trigger_id in ['ha_start', 'automation_reload']
+               and presence_known and not anyone_home and desired_mode == 'away') }}
 
       # Re-sync (restart, reload, thermostat back online, manual run) only corrects a
       # thermostat that still sits on one of our own values. Any other value is a

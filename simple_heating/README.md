@@ -1,6 +1,6 @@
 # 🔥 Simple Heating
 
-[![version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 The no-nonsense heater controller: **two temperatures** (Home and Away), switched by **who is home** and **when you sleep**. No outdoor temperature, windows or humidity – just robust logic. 🌡️
@@ -10,7 +10,7 @@ Looking for more features (outdoor temperature, door/window pause, pre-heating, 
 ## ✨ Features
 
 - 🏠 **Two modes** - Home (default 20°C) and Away (default 15°C), both adjustable
-- 👥 **Presence** - 2 required persons + 2 optional persons. Anyone home = Home, nobody home = Away
+- 👥 **Presence** - 2 required persons + 2 optional persons. Anyone home = Home (instant), nobody home = Away (after an adjustable leaving delay)
 - ✋ **Manual changes are respected** - Turn the heater up or down yourself and it stays that way
 - 🌙 **Sleep = Away temperature** - Fixed bedtime / wake-up times, or an optional sleep switch
 - ☀️ **Morning = Home** - Back to the Home temperature at wake-up (if someone is home)
@@ -67,6 +67,12 @@ Looking for more features (outdoor temperature, door/window pause, pre-heating, 
 | ☀️ Wake-up Time | From here on the Home temperature is used again | 07:00 |
 | 🛏️ Sleep Switch | Optional `input_boolean`, ON = sleeping. Replaces the fixed times | - |
 
+### 🚪 Leaving Delay (Collapsed)
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| ⏱️ Leaving Delay | Minutes the house must stay empty before switching to Away. `0` = immediately | 10 min |
+
 ### 👥 Extra Persons (Collapsed)
 
 | Parameter | Description | Default |
@@ -92,10 +98,12 @@ The blueprint **only** sets the temperature on these events - and nothing else:
 | Event | Action |
 |-------|--------|
 | 🚪 First person arrives (nobody was home) | → Home (not while sleeping) |
-| 🚶 Last person leaves | → Away (clears any manual change) |
+| 🚶 Last person leaves **and the house stays empty for the leaving delay** | → Away (clears any manual change) |
 | 🌙 Bedtime / sleep switch ON | → Away (clears any manual change) |
 | ☀️ Wake-up time / sleep switch OFF | → Home, or Away if nobody is home |
 | 🔄 HA restart, automation reload, thermostat back online | Re-sync, see below |
+
+**Leaving delay:** the last-person-left rule only fires after the house has been empty for the whole delay (a `for:` on the template trigger). If anybody comes back earlier, the timer is cancelled and **nothing happens** - the manual override stays. The timer starts over at the next departure. Arriving is always instant. Set the delay to `0` to react immediately.
 
 A second person arriving while someone is already home, or one person leaving while another stays, does **nothing** - so your manual setting is kept.
 
@@ -105,7 +113,7 @@ Because the blueprint **never reacts to temperature changes on the thermostat** 
 
 - (a) you change it again (the new value is held), or
 - (b) you go to sleep (→ Away), or
-- (c) everybody leaves (→ Away).
+- (c) everybody has left and the house stayed empty for the leaving delay (→ Away).
 
 The morning wake-up always applies the right target as well.
 
@@ -114,6 +122,8 @@ The morning wake-up always applies the right target as well.
 ### 🔄 Restart and re-sync
 
 After a Home Assistant restart (or automation reload) the blueprint waits 30 seconds for persons and thermostat to come up, then re-syncs. Since nothing is remembered, it uses a simple rule: if the thermostat still sits on the **Home or Away value** (±0.3°C) it is corrected to what it should be (this repairs a missed bedtime/wake-up while HA was down). Any **other value** is treated as your manual setting and left alone. The same re-sync runs when the thermostat comes back from `unavailable`.
+
+**Restart during the leaving delay:** the delay timer does not survive a restart. So after a restart (or reload) with a *known-empty* house, the "everybody left" rule is applied right away: the thermostat goes to Away, also when it sat on a manual value. (Your manual value while away is therefore not kept over a restart either.)
 
 > ⚠️ Limitation: a manual change to *exactly* the Home or Away temperature (e.g. you set 20°C while away) is indistinguishable from the blueprint's own value, so a restart may reset it. Choose e.g. 20.5°C to hold it across restarts.
 
@@ -134,8 +144,13 @@ After a Home Assistant restart (or automation reload) the blueprint waits 30 sec
 | Nothing happens at bedtime | With a sleep switch selected, the fixed times are ignored |
 | Manual value gets replaced | Last person left, bedtime, or restart with value equal to Home/Away temp |
 | Away at the wrong moment | Check that the person's device tracker is reliable (see automation trace) |
+| Heating stays Home after everybody left | The leaving delay (default 10 min) must pass first |
 
 ## 📝 Version History
+
+### v1.1.0
+- ⏱️ New input: leaving delay (default 10 min, 0 = immediate). Away/override-drop only after the house stayed empty that long; coming back in time does nothing
+- 🔄 Restart with an empty house now applies the "everybody left" rule (the delay timer is lost on restart)
 
 ### v1.0.0
 - 🎉 Initial release: Home/Away temperatures, presence of 2-4 persons, sleep schedule or sleep switch, stateless manual override, restart-safe re-sync
