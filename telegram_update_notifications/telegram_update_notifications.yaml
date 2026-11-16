@@ -1,8 +1,8 @@
-# Version: 1.4.0
+# Version: 1.4.1
 blueprint:
   name: "📱 Telegram Update Notifications"
   description: >
-    📦 [Version 1.4.0] Get notified about Home Assistant updates via Telegram!
+    📦 [Version 1.4.1] Get notified about Home Assistant updates via Telegram!
     Receive notifications when updates are available for core, addons, or integrations.
     Includes inline keyboard buttons to install or skip updates directly from Telegram. 🚀
   domain: automation
@@ -253,7 +253,7 @@ actions:
               data:
                 config_entry_id: "{{ telegram_bot }}"
                 message: "✅ *Update Complete*\n\n{{ md_name }} update completed!"
-                parse_mode: Markdown
+                parse_mode: markdown
 
         - alias: Dismiss HA notification if enabled
           if:
@@ -357,7 +357,7 @@ actions:
 
               📋 [Changelog]({{ release_url }})
               {% endif %}
-            parse_mode: Markdown
+            parse_mode: markdown
             inline_keyboard: >-
               [[["✅ Install", "install|{{ entity_id }}"], ["⏭️ Skip", "skip|{{ entity_id }}"]]]
 
@@ -384,7 +384,7 @@ actions:
           data:
             config_entry_id: "{{ telegram_bot }}"
             message: "⏳ *Updating...*\n\n{{ md_name }} is updating..."
-            parse_mode: Markdown
+            parse_mode: markdown
 
     # ════════════════════════════════════════════════════════════════════════
     # CONFIG CHECK COMPLETED
@@ -432,7 +432,7 @@ actions:
 
               📋 [Changelog]({{ release_url }})
               {% endif %}
-            parse_mode: Markdown
+            parse_mode: markdown
             inline_keyboard: >-
               [[["✅ Install", "install|{{ entity_id }}"], ["⏭️ Skip", "skip|{{ entity_id }}"]]]
 
@@ -504,7 +504,7 @@ actions:
 
                         📋 [Changelog]({{ reminder_release_url }})
                         {% endif %}
-                      parse_mode: Markdown
+                      parse_mode: markdown
                       inline_keyboard: >-
                         [[["✅ Install", "install|{{ reminder_entity_id }}"], ["⏭️ Skip", "skip|{{ reminder_entity_id }}"]]]
 
