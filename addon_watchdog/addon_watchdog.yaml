@@ -1,8 +1,8 @@
-# Version: 1.1.0
+# Version: 1.1.1
 blueprint:
   name: "🛡️ Add-on Watchdog"
   description: >
-    📦 [Version 1.1.0] Watches an entity and automatically restarts a Home Assistant add-on when it goes
+    📦 [Version 1.1.1] Watches an entity and automatically restarts a Home Assistant add-on when it goes
     offline. 🔁 Notifies you via Telegram (and optionally Home Assistant) when the problem starts, after every
     failed attempt, when the add-on has recovered, or — if the restarts did not help — with the most likely cause.
     Works for any add-on: Zigbee2MQTT, Mosquitto, Z-Wave JS, ESPHome, Matter Server, ... 🚀
@@ -255,7 +255,7 @@ actions:
         data:
           config_entry_id: "{{ telegram_bot }}"
           message: "{{ msg_start | trim }}"
-          parse_mode: Markdown
+          parse_mode: markdown
   - if:
       - condition: template
         value_template: "{{ send_to_ha }}"
@@ -308,7 +308,7 @@ actions:
                   data:
                     config_entry_id: "{{ telegram_bot }}"
                     message: "{{ msg_ok | trim }}"
-                    parse_mode: Markdown
+                    parse_mode: markdown
             - if:
                 - condition: template
                   value_template: "{{ send_to_ha }}"
@@ -339,7 +339,7 @@ actions:
                   data:
                     config_entry_id: "{{ telegram_bot }}"
                     message: "{{ msg_retry | trim }}"
-                    parse_mode: Markdown
+                    parse_mode: markdown
 
   # ── All attempts failed: diagnose and report ──────────────────────────────
   - variables:
@@ -389,7 +389,7 @@ actions:
         data:
           config_entry_id: "{{ telegram_bot }}"
           message: "{{ msg_fail | trim }}"
-          parse_mode: Markdown
+          parse_mode: markdown
   - if:
       - condition: template
         value_template: "{{ send_to_ha }}"
