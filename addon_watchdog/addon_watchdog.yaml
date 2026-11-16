@@ -1,0 +1,402 @@
+# Version: 1.1.0
+blueprint:
+  name: "🛡️ Add-on Watchdog"
+  description: >
+    📦 [Version 1.1.0] Watches an entity and automatically restarts a Home Assistant add-on when it goes
+    offline. 🔁 Notifies you via Telegram (and optionally Home Assistant) when the problem starts, after every
+    failed attempt, when the add-on has recovered, or — if the restarts did not help — with the most likely cause.
+    Works for any add-on: Zigbee2MQTT, Mosquitto, Z-Wave JS, ESPHome, Matter Server, ... 🚀
+  domain: automation
+  author: r3mcos3
+  source_url: https://github.com/r3mcos3/blueprints/blob/main/addon_watchdog/addon_watchdog.yaml
+  homeassistant:
+    min_version: 2025.12.0
+
+  input:
+    # ══════════════════════════════════════════════════════════════════════════
+    # 🧩 ADD-ON & MONITORING
+    # ══════════════════════════════════════════════════════════════════════════
+    addon_slug:
+      name: 🧩 Add-on
+      description: >
+        Pick the installed add-on to restart from the list. The slug (e.g. `core_mosquitto`) is filled in
+        for you. Requires Home Assistant OS or Supervised.
+      selector:
+        addon:
+
+    monitored_entity:
+      name: 👀 Monitored Entity
+      description: >
+        The entity that shows whether the add-on is working
+        (e.g. the Zigbee2MQTT `bridge connection state` binary sensor).
+      selector:
+        entity:
+          filter:
+            - domain:
+                - binary_sensor
+                - sensor
+                - switch
+                - light
+                - update
+
+    service_name:
+      name: 🏷️ Service Name
+      description: >
+        Friendly name used in the notifications (e.g. "Zigbee2MQTT").
+        Leave empty to use the name of the monitored entity.
+      default: ""
+      selector:
+        text:
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 🚨 PROBLEM & RECOVERY (COLLAPSED)
+    # ══════════════════════════════════════════════════════════════════════════
+    condition_settings:
+      name: 🚨 Problem & Recovery
+      icon: mdi:heart-pulse
+      description: Define when the add-on counts as down and when it counts as recovered.
+      collapsed: true
+      input:
+        problem_state:
+          name: 🚨 Problem State
+          description: >
+            The state of the monitored entity that means "the add-on is down"
+            (e.g. `off` for a connection binary sensor or `unavailable` for an MQTT-based entity).
+          default: "off"
+          selector:
+            text:
+
+        problem_duration:
+          name: ⏱️ Problem Duration
+          description: >
+            How long the entity must stay in the problem state before the watchdog acts.
+            Prevents false alarms during short hiccups and normal restarts.
+          default:
+            hours: 0
+            minutes: 2
+            seconds: 0
+          selector:
+            duration:
+
+        recovery_state:
+          name: ✅ Recovery State
+          description: The state used to decide whether the add-on has recovered (see the next option).
+          default: "on"
+          selector:
+            text:
+
+        recovery_mode:
+          name: ✅ Recovery Condition
+          description: >
+            **Equals**: recovered when the entity is in the Recovery State (e.g. `on`).
+            **Not equals**: recovered as soon as the entity is in any other state than the Recovery State
+            (e.g. set the Recovery State to `unavailable`).
+          default: equals
+          selector:
+            select:
+              options:
+                - label: ✅ State equals the Recovery State
+                  value: equals
+                - label: 🚫 State is anything but the Recovery State
+                  value: not_equals
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 🔁 RESTART SETTINGS (COLLAPSED)
+    # ══════════════════════════════════════════════════════════════════════════
+    restart_settings:
+      name: 🔁 Restart Settings
+      icon: mdi:restart
+      description: How often and how patiently the add-on is restarted.
+      collapsed: true
+      input:
+        max_attempts:
+          name: 🔁 Maximum Attempts
+          description: How many times the add-on is restarted before giving up.
+          default: 2
+          selector:
+            number:
+              min: 1
+              max: 10
+              step: 1
+              mode: box
+
+        wait_time:
+          name: ⏳ Wait Time per Attempt
+          description: >
+            How long to wait for recovery after each restart. As soon as the add-on has recovered the
+            watchdog stops waiting.
+          default:
+            hours: 0
+            minutes: 3
+            seconds: 0
+          selector:
+            duration:
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 📱 NOTIFICATION SETTINGS (COLLAPSED)
+    # ══════════════════════════════════════════════════════════════════════════
+    notification_settings:
+      name: 📱 Notification Settings
+      icon: mdi:bell
+      description: Where the watchdog reports what it is doing.
+      collapsed: true
+      input:
+        telegram_bot_config:
+          name: 📱 Telegram Bot
+          description: >
+            Select your Telegram bot. Leave empty to disable Telegram messages.
+          default: ""
+          selector:
+            config_entry:
+              integration: telegram_bot
+
+        send_to_ha:
+          name: 🏠 Send to HA
+          description: Also send the messages as a persistent notification in Home Assistant.
+          default: false
+          selector:
+            boolean:
+
+        language:
+          name: 🌍 Message Language
+          description: Language of the notification texts.
+          default: en
+          selector:
+            select:
+              options:
+                - label: 🇬🇧 English
+                  value: en
+                - label: 🇳🇱 Nederlands
+                  value: nl
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 🔍 DIAGNOSIS (COLLAPSED, OPTIONAL)
+    # ══════════════════════════════════════════════════════════════════════════
+    diagnosis_settings:
+      name: 🔍 Diagnosis (optional)
+      icon: mdi:stethoscope
+      description: >
+        Optional extras that make the "restart failed" message more helpful.
+      collapsed: true
+      input:
+        related_config_entry:
+          name: 🔌 Related Integration
+          description: >
+            Config entry of the integration the add-on depends on (e.g. MQTT). If it is not loaded,
+            this is reported as the likely cause. Leave empty to skip this check.
+          default: ""
+          selector:
+            config_entry:
+
+        addon_update_entity:
+          name: 🧭 Add-on Update Entity
+          description: >
+            The `update` entity of the add-on (e.g. `update.mosquitto_broker_update`). If it is unavailable
+            the Supervisor is probably not responding. Leave empty to skip this check.
+          default: ""
+          selector:
+            entity:
+              filter:
+                - domain: update
+
+mode: single
+max_exceeded: silent
+
+triggers:
+  - trigger: state
+    entity_id: !input monitored_entity
+    to: !input problem_state
+    for: !input problem_duration
+
+variables:
+  addon_slug: !input addon_slug
+  monitored_entity: !input monitored_entity
+  service_name_input: !input service_name
+  problem_state: !input problem_state
+  recovery_state: !input recovery_state
+  recovery_mode: !input recovery_mode
+  max_attempts: !input max_attempts
+  telegram_bot: !input telegram_bot_config
+  send_to_ha: !input send_to_ha
+  lang: !input language
+  related_config_entry: !input related_config_entry
+  addon_update_entity: !input addon_update_entity
+  nl: "{{ lang == 'nl' }}"
+  # Name for the messages (plain, and Markdown-escaped)
+  service_name_plain: >-
+    {%- set n = service_name_input | trim -%}
+    {%- if n == '' -%}{%- set n = state_attr(monitored_entity, 'friendly_name') or monitored_entity -%}{%- endif -%}
+    {{ n | string | trim }}
+  service_name: >-
+    {%- set n = service_name_plain -%}
+    {{ n | string | trim | replace('_', '\\_') | replace('*', '\\*') | replace('`', '\\`') | replace('[', '\\[') }}
+  since: >-
+    {{ as_local(trigger.to_state.last_changed).strftime('%H:%M') if trigger is defined and trigger.to_state is defined else now().strftime('%H:%M') }}
+  msg_start: |-
+    {%- if nl -%}
+    ⚠️ *{{ service_name }} is offline*
+    Sinds {{ since }} (status: {{ problem_state }}).
+    🔁 Herstart van de add-on wordt geprobeerd...
+    {%- else -%}
+    ⚠️ *{{ service_name }} is offline*
+    Since {{ since }} (state: {{ problem_state }}).
+    🔁 Trying to restart the add-on...
+    {%- endif -%}
+
+actions:
+  # ── Announce the problem ──────────────────────────────────────────────────
+  - alias: "📣 Announce the problem"
+    if:
+      - condition: template
+        value_template: "{{ telegram_bot | string | trim != '' }}"
+    then:
+      - action: telegram_bot.send_message
+        continue_on_error: true
+        data:
+          config_entry_id: "{{ telegram_bot }}"
+          message: "{{ msg_start | trim }}"
+          parse_mode: Markdown
+  - if:
+      - condition: template
+        value_template: "{{ send_to_ha }}"
+    then:
+      - action: persistent_notification.create
+        continue_on_error: true
+        data:
+          title: "⚠️ {{ service_name_plain }}"
+          message: "{{ msg_start | replace('*', '') | trim }}"
+          notification_id: "addon_watchdog_{{ addon_slug }}"
+
+  # ── Restart loop ──────────────────────────────────────────────────────────
+  - repeat:
+      count: "{{ max_attempts | int(2) }}"
+      sequence:
+        - alias: "🔁 Restart the add-on"
+          action: hassio.addon_restart
+          continue_on_error: true
+          data:
+            addon: "{{ addon_slug }}"
+
+        - alias: "⏳ Wait for recovery"
+          wait_template: >-
+            {% set s = states(monitored_entity) %}
+            {{ (s == recovery_state) if recovery_mode == 'equals' else (s != recovery_state) }}
+          timeout: !input wait_time
+          continue_on_timeout: true
+
+        - if:
+            - condition: template
+              value_template: >-
+                {% set s = states(monitored_entity) %}
+                {{ (s == recovery_state) if recovery_mode == 'equals' else (s != recovery_state) }}
+          then:
+            - variables:
+                msg_ok: |-
+                  {%- if nl -%}
+                  ✅ *{{ service_name }} is hersteld*
+                  De add-on is herstart (poging {{ repeat.index }}) en de status is weer in orde.
+                  {%- else -%}
+                  ✅ *{{ service_name }} has recovered*
+                  The add-on was restarted (attempt {{ repeat.index }}) and its state is healthy again.
+                  {%- endif -%}
+            - if:
+                - condition: template
+                  value_template: "{{ telegram_bot | string | trim != '' }}"
+              then:
+                - action: telegram_bot.send_message
+                  continue_on_error: true
+                  data:
+                    config_entry_id: "{{ telegram_bot }}"
+                    message: "{{ msg_ok | trim }}"
+                    parse_mode: Markdown
+            - if:
+                - condition: template
+                  value_template: "{{ send_to_ha }}"
+              then:
+                - action: persistent_notification.create
+                  continue_on_error: true
+                  data:
+                    title: "✅ {{ service_name_plain }}"
+                    message: "{{ msg_ok | replace('*', '') | trim }}"
+                    notification_id: "addon_watchdog_{{ addon_slug }}"
+            - stop: "Add-on recovered"
+
+        - if:
+            - condition: template
+              value_template: "{{ repeat.index < (max_attempts | int(2)) }}"
+          then:
+            - variables:
+                msg_retry: >-
+                  {% if nl %}⏳ Poging {{ repeat.index }} van {{ max_attempts | int(2) }} mislukt, {{ service_name }} is nog niet hersteld. Volgende herstart wordt gestart...
+                  {% else %}⏳ Attempt {{ repeat.index }} of {{ max_attempts | int(2) }} failed, {{ service_name }} has not recovered yet. Starting the next restart...
+                  {% endif %}
+            - if:
+                - condition: template
+                  value_template: "{{ telegram_bot | string | trim != '' }}"
+              then:
+                - action: telegram_bot.send_message
+                  continue_on_error: true
+                  data:
+                    config_entry_id: "{{ telegram_bot }}"
+                    message: "{{ msg_retry | trim }}"
+                    parse_mode: Markdown
+
+  # ── All attempts failed: diagnose and report ──────────────────────────────
+  - variables:
+      current_state: "{{ states(monitored_entity) }}"
+      entry_state: >-
+        {{ config_entry_attr(related_config_entry, 'state') if related_config_entry | string | trim != '' else 'skipped' }}
+      update_state: >-
+        {{ states(addon_update_entity) if addon_update_entity | string | trim != '' else 'skipped' }}
+      reason: >-
+        {% if entry_state not in ['skipped', 'loaded'] %}
+          {% if nl %}De gekoppelde integratie in HA is niet geladen (status: {{ entry_state }}). Controleer de instellingen en de inloggegevens van de integratie.
+          {% else %}The related integration in HA is not loaded (state: {{ entry_state }}). Check the integration settings and credentials.{% endif %}
+        {% elif update_state == 'unavailable' %}
+          {% if nl %}De add-on-entiteit is unavailable: de Supervisor reageert mogelijk niet op de herstart.
+          {% else %}The add-on entity is unavailable: the Supervisor may not be responding to the restart.{% endif %}
+        {% elif current_state == 'unavailable' %}
+          {% if nl %}De bewaakte entiteit is unavailable: HA ontvangt geen status meer. Mogelijk is de verbinding (bijv. de broker) weg.
+          {% else %}The monitored entity is unavailable: HA is not receiving any status. The connection (e.g. a broker) may be gone.{% endif %}
+        {% else %}
+          {% if nl %}De Supervisor en integratie lijken in orde, maar de add-on komt niet online. Waarschijnlijk start de add-on niet op of is de onderliggende hardware/verbinding niet bereikbaar. Bekijk de add-on log.
+          {% else %}The Supervisor and integration look fine, but the add-on does not come online. It probably fails to start or its hardware/connection is unreachable. Check the add-on log.{% endif %}
+        {% endif %}
+      msg_fail: |-
+        {%- if nl -%}
+        ❌ *{{ service_name }}: herstel mislukt*
+        {{ max_attempts | int(2) }} herstart(s) hebben de add-on niet online gekregen.
+
+        🔍 *Waarschijnlijke oorzaak*
+        {{ reason | trim }}
+
+        _Status: {{ current_state | replace('_', ' ') }}_
+        {%- else -%}
+        ❌ *{{ service_name }}: recovery failed*
+        {{ max_attempts | int(2) }} restart(s) did not bring the add-on back online.
+
+        🔍 *Most likely cause*
+        {{ reason | trim }}
+
+        _State: {{ current_state | replace('_', ' ') }}_
+        {%- endif -%}
+  - if:
+      - condition: template
+        value_template: "{{ telegram_bot | string | trim != '' }}"
+    then:
+      - action: telegram_bot.send_message
+        continue_on_error: true
+        data:
+          config_entry_id: "{{ telegram_bot }}"
+          message: "{{ msg_fail | trim }}"
+          parse_mode: Markdown
+  - if:
+      - condition: template
+        value_template: "{{ send_to_ha }}"
+    then:
+      - action: persistent_notification.create
+        continue_on_error: true
+        data:
+          title: "❌ {{ service_name_plain }}"
+          message: "{{ msg_fail | replace('*', '') | replace('_', '') | trim }}"
+          notification_id: "addon_watchdog_{{ addon_slug }}"
