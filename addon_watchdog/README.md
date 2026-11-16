@@ -1,6 +1,6 @@
 # 🛡️ Add-on Watchdog
 
-[![version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 Watches an entity and automatically restarts a Home Assistant add-on when it goes offline, and tells you what happened. Works for any add-on: Zigbee2MQTT, Mosquitto, Z-Wave JS, ESPHome, Matter Server, ... 🛡️
@@ -15,12 +15,13 @@ Watches an entity and automatically restarts a Home Assistant add-on when it goe
 - 📱 **Notifications** - Problem started, attempt failed, recovered, or failed with the most likely cause (Telegram and/or Home Assistant)
 - 🔍 **Diagnosis** - Optional checks on a related integration and the add-on update entity for a helpful "most likely cause"
 - 🌍 **Multi-language** - English and Dutch
-- 🔒 **Nothing hard-coded** - Add-on slug, entities and Telegram bot are all inputs
+- 🧩 **Pick from a list** - Choose the add-on from your installed add-ons, no slug lookup needed
+- 🔒 **Nothing hard-coded** - Add-on, entities and Telegram bot are all inputs
 
 ## 📋 Requirements
 
 1. **Home Assistant OS or Supervised** - The `hassio.addon_restart` action needs the Supervisor
-2. **Add-on slug** - Find it in the add-on URL (`/hassio/addon/<slug>`)
+2. **An installed add-on** - Picked from a list, no need to look up the slug
 3. **Monitored entity** - An entity that shows whether the add-on works
 4. **Optional:** a Telegram bot integration for Telegram messages
 
@@ -32,7 +33,7 @@ Watches an entity and automatically restarts a Home Assistant add-on when it goe
 
 | Input | Description |
 |-------|-------------|
-| Add-on | Slug of the add-on to restart |
+| Add-on | Pick the installed add-on to restart from a list |
 | Monitored Entity | Entity that shows whether the add-on works |
 | Service Name | Name in the messages (empty = entity name) |
 | Problem State / Duration | State that means "down" and how long it must last |
@@ -50,4 +51,5 @@ Watches an entity and automatically restarts a Home Assistant add-on when it goe
 
 ## 📝 Changelog
 
+- **1.1.0** - The add-on is now chosen from a list of installed add-ons (add-on selector) instead of typing the slug. The monitored entity selector is limited to useful domains (binary_sensor, sensor, switch, light, update)
 - **1.0.0** - Initial release: generic add-on watchdog replacing separate Zigbee2MQTT and MQTT watchdog automations

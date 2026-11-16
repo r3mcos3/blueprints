@@ -1,8 +1,8 @@
-# Version: 1.0.0
+# Version: 1.1.0
 blueprint:
   name: "🛡️ Add-on Watchdog"
   description: >
-    📦 [Version 1.0.0] Watches an entity and automatically restarts a Home Assistant add-on when it goes
+    📦 [Version 1.1.0] Watches an entity and automatically restarts a Home Assistant add-on when it goes
     offline. 🔁 Notifies you via Telegram (and optionally Home Assistant) when the problem starts, after every
     failed attempt, when the add-on has recovered, or — if the restarts did not help — with the most likely cause.
     Works for any add-on: Zigbee2MQTT, Mosquitto, Z-Wave JS, ESPHome, Matter Server, ... 🚀
@@ -19,10 +19,10 @@ blueprint:
     addon_slug:
       name: 🧩 Add-on
       description: >
-        The slug of the add-on to restart (Settings → Add-ons → your add-on → the part of the URL after
-        `/hassio/addon/`, e.g. `core_mosquitto` or `45df7312_zigbee2mqtt`).
+        Pick the installed add-on to restart from the list. The slug (e.g. `core_mosquitto`) is filled in
+        for you. Requires Home Assistant OS or Supervised.
       selector:
-        text:
+        addon:
 
     monitored_entity:
       name: 👀 Monitored Entity
@@ -31,6 +31,13 @@ blueprint:
         (e.g. the Zigbee2MQTT `bridge connection state` binary sensor).
       selector:
         entity:
+          filter:
+            - domain:
+                - binary_sensor
+                - sensor
+                - switch
+                - light
+                - update
 
     service_name:
       name: 🏷️ Service Name
