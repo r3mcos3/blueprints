@@ -1,6 +1,6 @@
 # 🔄 Update Notifications (Telegram)
 
-[![version](https://img.shields.io/badge/version-1.4.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.4.1-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 [![Platform](https://img.shields.io/badge/Platform-Telegram-blue.svg)](https://telegram.org/)
 
@@ -225,6 +225,9 @@ If you're not sure about your chat_id:
 3. Some addons don't have changelog URLs available
 
 ## 📝 Version History
+
+### Version 1.4.1
+- 🐛 Fixed: `parse_mode` is now lowercase `markdown`. Current Home Assistant versions reject `Markdown`, so the Telegram messages failed validation
 
 ### Version 1.4.0
 - 🐛 Fixed: the selected Telegram bot was never passed to the Telegram actions (`config_entry_id` was missing)

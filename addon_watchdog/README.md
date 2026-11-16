@@ -1,6 +1,6 @@
 # 🛡️ Add-on Watchdog
 
-[![version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/r3mcos3/blueprints)
+[![version](https://img.shields.io/badge/version-1.1.1-blue.svg)](https://github.com/r3mcos3/blueprints)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12.0%2B-blue.svg)](https://www.home-assistant.io/)
 
 Watches an entity and automatically restarts a Home Assistant add-on when it goes offline, and tells you what happened. Works for any add-on: Zigbee2MQTT, Mosquitto, Z-Wave JS, ESPHome, Matter Server, ... 🛡️
@@ -51,5 +51,6 @@ Watches an entity and automatically restarts a Home Assistant add-on when it goe
 
 ## 📝 Changelog
 
+- **1.1.1** - Fix: `parse_mode` is now lowercase `markdown`. Current Home Assistant versions reject `Markdown` and the validation error stopped the whole run before the add-on was restarted
 - **1.1.0** - The add-on is now chosen from a list of installed add-ons (add-on selector) instead of typing the slug. The monitored entity selector is limited to useful domains (binary_sensor, sensor, switch, light, update)
 - **1.0.0** - Initial release: generic add-on watchdog replacing separate Zigbee2MQTT and MQTT watchdog automations
